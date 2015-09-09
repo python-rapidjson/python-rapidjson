@@ -1,6 +1,9 @@
-from distutils.core import setup, Extension
+try:
+    from setuptools import setup, Extension
+except ImportError:
+    from distutils.core import setup, Extension
 
-with open('README.md') as f:
+with open('README.rst') as f:
     long_description = f.read()
 
 rapidjson = Extension(
