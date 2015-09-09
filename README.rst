@@ -9,15 +9,7 @@ to use this library.
 
 Getting Started
 ---------------
-To get started using ``python-rapidjson`` you will need to install RapidJSON, on
-Ubuntu you do the following:
-
-.. code-block:: bash
-
-    $ sudo apt-get install rapidjson-dev
-
-
-and then you just use pip to install ``python-rapidjson``:
+First install ``python-rapidjson``:
 
 .. code-block:: bash
 
