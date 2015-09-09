@@ -1,4 +1,80 @@
 python-rapidjson
 ================
+Python wrapper around RapidJSON. RapidJSON_ is an extremely fast C++ json
+serialization library.
 
-Python wrapper around rapidjson
+We do not support legacy python versions, you will need to upgrade to Python 3
+to use this library.
+
+
+Getting Started
+---------------
+To get started using ``python-rapidjson`` you will need to install RapidJSON, on
+Ubuntu you do the following:
+
+.. code-block:: bash
+
+    $ sudo apt-get install rapidjson-dev
+
+
+and then you just use pip to install ``python-rapidjson``:
+
+.. code-block:: bash
+
+    $ pip install python-rapidjson
+
+
+RapidJSON tries to be as compatible with the standard library ``json`` module so
+it should be a drop in replacement. Basic usage looks like this:
+
+.. code-block:: python
+
+    >>> import rapidjson
+    >>> data = {'foo': 100, 'bar': 'baz'}
+    >>> rapidjson.dumps(data)
+    '{"bar":"baz","foo":100}'
+    >>> rapidjson.loads('{"bar":"baz","foo":100}')
+    {'bar': 'baz', 'foo': 100}
+
+
+Performance
+-----------
+``python-rapidjson`` tries to be as performant as possible while staying
+compatible with the ``json`` module.  Here are our current benchmarks:
+
++-----------------------------------------+--------+------------+------------+-----------+
+|                                         | ujson  | simplejson | rapidjson  | yajl      |
++=========================================+========+============+============+===========+
+|Array with 256 doubles                   |        |            |            |           |
++-----------------------------------------+--------+------------+------------+-----------+
+| Encode                                  | 13.81s | 12.58s     | 1.25s      | 8.36s     |
++-----------------------------------------+--------+------------+------------+-----------+
+| Decode                                  | 1.85s  | 4.65s      | 0.947s     | 2.09s     |
++-----------------------------------------+--------+------------+------------+-----------+
+|                                         |        |            |            |           |
++-----------------------------------------+--------+------------+------------+-----------+
+| Array with 256 utf-8 strings            |        |            |            |           |
++-----------------------------------------+--------+------------+------------+-----------+
+| Encode                                  | 1.98s  | 2.36s      | 1.70s      | 1.45s     |
++-----------------------------------------+--------+------------+------------+-----------+
+| Decode                                  | 2.77s  | 13.58s     | 1.42s      | 7.19s     |
++-----------------------------------------+--------+------------+------------+-----------+
+|                                         |        |            |            |           |
++-----------------------------------------+--------+------------+------------+-----------+
+|100 dictionaries of 100 arrays           |        |            |            |           |
++-----------------------------------------+--------+------------+------------+-----------+
+| Encode                                  | 1.65s  | 5.20s      | 0.77s      | 2.09s     |
++-----------------------------------------+--------+------------+------------+-----------+
+| Decode                                  | 2.76s  | 3.86s      | 2.79s      | 3.47      |
++-----------------------------------------+--------+------------+------------+-----------+
+|                                         |        |            |            |           |
++-----------------------------------------+--------+------------+------------+-----------+
+
+To run these tests yourself, clone the repo and run:
+
+.. code-block::
+
+   $ tox -e py34 -m benchmark
+
+
+.. _RapidJSON: https://github.com/miloyip/rapidjson
