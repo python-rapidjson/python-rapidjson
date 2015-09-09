@@ -1,0 +1,5 @@
+pytest
+simplejson
+ujson
+yajl
+-e .
