@@ -354,6 +354,13 @@ rapidjson_dumps(PyObject* self, PyObject* args, PyObject* kwargs)
             double d = PyFloat_AsDouble(object);
             writer.Double(d);
         }
+        else if (PyBytes_Check(object)) {
+            char* s = PyBytes_AsString(object);
+            if (s == NULL)
+                return NULL;
+
+            writer.String(s);
+        }
         else if (PyUnicode_Check(object)) {
             char* s = PyUnicode_AsUTF8(object);
             writer.String(s);
