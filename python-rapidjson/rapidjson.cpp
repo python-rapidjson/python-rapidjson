@@ -1,17 +1,20 @@
 #include <Python.h>
 #include <datetime.h>
 
+#include <algorithm>
 #include <string>
 #include <vector>
-#include <iostream>
 
 #include "rapidjson/reader.h"
 #include "rapidjson/stringbuffer.h"
 #include "rapidjson/writer.h"
+#include "rapidjson/prettywriter.h"
 #include "rapidjson/error/en.h"
 
 using namespace rapidjson;
 
+
+static PyObject* rapidjson_decimal_type = NULL;
 
 struct HandlerContext {
     PyObject* object;
@@ -21,14 +24,15 @@ struct HandlerContext {
 };
 
 struct PyHandler {
+    int useDecimal;
     PyObject* root;
     PyObject* objectHook;
     std::vector<HandlerContext> stack;
 
-    PyHandler(PyObject* hook)
-    : root(NULL), objectHook(hook)
+    PyHandler(int ud, PyObject* hook)
+    : useDecimal(ud), root(NULL), objectHook(hook)
     {
-        stack.reserve(64);
+        stack.reserve(128);
     }
 
     bool Handle(PyObject* value) {
@@ -108,6 +112,9 @@ struct PyHandler {
         stack.pop_back();
 
         PyObject* value = PyObject_CallFunctionObjArgs(objectHook, dict, NULL);
+        // In case the dict is returned from the function.
+        if (value == dict)
+            Py_INCREF(value);
 
         if (value == NULL)
             return false;
@@ -207,8 +214,47 @@ struct PyHandler {
         return HandleSimpleType(value);
     }
 
-    bool Double(double d) {
-        PyObject* value = PyFloat_FromDouble(d);
+    bool Double(double d, const char* decimal, SizeType length, bool minus, size_t decimalPosition, int exp) {
+        PyObject* value;
+        if (!useDecimal)
+            value = PyFloat_FromDouble(d);
+        else {
+            const int MAX_FINAL_SIZE = 512;
+            const int MAX_EXP_SIZE = 11; // 32-bit
+            const int MAX_DECIMAL_SIZE = MAX_FINAL_SIZE - MAX_EXP_SIZE - 3; // e, +/-, \0
+
+            exp += decimalPosition - length;
+
+            if (length > MAX_DECIMAL_SIZE)
+                length = MAX_DECIMAL_SIZE;
+
+            char finalStr[MAX_DECIMAL_SIZE];
+            finalStr[0] = minus ? '-' : '+';
+            memcpy(finalStr+1, decimal, length);
+
+            if (exp == 0)
+                finalStr[length+1] = 0;
+            else {
+                char expStr[MAX_EXP_SIZE];
+                char* end = internal::i32toa(exp, expStr);
+                size_t len = end - expStr;
+
+                finalStr[length+1] = 'e';
+                finalStr[length+2] = 0;
+                memcpy(finalStr+length+2, expStr, len);
+                finalStr[length+2+len] = 0;
+            }
+
+            PyObject* raw = PyUnicode_FromString(finalStr);
+            if (raw == NULL) {
+                PyErr_Format(PyExc_ValueError, "foo");
+                return NULL;
+            }
+
+            value = PyObject_CallFunctionObjArgs(rapidjson_decimal_type, raw, NULL);
+            Py_DECREF(raw);
+        }
+
         return HandleSimpleType(value);
     }
 
@@ -225,15 +271,28 @@ rapidjson_loads(PyObject* self, PyObject* args, PyObject* kwargs)
 
     PyObject* jsonObject;
     PyObject* objectHook = NULL;
+    int useDecimal = false;
+    int preciseFloat = true;
 
-    static char* kwlist[] = {"value", "object_hook", NULL};
-    if (!PyArg_ParseTupleAndKeywords(args, kwargs, "O|O:rapidjson.loads",
+    static char* kwlist[] = {
+        "obj",
+        "object_hook",
+        "use_decimal",
+        "precise_float",
+        NULL
+    };
+
+    if (!PyArg_ParseTupleAndKeywords(args, kwargs, "O|Opp:rapidjson.loads",
                                      kwlist,
                                      &jsonObject,
-                                     &objectHook))
+                                     &objectHook,
+                                     &useDecimal,
+                                     &preciseFloat))
 
-    if (objectHook && !PyCallable_Check(objectHook))
-        objectHook = NULL;
+    if (objectHook && !PyCallable_Check(objectHook)) {
+        PyErr_Format(PyExc_TypeError, "object_hook is not callable");
+        return NULL;
+    }
 
     Py_ssize_t jsonStrLen;
     char* jsonStr;
@@ -256,10 +315,16 @@ rapidjson_loads(PyObject* self, PyObject* args, PyObject* kwargs)
     char* jsonStrCopy = (char*) malloc(sizeof(char) * (jsonStrLen+1));
     memcpy(jsonStrCopy, jsonStr, jsonStrLen+1);
 
-    PyHandler handler(objectHook);
+    PyHandler handler(useDecimal, objectHook);
     Reader reader;
     InsituStringStream ss(jsonStrCopy);
-    reader.Parse<kParseInsituFlag>(ss, handler);
+
+    if (preciseFloat) {
+        reader.Parse<kParseInsituFlag | kParseFullPrecisionFlag>(ss, handler);
+    }
+    else {
+        reader.Parse<kParseInsituFlag>(ss, handler);
+    }
 
     if (reader.HasParseError()) {
         SizeType offset = reader.GetErrorOffset();
@@ -282,132 +347,229 @@ struct WriterContext {
     const char* key;
     PyObject* object;
     PyObject* decref;
+    unsigned level;
     bool isObject;
 
-    WriterContext(const char* k, PyObject* o, bool isO, PyObject* d=NULL)
-    : key(k), object(o), decref(d), isObject(isO)
+    WriterContext(const char* k, PyObject* o, bool isO, int l, PyObject* d=NULL)
+    : key(k), object(o), decref(d), level(l), isObject(isO)
     {}
 };
 
-static const int DATETIME_MODE_NONE = 0;
-static const int DATETIME_MODE_ISO8601 = 1;
+struct DictItem {
+    char* key_str;
+    PyObject* item;
 
+    DictItem(char* k, PyObject* i)
+    : key_str(k), item(i)
+    {}
+
+    bool operator<(const DictItem& other) {
+        return strcmp(other.key_str, this->key_str) < 0;
+    }
+};
+
+enum DatetimeMode {
+    DATETIME_MODE_NONE = 0,
+    DATETIME_MODE_ISO8601 = 1
+};
+
+static const int MAX_RECURSION_DEPTH = 2048;
+
+
+template<typename T>
 static PyObject*
-rapidjson_dumps(PyObject* self, PyObject* args, PyObject* kwargs)
+rapidjson_dumps_internal(
+    T* writer,
+    StringBuffer* buf,
+    PyObject* value,
+    int skipKeys,
+    int ensureAscii,
+    int allowNan,
+    PyObject* defaultFn,
+    int sortKeys,
+    int useDecimal,
+    unsigned maxRecursionDepth,
+    DatetimeMode datetimeMode,
+    bool prettyPrint,
+    char indentChar,
+    unsigned indentCharCount)
 {
-    /* Converts a Python object to a JSON-encoded string. */
-
-    PyObject* value;
-    PyObject* default_fn = NULL;
-    int datetime_mode = DATETIME_MODE_ISO8601;
-
-    static char* kwlist[] = {"value", "default", "datetime_mode", NULL};
-    if (!PyArg_ParseTupleAndKeywords(args, kwargs, "O|Oi:rapidjson.dumps",
-                                     kwlist,
-                                     &value,
-                                     &default_fn,
-                                     &datetime_mode))
-        return NULL;
-
-    if (default_fn && !PyCallable_Check(default_fn))
-        default_fn = NULL;
-
-    StringBuffer buf;
-    Writer<StringBuffer> writer(buf);
+    int isDec;
     std::vector<WriterContext> stack;
+    stack.reserve(128);
 
-    stack.push_back(WriterContext(NULL, value, false));
+    stack.push_back(WriterContext(NULL, value, false, 0));
 
     while (!stack.empty()) {
-        const WriterContext current = stack.back();
+        const WriterContext& current = stack.back();
         stack.pop_back();
 
+        const unsigned currentLevel = current.level;
+        const unsigned nextLevel = current.level + 1;
         PyObject* const object = current.object;
+
+        if (currentLevel > maxRecursionDepth) {
+            PyErr_Format(PyExc_OverflowError, "Max recursion depth reached");
+            return NULL;
+        }
 
         if (object == NULL) {
             if (current.key != NULL) {
-                writer.Key(current.key);
+                writer->Key(current.key);
             }
             else if (current.decref != NULL) {
                 Py_DECREF(current.decref);
             }
             else if (current.isObject) {
-                writer.EndObject();
+                writer->EndObject();
             }
             else {
-                writer.EndArray();
+                writer->EndArray();
             }
         }
         else if (object == Py_None) {
-            writer.Null();
+            writer->Null();
         }
         else if (PyBool_Check(object)) {
-            writer.Bool(object == Py_True);
+            writer->Bool(object == Py_True);
+        }
+        else if (useDecimal && (isDec = PyObject_IsInstance(object, rapidjson_decimal_type))) {
+            if (isDec == -1)
+                return NULL;
+
+            PyObject* decStrObj = PyObject_Str(object);
+            if (decStrObj == NULL)
+                return NULL;
+
+            Py_ssize_t size;
+            char* decStr = PyUnicode_AsUTF8AndSize(decStrObj, &size);
+            if (decStr == NULL) {
+                Py_DECREF(decStrObj);
+                return NULL;
+            }
+
+            writer->RawNumber(decStr, size);
+            Py_DECREF(decStrObj);
         }
         else if (PyLong_Check(object)) {
-            // TODO overflow
-            long long i = PyLong_AsLongLong(object);
-            writer.Int64(i);
+            int overflow;
+            long long i = PyLong_AsLongLongAndOverflow(object, &overflow);
+            if (i == -1 && PyErr_Occurred())
+                return NULL;
+
+            if (overflow == 0) {
+                writer->Int64(i);
+            } else {
+                unsigned long long ui = PyLong_AsUnsignedLongLong(object);
+                if (PyErr_Occurred())
+                    return NULL;
+
+                writer->Uint64(ui);
+            }
         }
         else if (PyFloat_Check(object)) {
-            // TODO overflow
             double d = PyFloat_AsDouble(object);
-            writer.Double(d);
+            if (d == -1.0 && PyErr_Occurred())
+                return NULL;
+
+            if (Py_IS_NAN(d)) {
+                if (allowNan)
+                    writer->RawNumber("NaN", 3);
+                else {
+                    PyErr_Format(PyExc_ValueError, "Out of range float values are not JSON compliant");
+                    return NULL;
+                }
+            } else if (Py_IS_INFINITY(d)) {
+                if (!allowNan) {
+                    PyErr_Format(PyExc_ValueError, "Out of range float values are not JSON compliant");
+                    return NULL;
+                }
+                else if (d < 0)
+                    writer->RawNumber("-Infinity", 9);
+                else
+                    writer->RawNumber("Infinity", 8);
+            }
+            else
+                writer->Double(d);
         }
         else if (PyBytes_Check(object)) {
             char* s = PyBytes_AsString(object);
             if (s == NULL)
-                return NULL;
+                goto error;
 
-            writer.String(s);
+            writer->String(s);
         }
         else if (PyUnicode_Check(object)) {
             char* s = PyUnicode_AsUTF8(object);
-            writer.String(s);
+            writer->String(s);
         }
         else if (PyList_Check(object)) {
-            writer.StartArray();
-            stack.push_back(WriterContext(NULL, NULL, false));
+            writer->StartArray();
+            stack.push_back(WriterContext(NULL, NULL, false, currentLevel));
 
             Py_ssize_t size = PyList_GET_SIZE(object);
 
             for (Py_ssize_t i = size - 1; i >= 0; --i) {
                 PyObject* item = PyList_GET_ITEM(object, i);
-                stack.push_back(WriterContext(NULL, item, false));
+                stack.push_back(WriterContext(NULL, item, false, nextLevel));
             }
         }
         else if (PyTuple_Check(object)) {
-            writer.StartArray();
-            stack.push_back(WriterContext(NULL, NULL, false));
+            writer->StartArray();
+            stack.push_back(WriterContext(NULL, NULL, false, currentLevel));
 
             Py_ssize_t size = PyTuple_GET_SIZE(object);
 
             for (Py_ssize_t i = size - 1; i >= 0; --i) {
                 PyObject* item = PyTuple_GET_ITEM(object, i);
-                stack.push_back(WriterContext(NULL, item, false));
+                stack.push_back(WriterContext(NULL, item, false, nextLevel));
             }
         }
         else if (PyDict_Check(object)) {
-            writer.StartObject();
-            stack.push_back(WriterContext(NULL, NULL, true));
+            writer->StartObject();
+            stack.push_back(WriterContext(NULL, NULL, true, currentLevel));
 
             Py_ssize_t pos = 0;
             PyObject* key;
             PyObject* item;
 
-            while (PyDict_Next(object, &pos, &key, &item)) {
-                if (PyUnicode_Check(key)) {
-                    char* key_str = PyUnicode_AsUTF8(key);
-                    stack.push_back(WriterContext(NULL, item, false));
-                    stack.push_back(WriterContext(key_str, NULL, false));
+            if (!sortKeys) {
+                while (PyDict_Next(object, &pos, &key, &item)) {
+                    if (PyUnicode_Check(key)) {
+                        char* key_str = PyUnicode_AsUTF8(key);
+                        stack.push_back(WriterContext(NULL, item, false, nextLevel));
+                        stack.push_back(WriterContext(key_str, NULL, false, nextLevel));
+                    }
+                    else if (!skipKeys) {
+                        PyErr_Format(PyExc_TypeError, "keys must be a string");
+                        goto error;
+                    }
                 }
-                else {
-                    PyErr_Format(PyExc_TypeError, "keys must be a string");
-                    return NULL;
+            }
+            else {
+                std::vector<DictItem> items;
+
+                while (PyDict_Next(object, &pos, &key, &item)) {
+                    if (PyUnicode_Check(key)) {
+                        char* key_str = PyUnicode_AsUTF8(key);
+                        items.push_back(DictItem(key_str, item));
+                    }
+                    else if (!skipKeys) {
+                        PyErr_Format(PyExc_TypeError, "keys must be a string");
+                        goto error;
+                    }
+                }
+
+                std::sort(items.begin(), items.end());
+
+                std::vector<DictItem>::const_iterator iter = items.begin();
+                for (; iter != items.end(); ++iter) {
+                    stack.push_back(WriterContext(NULL, iter->item, false, nextLevel));
+                    stack.push_back(WriterContext(iter->key_str, NULL, false, nextLevel));
                 }
             }
         }
-        else if (PyDateTime_Check(object) && datetime_mode == DATETIME_MODE_ISO8601) {
+        else if (PyDateTime_Check(object) && datetimeMode == DATETIME_MODE_ISO8601) {
             int year = PyDateTime_GET_YEAR(object);
             int month = PyDateTime_GET_MONTH(object);
             int day = PyDateTime_GET_DAY(object);
@@ -434,27 +596,156 @@ rapidjson_dumps(PyObject* self, PyObject* args, PyObject* kwargs)
                          hour, min, sec);
             }
 
-            writer.String(isoformat);
+            writer->String(isoformat);
         }
-        else if (default_fn) {
-            PyObject* retval = PyObject_CallFunctionObjArgs(default_fn, object, NULL);
+        else if (defaultFn) {
+            PyObject* retval = PyObject_CallFunctionObjArgs(defaultFn, object, NULL);
             if (retval == NULL)
-                return NULL;
+                goto error;
 
             // Decref the return value once it's done being dumped to a string.
-            stack.push_back(WriterContext(NULL, NULL, false, retval));
-            stack.push_back(WriterContext(NULL, retval, false));
+            stack.push_back(WriterContext(NULL, NULL, false, currentLevel, retval));
+            stack.push_back(WriterContext(NULL, retval, false, currentLevel));
         }
         else {
             PyObject* repr = PyObject_Repr(object);
             PyErr_Format(PyExc_TypeError, "%s is not JSON serializable", PyUnicode_AsUTF8(repr));
             Py_XDECREF(repr);
+            goto error;
+        }
+    }
+
+    return PyUnicode_FromString(buf->GetString());
+
+error:
+    return NULL;
+}
+
+
+#define RAPIDJSON_DUMPS_INTERNAL_CALL \
+    rapidjson_dumps_internal( \
+        &writer, \
+        &buf, \
+        value, \
+        skipKeys, \
+        ensureAscii, \
+        allowNan, \
+        defaultFn, \
+        sortKeys, \
+        useDecimal, \
+        maxRecursionDepth, \
+        datetimeMode, \
+        prettyPrint, \
+        indentChar, \
+        indentCharCount)
+
+
+static PyObject*
+rapidjson_dumps(PyObject* self, PyObject* args, PyObject* kwargs)
+{
+    /* Converts a Python object to a JSON-encoded string. */
+
+    PyObject* value;
+    int skipKeys = 0;
+    int ensureAscii = 1;
+    int allowNan = 1;
+    PyObject* indent = NULL;
+    PyObject* defaultFn = NULL;
+    int sortKeys = 0;
+    int useDecimal = 0;
+    unsigned maxRecursionDepth = MAX_RECURSION_DEPTH;
+    DatetimeMode datetimeMode = DATETIME_MODE_ISO8601;
+
+    bool prettyPrint = false;
+    char indentChar = ' ';
+    unsigned indentCharCount = 4;
+
+    static char* kwlist[] = {
+        "s",
+        "skipkeys",
+        "ensure_ascii",
+        "allow_nan",
+        "indent",
+        "default",
+        "sort_keys",
+        "use_decimal",
+        "max_recursion_depth",
+        "datetime_mode",
+        NULL
+    };
+    if (!PyArg_ParseTupleAndKeywords(args, kwargs, "O|pppOOppIi:rapidjson.dumps",
+                                     kwlist,
+                                     &value,
+                                     &skipKeys,
+                                     &ensureAscii,
+                                     &allowNan,
+                                     &indent,
+                                     &defaultFn,
+                                     &sortKeys,
+                                     &useDecimal,
+                                     &maxRecursionDepth,
+                                     &datetimeMode))
+        return NULL;
+
+    if (defaultFn && !PyCallable_Check(defaultFn)) {
+        PyErr_Format(PyExc_TypeError, "default must be a callable");
+        return NULL;
+    }
+
+    if (indent && indent != Py_None) {
+        prettyPrint = true;
+
+        if (PyLong_Check(indent)) {
+            indentCharCount = PyLong_AsLong(indent);
+        }
+        else if (PyUnicode_Check(indent)) {
+            char* s = PyUnicode_AsUTF8(indent);
+
+            if (s != NULL) {
+                indentCharCount = strlen(s);
+                indentChar = *s;
+            }
+        }
+        else if (PyBytes_Check(indent)) {
+            char* s = PyBytes_AsString(indent);
+
+            if (s != NULL) {
+                indentCharCount = strlen(s);
+                indentChar = *s;
+            }
+        }
+        else {
+            PyErr_Format(PyExc_TypeError, "indent must be an int or a string");
             return NULL;
         }
     }
 
-    return PyUnicode_FromString(buf.GetString());
+    ////
+
+    StringBuffer buf;
+
+    if (!prettyPrint) {
+        if (ensureAscii) {
+            Writer<StringBuffer, UTF8<>, ASCII<> > writer(buf);
+            return RAPIDJSON_DUMPS_INTERNAL_CALL;
+        }
+        else {
+            Writer<StringBuffer> writer(buf);
+            return RAPIDJSON_DUMPS_INTERNAL_CALL;
+        }
+    }
+    else if (ensureAscii) {
+        PrettyWriter<StringBuffer, UTF8<>, ASCII<> > writer(buf);
+        writer.SetIndent(indentChar, indentCharCount);
+        return RAPIDJSON_DUMPS_INTERNAL_CALL;
+    }
+    else {
+        PrettyWriter<StringBuffer> writer(buf);
+        writer.SetIndent(indentChar, indentCharCount);
+        return RAPIDJSON_DUMPS_INTERNAL_CALL;
+    }
 }
+
 
 
 static PyMethodDef
@@ -476,6 +767,14 @@ PyMODINIT_FUNC
 PyInit_rapidjson()
 {
     PyDateTime_IMPORT;
+
+    PyObject* decimalModule = PyImport_ImportModule("decimal");
+    if (decimalModule == NULL)
+        return NULL;
+
+    rapidjson_decimal_type = PyObject_GetAttrString(decimalModule, "Decimal");
+    Py_INCREF(rapidjson_decimal_type);
+    Py_DECREF(decimalModule);
 
     PyObject* module;
 
