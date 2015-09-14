@@ -240,7 +240,6 @@ struct PyHandler {
                 size_t len = end - expStr;
 
                 finalStr[length+1] = 'e';
-                finalStr[length+2] = 0;
                 memcpy(finalStr+length+2, expStr, len);
                 finalStr[length+2+len] = 0;
             }
@@ -363,7 +362,7 @@ struct DictItem {
     : key_str(k), item(i)
     {}
 
-    bool operator<(const DictItem& other) {
+    bool operator<(const DictItem& other) const {
         return strcmp(other.key_str, this->key_str) < 0;
     }
 };
