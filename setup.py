@@ -14,7 +14,7 @@ rapidjson = Extension(
 
 setup(
     name='python-rapidjson',
-    version='0.0.1',
+    version='0.0.2',
     description='Python wrapper around rapidjson',
     long_description=long_description,
     license='MIT License',
