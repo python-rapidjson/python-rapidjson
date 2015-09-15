@@ -129,10 +129,13 @@ def test_datetime_mode():
     d = datetime.utcnow()
     dstr = d.isoformat()
 
-    assert rapidjson.dumps(d) == '"%s"' % dstr
+    with pytest.raises(TypeError):
+        rapidjson.dumps(d)
 
     with pytest.raises(TypeError):
         rapidjson.dumps(d, datetime_mode=0)
+
+    assert rapidjson.dumps(d, datetime_mode=1) == '"%s"' % dstr
 
 
 @pytest.mark.unit
