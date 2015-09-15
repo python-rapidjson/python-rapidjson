@@ -180,6 +180,50 @@ struct PyHandler {
         return true;
     }
 
+    bool NaN() {
+        PyObject* str = PyUnicode_FromStringAndSize("nan", 3);
+        if (str == NULL)
+            return NULL;
+
+        PyObject* value;
+        if (!useDecimal)
+            value = PyFloat_FromString(str);
+        else
+            value = PyObject_CallFunctionObjArgs(rapidjson_decimal_type, str, NULL);
+
+        Py_DECREF(str);
+
+        if (value == NULL)
+            return NULL;
+
+        return HandleSimpleType(value);
+    }
+
+    bool Infinity(bool minus) {
+        PyObject* str;
+
+        if (minus)
+            str = PyUnicode_FromStringAndSize("-Infinity", 9);
+        else
+            str = PyUnicode_FromStringAndSize("Infinity", 8);
+
+        if (str == NULL)
+            return NULL;
+
+        PyObject* value;
+        if (!useDecimal)
+            value = PyFloat_FromString(str);
+        else
+            value = PyObject_CallFunctionObjArgs(rapidjson_decimal_type, str, NULL);
+
+        Py_DECREF(str);
+
+        if (value == NULL)
+            return NULL;
+
+        return HandleSimpleType(value);
+    }
+
     bool Null() {
         PyObject* value = Py_None;
         Py_INCREF(value);
@@ -246,7 +290,7 @@ struct PyHandler {
 
             PyObject* raw = PyUnicode_FromString(finalStr);
             if (raw == NULL) {
-                PyErr_Format(PyExc_ValueError, "foo");
+                PyErr_Format(PyExc_ValueError, "Error generating decimal representation");
                 return NULL;
             }
 
@@ -270,8 +314,8 @@ rapidjson_loads(PyObject* self, PyObject* args, PyObject* kwargs)
 
     PyObject* jsonObject;
     PyObject* objectHook = NULL;
-    int useDecimal = false;
-    int preciseFloat = true;
+    int useDecimal = 0;
+    int preciseFloat = 1;
 
     static char* kwlist[] = {
         "obj",
@@ -388,10 +432,7 @@ rapidjson_dumps_internal(
     int sortKeys,
     int useDecimal,
     unsigned maxRecursionDepth,
-    DatetimeMode datetimeMode,
-    bool prettyPrint,
-    char indentChar,
-    unsigned indentCharCount)
+    DatetimeMode datetimeMode)
 {
     int isDec;
     std::vector<WriterContext> stack;
@@ -633,10 +674,7 @@ error:
         sortKeys, \
         useDecimal, \
         maxRecursionDepth, \
-        datetimeMode, \
-        prettyPrint, \
-        indentChar, \
-        indentCharCount)
+        datetimeMode)
 
 
 static PyObject*
@@ -653,7 +691,7 @@ rapidjson_dumps(PyObject* self, PyObject* args, PyObject* kwargs)
     int sortKeys = 0;
     int useDecimal = 0;
     unsigned maxRecursionDepth = MAX_RECURSION_DEPTH;
-    DatetimeMode datetimeMode = DATETIME_MODE_ISO8601;
+    DatetimeMode datetimeMode = DATETIME_MODE_NONE;
 
     bool prettyPrint = false;
     char indentChar = ' ';

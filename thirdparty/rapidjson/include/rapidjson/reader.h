@@ -587,6 +587,34 @@ private:
             RAPIDJSON_PARSE_ERROR(kParseErrorValueInvalid, is.Tell() - 1);
     }
 
+    template<unsigned parseFlags, typename InputStream, typename Handler>
+    void ParseNaN(InputStream& is, Handler& handler) {
+        RAPIDJSON_ASSERT(is.Peek() == 'N');
+        is.Take();
+
+        if (is.Take() == 'a' && is.Take() == 'N') {
+            if (!handler.NaN())
+                RAPIDJSON_PARSE_ERROR(kParseErrorTermination, is.Tell());
+        }
+        else
+            RAPIDJSON_PARSE_ERROR(kParseErrorValueInvalid, is.Tell() - 1);
+    }
+
+    template<unsigned parseFlags, typename InputStream, typename Handler>
+    void ParseInfinity(InputStream& is, Handler& handler) {
+        RAPIDJSON_ASSERT(is.Peek() == 'I');
+        is.Take();
+
+        if (is.Take() == 'n' && is.Take() == 'f' && is.Take() == 'i' &&
+            is.Take() == 'n' && is.Take() == 'i' && is.Take() == 't' && is.Take() == 'y')
+        {
+            if (!handler.Infinity(false))
+                RAPIDJSON_PARSE_ERROR(kParseErrorTermination, is.Tell());
+        }
+        else
+            RAPIDJSON_PARSE_ERROR(kParseErrorValueInvalid, is.Tell() - 1);
+    }
+
     // Helper function to parse four hexidecimal digits in \uXXXX in ParseString().
     template<typename InputStream>
     unsigned ParseHex4(InputStream& is) {
@@ -817,8 +845,21 @@ private:
                     significandDigit++;
                 }
         }
-        else
+        else {
+            if (s.Peek() == 'I') {
+                s.Take();
+                if (s.Take() == 'n' && s.Take() == 'f' && s.Take() == 'i' &&
+                    s.Take() == 'n' && s.Take() == 'i' && s.Take() == 't' && s.Take() == 'y')
+                {
+                    if (handler.Infinity(true))
+                        return;
+
+                    RAPIDJSON_PARSE_ERROR(kParseErrorTermination, s.Tell());
+                }
+            }
+
             RAPIDJSON_PARSE_ERROR(kParseErrorValueInvalid, s.Tell());
+        }
 
         // Parse 64bit int
         bool useDouble = false;
@@ -989,6 +1030,8 @@ private:
             case 'n': ParseNull  <parseFlags>(is, handler); break;
             case 't': ParseTrue  <parseFlags>(is, handler); break;
             case 'f': ParseFalse <parseFlags>(is, handler); break;
+            case 'N': ParseNaN   <parseFlags>(is, handler); break;
+            case 'I': ParseInfinity<parseFlags>(is, handler); break;
             case '"': ParseString<parseFlags>(is, handler); break;
             case '{': ParseObject<parseFlags>(is, handler); break;
             case '[': ParseArray <parseFlags>(is, handler); break;
