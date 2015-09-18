@@ -236,3 +236,38 @@ def test_json_medium_complex_objects(name, serialize, deserialize):
     )
 
     print(msg)
+
+
+@pytest.mark.benchmark
+def test_double_performance_float_precision():
+    from functools import partial
+
+    print("\nArray with 256 doubles:")
+    name = 'rapidjson (precise)'
+    serialize = rapidjson.dumps
+    deserialize = rapidjson.loads
+
+    ser_data, des_data = run_client_test(
+        name, serialize, deserialize,
+        data=doubles,
+        iterations=50000,
+    )
+    msg = "%-11s serialize: %0.3f  deserialize: %0.3f  total: %0.3f" % (
+        name, ser_data, des_data, ser_data + des_data
+    )
+
+    print(msg)
+
+    name = 'rapidjson (not precise)'
+    serialize = rapidjson.dumps
+    deserialize = partial(rapidjson.loads, precise_float=False)
+
+    ser_data, des_data = run_client_test(
+        name, serialize, deserialize,
+        data=doubles,
+        iterations=50000,
+    )
+    msg = "%-11s serialize: %0.3f  deserialize: %0.3f  total: %0.3f" % (
+        name, ser_data, des_data, ser_data + des_data
+    )
+    print(msg)
