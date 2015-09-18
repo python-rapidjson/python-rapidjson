@@ -2,6 +2,7 @@ import pytest
 import time
 import sys
 import random
+from functools import partial
 
 try:
     import yajl
@@ -84,10 +85,27 @@ if json:
     contenders.append(('stdlib json', json.dumps, json.loads))
 
 if rapidjson:
-    contenders.append(('rapidjson', rapidjson.dumps, rapidjson.loads))
+    contenders.append(
+        ('rapidjson', rapidjson.dumps,
+         partial(rapidjson.loads, precise_float=True))
+    )
 
 if ujson:
-    contenders.append(('ujson', ujson.dumps, ujson.loads))
+    contenders.append(
+        ('ujson', ujson.dumps, partial(ujson.loads, precise_float=True))
+    )
+
+unprecise_rapid = (
+    'rapidjson (not precise)',
+    rapidjson.dumps,
+    partial(rapidjson.loads, precise_float=False)
+)
+
+unprecise_ujson = (
+    'ujson (not precise)',
+    ujson.dumps,
+    partial(ujson.loads, precise_float=False)
+)
 
 
 doubles = []
@@ -129,7 +147,10 @@ def test_json_serialization(name, serialize, deserialize):
 
 
 @pytest.mark.benchmark
-@pytest.mark.parametrize('name,serialize,deserialize', contenders)
+@pytest.mark.parametrize(
+    'name,serialize,deserialize',
+    contenders + [unprecise_ujson, unprecise_rapid]
+)
 def test_json_doubles(name, serialize, deserialize):
     print("\nArray with 256 doubles:")
     ser_data, des_data = run_client_test(
