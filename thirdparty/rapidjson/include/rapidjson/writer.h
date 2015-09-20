@@ -266,7 +266,7 @@ protected:
         os_->Put('\"');
         GenericStringStream<SourceEncoding> is(str);
         while (is.Tell() < length) {
-            const Ch c = is.Peek();
+            const Ch c = is.Take();
             const unsigned char byte1 = (unsigned char) c;
             if (!TargetEncoding::supportUnicode && byte1 >= 0x80) {
                 // Unicode escaping
@@ -289,7 +289,6 @@ protected:
                     4, 4, 4, 4, 4, 4, 4, 4, 5, 5, 5, 5, 6, 6, 0, 0, // f
                 };
 
-                is.Take();
                 Ch* start;
                 unsigned char byte2, byte3, byte4;
                 unsigned lead, trail, codepoint;
@@ -346,7 +345,6 @@ protected:
                 }
             }
             else if ((sizeof(Ch) == 1 || (unsigned)c < 256) && escape[(unsigned char)c])  {
-                is.Take();
                 Ch* start = os_->stack_.template Push<Ch>(2);
                 *start = '\\';
                 *(++start) = escape[(unsigned char)c];
@@ -359,8 +357,7 @@ protected:
                 }
             }
             else
-                if (!Transcoder<SourceEncoding, TargetEncoding>::Transcode(is, *os_))
-                    return false;
+                os_->Put(c);
         }
         os_->Put('\"');
         return true;
