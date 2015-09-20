@@ -692,8 +692,8 @@ rapidjson_dumps(PyObject* self, PyObject* args, PyObject* kwargs)
     DatetimeMode datetimeMode = DATETIME_MODE_NONE;
 
     bool prettyPrint = false;
-    char indentChar = ' ';
-    unsigned indentCharCount = 4;
+    const char indentChar = ' ';
+    unsigned char indentCharCount = 4;
 
     static char* kwlist[] = {
         "s",
@@ -733,24 +733,8 @@ rapidjson_dumps(PyObject* self, PyObject* args, PyObject* kwargs)
         if (PyLong_Check(indent)) {
             indentCharCount = PyLong_AsLong(indent);
         }
-        else if (PyUnicode_Check(indent)) {
-            char* s = PyUnicode_AsUTF8(indent);
-
-            if (s != NULL) {
-                indentCharCount = strlen(s);
-                indentChar = *s;
-            }
-        }
-        else if (PyBytes_Check(indent)) {
-            char* s = PyBytes_AsString(indent);
-
-            if (s != NULL) {
-                indentCharCount = strlen(s);
-                indentChar = *s;
-            }
-        }
         else {
-            PyErr_Format(PyExc_TypeError, "indent must be an int or a string");
+            PyErr_Format(PyExc_TypeError, "indent must be an int");
             return NULL;
         }
     }

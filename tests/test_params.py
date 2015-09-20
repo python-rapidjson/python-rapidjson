@@ -53,6 +53,9 @@ def test_indent():
 
     assert rapidjson.dumps(o, indent=4) in expected
 
+    with pytest.raises(TypeError):
+        rapidjson.dumps(o, indent="\t")
+
 
 @pytest.mark.unit
 def test_sort_keys():
