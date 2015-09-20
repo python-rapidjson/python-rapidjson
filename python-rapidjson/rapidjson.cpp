@@ -419,14 +419,13 @@ enum DatetimeMode {
 static const int MAX_RECURSION_DEPTH = 2048;
 
 
-template<typename T>
+template<typename WriterT, typename BufferT>
 static PyObject*
 rapidjson_dumps_internal(
-    T* writer,
-    StringBuffer* buf,
+    WriterT* writer,
+    BufferT* buf,
     PyObject* value,
     int skipKeys,
-    int ensureAscii,
     int allowNan,
     PyObject* defaultFn,
     int sortKeys,
@@ -668,7 +667,6 @@ error:
         &buf, \
         value, \
         skipKeys, \
-        ensureAscii, \
         allowNan, \
         defaultFn, \
         sortKeys, \
@@ -757,26 +755,26 @@ rapidjson_dumps(PyObject* self, PyObject* args, PyObject* kwargs)
         }
     }
 
-    ////
-
-    StringBuffer buf;
-
     if (!prettyPrint) {
         if (ensureAscii) {
-            Writer<StringBuffer, UTF8<>, ASCII<> > writer(buf);
+            GenericStringBuffer<ASCII<> > buf;
+            Writer<GenericStringBuffer<ASCII<> >, UTF8<>, ASCII<> > writer(buf);
             return RAPIDJSON_DUMPS_INTERNAL_CALL;
         }
         else {
+            StringBuffer buf;
             Writer<StringBuffer> writer(buf);
             return RAPIDJSON_DUMPS_INTERNAL_CALL;
         }
     }
     else if (ensureAscii) {
-        PrettyWriter<StringBuffer, UTF8<>, ASCII<> > writer(buf);
+        GenericStringBuffer<ASCII<> > buf;
+        PrettyWriter<GenericStringBuffer<ASCII<> >, UTF8<>, ASCII<> > writer(buf);
         writer.SetIndent(indentChar, indentCharCount);
         return RAPIDJSON_DUMPS_INTERNAL_CALL;
     }
     else {
+        StringBuffer buf;
         PrettyWriter<StringBuffer> writer(buf);
         writer.SetIndent(indentChar, indentCharCount);
         return RAPIDJSON_DUMPS_INTERNAL_CALL;

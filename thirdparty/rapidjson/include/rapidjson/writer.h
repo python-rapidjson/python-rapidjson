@@ -267,46 +267,95 @@ protected:
         GenericStringStream<SourceEncoding> is(str);
         while (is.Tell() < length) {
             const Ch c = is.Peek();
-            if (!TargetEncoding::supportUnicode && (unsigned)c >= 0x80) {
+            const unsigned char byte1 = (unsigned char) c;
+            if (!TargetEncoding::supportUnicode && byte1 >= 0x80) {
                 // Unicode escaping
-                unsigned codepoint;
-                if (!SourceEncoding::Decode(is, &codepoint))
-                    return false;
-                os_->Put('\\');
-                os_->Put('u');
-                if (codepoint <= 0xD7FF || (codepoint >= 0xE000 && codepoint <= 0xFFFF)) {
-                    os_->Put(hexDigits[(codepoint >> 12) & 15]);
-                    os_->Put(hexDigits[(codepoint >>  8) & 15]);
-                    os_->Put(hexDigits[(codepoint >>  4) & 15]);
-                    os_->Put(hexDigits[(codepoint      ) & 15]);
-                }
-                else {
-                    RAPIDJSON_ASSERT(codepoint >= 0x010000 && codepoint <= 0x10FFFF);
-                    // Surrogate pair
-                    unsigned s = codepoint - 0x010000;
-                    unsigned lead = (s >> 10) + 0xD800;
-                    unsigned trail = (s & 0x3FF) + 0xDC00;
-                    os_->Put(hexDigits[(lead >> 12) & 15]);
-                    os_->Put(hexDigits[(lead >>  8) & 15]);
-                    os_->Put(hexDigits[(lead >>  4) & 15]);
-                    os_->Put(hexDigits[(lead      ) & 15]);
-                    os_->Put('\\');
-                    os_->Put('u');
-                    os_->Put(hexDigits[(trail >> 12) & 15]);
-                    os_->Put(hexDigits[(trail >>  8) & 15]);
-                    os_->Put(hexDigits[(trail >>  4) & 15]);
-                    os_->Put(hexDigits[(trail      ) & 15]);
+                static const char Utf8NumBytes[256] = {
+                    1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, // 0
+                    1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, // 1
+                    1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, // 2
+                    1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, // 3
+                    1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, // 4
+                    1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, // 5
+                    1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, // 6
+                    1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, // 7
+                    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // 8
+                    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // 9
+                    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // a
+                    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // b
+                    2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, // c
+                    2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, // d
+                    3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, // e
+                    4, 4, 4, 4, 4, 4, 4, 4, 5, 5, 5, 5, 6, 6, 0, 0, // f
+                };
+
+                is.Take();
+                Ch* start;
+                unsigned char byte2, byte3, byte4;
+                unsigned lead, trail, codepoint;
+                switch (Utf8NumBytes[byte1]) {
+                    case 2:
+                        byte2 = (unsigned char) is.Take();
+                        start = os_->stack_.template Push<Ch>(6);
+                        *start = '\\';
+                        *(++start) = 'u';
+                        *(++start) = '0';
+                        *(++start) = hexDigits[((byte1 & 0x1Fu) >> 2)];
+                        *(++start) = hexDigits[((byte1 & 0x03u) << 2) | ((byte2 & 0x3Fu) >> 4)];
+                        *(++start) = hexDigits[byte2 & 0xFu];
+                        break;
+                    case 3:
+                        byte2 = (unsigned char) is.Take();
+                        byte3 = (unsigned char) is.Take();
+                        start = os_->stack_.template Push<Ch>(6);
+                        *start = '\\';
+                        *(++start) = 'u';
+                        *(++start) = hexDigits[byte1 & 0xFu];
+                        *(++start) = hexDigits[(byte2 & 0x3Fu) >> 2];
+                        *(++start) = hexDigits[((byte2 & 0x03u) << 2) | ((byte3 & 0x3Fu) >> 4)];
+                        *(++start) = hexDigits[byte3 & 0xFu];
+                        break;
+                    case 4:
+                        byte2 = (unsigned char) is.Take();
+                        byte3 = (unsigned char) is.Take();
+                        byte4 = (unsigned char) is.Take();
+
+                        codepoint = (
+                            (byte1 & 0x7u) << 18) | ((byte2 & 0x3Fu) << 12) |
+                            ((byte3 & 0x3Fu) << 6) | ((byte4 & 0x3Fu));
+                        codepoint -= 0x10000;
+                        lead = (codepoint >> 10) + 0xD800;
+                        trail = (codepoint & 0x3FF) + 0xDC00;
+
+                        start = os_->stack_.template Push<Ch>(12);
+                        *start = '\\';
+                        *(++start) = 'u';
+                        *(++start) = hexDigits[(lead >> 12) & 15];
+                        *(++start) = hexDigits[(lead >>  8) & 15];
+                        *(++start) = hexDigits[(lead >>  4) & 15];
+                        *(++start) = hexDigits[(lead      ) & 15];
+                        *(++start) = '\\';
+                        *(++start) = 'u';
+                        *(++start) = hexDigits[(trail >> 12) & 15];
+                        *(++start) = hexDigits[(trail >>  8) & 15];
+                        *(++start) = hexDigits[(trail >>  4) & 15];
+                        *(++start) = hexDigits[(trail      ) & 15];
+                        break;
+                    default:
+                        return false;
                 }
             }
             else if ((sizeof(Ch) == 1 || (unsigned)c < 256) && escape[(unsigned char)c])  {
                 is.Take();
-                os_->Put('\\');
-                os_->Put(escape[(unsigned char)c]);
+                Ch* start = os_->stack_.template Push<Ch>(2);
+                *start = '\\';
+                *(++start) = escape[(unsigned char)c];
                 if (escape[(unsigned char)c] == 'u') {
-                    os_->Put('0');
-                    os_->Put('0');
-                    os_->Put(hexDigits[(unsigned char)c >> 4]);
-                    os_->Put(hexDigits[(unsigned char)c & 0xF]);
+                    start = os_->stack_.template Push<Ch>(4);
+                    *start = '0';
+                    *(++start) = '0';
+                    *(++start) = hexDigits[(unsigned char)c >> 4];
+                    *(++start) = hexDigits[(unsigned char)c & 0xF];
                 }
             }
             else
