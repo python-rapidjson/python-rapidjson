@@ -25,12 +25,13 @@ struct HandlerContext {
 
 struct PyHandler {
     int useDecimal;
+    int allowNan;
     PyObject* root;
     PyObject* objectHook;
     std::vector<HandlerContext> stack;
 
-    PyHandler(int ud, PyObject* hook)
-    : useDecimal(ud), root(NULL), objectHook(hook)
+    PyHandler(int ud, PyObject* hook, int an)
+    : useDecimal(ud), allowNan(an), root(NULL), objectHook(hook)
     {
         stack.reserve(128);
     }
@@ -181,9 +182,14 @@ struct PyHandler {
     }
 
     bool NaN() {
+        if (!allowNan) {
+            PyErr_SetString(PyExc_ValueError, "Out of range float values are not JSON compliant");
+            return false;
+        }
+
         PyObject* str = PyUnicode_FromStringAndSize("nan", 3);
         if (str == NULL)
-            return NULL;
+            return false;
 
         PyObject* value;
         if (!useDecimal)
@@ -194,12 +200,17 @@ struct PyHandler {
         Py_DECREF(str);
 
         if (value == NULL)
-            return NULL;
+            return false;
 
         return HandleSimpleType(value);
     }
 
     bool Infinity(bool minus) {
+        if (!allowNan) {
+            PyErr_SetString(PyExc_ValueError, "Out of range float values are not JSON compliant");
+            return false;
+        }
+
         PyObject* str;
 
         if (minus)
@@ -208,7 +219,7 @@ struct PyHandler {
             str = PyUnicode_FromStringAndSize("Infinity", 8);
 
         if (str == NULL)
-            return NULL;
+            return false;
 
         PyObject* value;
         if (!useDecimal)
@@ -219,7 +230,7 @@ struct PyHandler {
         Py_DECREF(str);
 
         if (value == NULL)
-            return NULL;
+            return false;
 
         return HandleSimpleType(value);
     }
@@ -290,8 +301,8 @@ struct PyHandler {
 
             PyObject* raw = PyUnicode_FromString(finalStr);
             if (raw == NULL) {
-                PyErr_Format(PyExc_ValueError, "Error generating decimal representation");
-                return NULL;
+                PyErr_SetString(PyExc_ValueError, "Error generating decimal representation");
+                return false;
             }
 
             value = PyObject_CallFunctionObjArgs(rapidjson_decimal_type, raw, NULL);
@@ -316,24 +327,27 @@ rapidjson_loads(PyObject* self, PyObject* args, PyObject* kwargs)
     PyObject* objectHook = NULL;
     int useDecimal = 0;
     int preciseFloat = 1;
+    int allowNan = 1;
 
     static char* kwlist[] = {
         "obj",
         "object_hook",
         "use_decimal",
         "precise_float",
+        "allow_nan",
         NULL
     };
 
-    if (!PyArg_ParseTupleAndKeywords(args, kwargs, "O|Opp:rapidjson.loads",
+    if (!PyArg_ParseTupleAndKeywords(args, kwargs, "O|Oppp:rapidjson.loads",
                                      kwlist,
                                      &jsonObject,
                                      &objectHook,
                                      &useDecimal,
-                                     &preciseFloat))
+                                     &preciseFloat,
+                                     &allowNan))
 
     if (objectHook && !PyCallable_Check(objectHook)) {
-        PyErr_Format(PyExc_TypeError, "object_hook is not callable");
+        PyErr_SetString(PyExc_TypeError, "object_hook is not callable");
         return NULL;
     }
 
@@ -351,23 +365,21 @@ rapidjson_loads(PyObject* self, PyObject* args, PyObject* kwargs)
             return NULL;
     }
     else {
-        PyErr_Format(PyExc_TypeError, "Expected string or utf-8 encoded bytes");
+        PyErr_SetString(PyExc_TypeError, "Expected string or utf-8 encoded bytes");
         return NULL;
     }
 
     char* jsonStrCopy = (char*) malloc(sizeof(char) * (jsonStrLen+1));
     memcpy(jsonStrCopy, jsonStr, jsonStrLen+1);
 
-    PyHandler handler(useDecimal, objectHook);
+    PyHandler handler(useDecimal, objectHook, allowNan);
     Reader reader;
     InsituStringStream ss(jsonStrCopy);
 
-    if (preciseFloat) {
+    if (preciseFloat)
         reader.Parse<kParseInsituFlag | kParseFullPrecisionFlag>(ss, handler);
-    }
-    else {
+    else
         reader.Parse<kParseInsituFlag>(ss, handler);
-    }
 
     if (reader.HasParseError()) {
         SizeType offset = reader.GetErrorOffset();
@@ -375,7 +387,20 @@ rapidjson_loads(PyObject* self, PyObject* args, PyObject* kwargs)
         const char* msg = GetParseError_En(code);
         const char* fmt = "Parse error at offset %d: %s";
 
-        PyErr_Format(PyExc_ValueError, fmt, offset, msg);
+        if (PyErr_Occurred()) {
+            PyObject* etype;
+            PyObject* evalue;
+            PyObject* etraceback;
+            PyErr_Fetch(&etype, &evalue, &etraceback);
+
+            const char* emsg = msg;
+            if (PyUnicode_Check(evalue))
+                emsg = PyUnicode_AsUTF8(evalue);
+
+            PyErr_Format(etype, fmt, offset, emsg);
+        }
+        else
+            PyErr_Format(PyExc_ValueError, fmt, offset, msg);
 
         Py_XDECREF(handler.root);
         free(jsonStrCopy);
@@ -448,7 +473,7 @@ rapidjson_dumps_internal(
         PyObject* const object = current.object;
 
         if (currentLevel > maxRecursionDepth) {
-            PyErr_Format(PyExc_OverflowError, "Max recursion depth reached");
+            PyErr_SetString(PyExc_OverflowError, "Max recursion depth reached");
             return NULL;
         }
 
@@ -515,12 +540,12 @@ rapidjson_dumps_internal(
                 if (allowNan)
                     writer->RawNumber("NaN", 3);
                 else {
-                    PyErr_Format(PyExc_ValueError, "Out of range float values are not JSON compliant");
+                    PyErr_SetString(PyExc_ValueError, "Out of range float values are not JSON compliant");
                     return NULL;
                 }
             } else if (Py_IS_INFINITY(d)) {
                 if (!allowNan) {
-                    PyErr_Format(PyExc_ValueError, "Out of range float values are not JSON compliant");
+                    PyErr_SetString(PyExc_ValueError, "Out of range float values are not JSON compliant");
                     return NULL;
                 }
                 else if (d < 0)
@@ -580,7 +605,7 @@ rapidjson_dumps_internal(
                         stack.push_back(WriterContext(key_str, NULL, false, nextLevel));
                     }
                     else if (!skipKeys) {
-                        PyErr_Format(PyExc_TypeError, "keys must be a string");
+                        PyErr_SetString(PyExc_TypeError, "keys must be a string");
                         goto error;
                     }
                 }
@@ -594,7 +619,7 @@ rapidjson_dumps_internal(
                         items.push_back(DictItem(key_str, item));
                     }
                     else if (!skipKeys) {
-                        PyErr_Format(PyExc_TypeError, "keys must be a string");
+                        PyErr_SetString(PyExc_TypeError, "keys must be a string");
                         goto error;
                     }
                 }
@@ -723,7 +748,7 @@ rapidjson_dumps(PyObject* self, PyObject* args, PyObject* kwargs)
         return NULL;
 
     if (defaultFn && !PyCallable_Check(defaultFn)) {
-        PyErr_Format(PyExc_TypeError, "default must be a callable");
+        PyErr_SetString(PyExc_TypeError, "default must be a callable");
         return NULL;
     }
 
@@ -734,7 +759,7 @@ rapidjson_dumps(PyObject* self, PyObject* args, PyObject* kwargs)
             indentCharCount = PyLong_AsLong(indent);
         }
         else {
-            PyErr_Format(PyExc_TypeError, "indent must be an int");
+            PyErr_SetString(PyExc_TypeError, "indent must be an int");
             return NULL;
         }
     }

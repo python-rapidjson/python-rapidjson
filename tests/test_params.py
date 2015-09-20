@@ -1,3 +1,4 @@
+import math
 import pytest
 import rapidjson
 
@@ -32,6 +33,27 @@ def test_allow_nan():
 
     with pytest.raises(ValueError):
         rapidjson.dumps(f, allow_nan=False)
+
+    s = "NaN"
+    assert math.isnan(rapidjson.loads(s))
+    assert math.isnan(rapidjson.loads(s, allow_nan=True))
+
+    with pytest.raises(ValueError):
+        rapidjson.loads(s, allow_nan=False)
+
+    s = "Infinity"
+    assert rapidjson.loads(s) == float("inf")
+    assert rapidjson.loads(s, allow_nan=True) == float("inf")
+
+    with pytest.raises(ValueError):
+        rapidjson.loads(s, allow_nan=False)
+
+    s = "-Infinity"
+    assert rapidjson.loads(s) == float("-inf")
+    assert rapidjson.loads(s, allow_nan=True) == float("-inf")
+
+    with pytest.raises(ValueError):
+        rapidjson.loads(s, allow_nan=False)
 
 
 @pytest.mark.unit
