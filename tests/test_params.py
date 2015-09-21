@@ -150,6 +150,11 @@ def test_max_recursion_depth():
 @pytest.mark.unit
 def test_datetime_mode():
     from datetime import datetime
+    import pytz
+
+    assert rapidjson.DATETIME_MODE_NONE == 0
+    assert rapidjson.DATETIME_MODE_ISO8601 == 1
+    assert rapidjson.DATETIME_MODE_ISO8601_IGNORE_TZ == 2
 
     d = datetime.utcnow()
     dstr = d.isoformat()
@@ -158,9 +163,34 @@ def test_datetime_mode():
         rapidjson.dumps(d)
 
     with pytest.raises(TypeError):
-        rapidjson.dumps(d, datetime_mode=0)
+        rapidjson.dumps(d, datetime_mode=rapidjson.DATETIME_MODE_NONE)
 
-    assert rapidjson.dumps(d, datetime_mode=1) == '"%s"' % dstr
+    assert rapidjson.dumps(d, datetime_mode=rapidjson.DATETIME_MODE_ISO8601) == '"%s"' % dstr
+    assert rapidjson.dumps(d, datetime_mode=rapidjson.DATETIME_MODE_ISO8601_IGNORE_TZ) == '"%s"' % dstr
+
+    d = d.replace(tzinfo=pytz.utc)
+    dstr = d.isoformat()
+
+    assert rapidjson.dumps(d, datetime_mode=rapidjson.DATETIME_MODE_ISO8601) == '"%s"' % dstr
+    assert rapidjson.dumps(d, datetime_mode=rapidjson.DATETIME_MODE_ISO8601_IGNORE_TZ) == '"%s"' % dstr[:-6]
+
+    d = d.astimezone(pytz.timezone('Pacific/Chatham'))
+    dstr = d.isoformat()
+
+    assert rapidjson.dumps(d, datetime_mode=rapidjson.DATETIME_MODE_ISO8601) == '"%s"' % dstr
+    assert rapidjson.dumps(d, datetime_mode=rapidjson.DATETIME_MODE_ISO8601_IGNORE_TZ) == '"%s"' % dstr[:-6]
+
+    d = d.astimezone(pytz.timezone('Asia/Kathmandu'))
+    dstr = d.isoformat()
+
+    assert rapidjson.dumps(d, datetime_mode=rapidjson.DATETIME_MODE_ISO8601) == '"%s"' % dstr
+    assert rapidjson.dumps(d, datetime_mode=rapidjson.DATETIME_MODE_ISO8601_IGNORE_TZ) == '"%s"' % dstr[:-6]
+
+    d = d.astimezone(pytz.timezone('America/New_York'))
+    dstr = d.isoformat()
+
+    assert rapidjson.dumps(d, datetime_mode=rapidjson.DATETIME_MODE_ISO8601) == '"%s"' % dstr
+    assert rapidjson.dumps(d, datetime_mode=rapidjson.DATETIME_MODE_ISO8601_IGNORE_TZ) == '"%s"' % dstr[:-6]
 
 
 @pytest.mark.unit

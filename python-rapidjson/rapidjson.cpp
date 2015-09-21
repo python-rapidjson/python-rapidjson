@@ -10,6 +10,7 @@
 #include "rapidjson/writer.h"
 #include "rapidjson/prettywriter.h"
 #include "rapidjson/error/en.h"
+#include "docstrings.h"
 
 using namespace rapidjson;
 
@@ -330,7 +331,7 @@ rapidjson_loads(PyObject* self, PyObject* args, PyObject* kwargs)
     int allowNan = 1;
 
     static char* kwlist[] = {
-        "obj",
+        "s",
         "object_hook",
         "use_decimal",
         "precise_float",
@@ -438,7 +439,8 @@ struct DictItem {
 
 enum DatetimeMode {
     DATETIME_MODE_NONE = 0,
-    DATETIME_MODE_ISO8601 = 1
+    DATETIME_MODE_ISO8601 = 1,
+    DATETIME_MODE_ISO8601_IGNORE_TZ = 2
 };
 
 static const int MAX_RECURSION_DEPTH = 2048;
@@ -633,7 +635,9 @@ rapidjson_dumps_internal(
                 }
             }
         }
-        else if (PyDateTime_Check(object) && datetimeMode == DATETIME_MODE_ISO8601) {
+        else if (PyDateTime_Check(object) &&
+                 (datetimeMode == DATETIME_MODE_ISO8601 || datetimeMode == DATETIME_MODE_ISO8601_IGNORE_TZ))
+        {
             int year = PyDateTime_GET_YEAR(object);
             int month = PyDateTime_GET_MONTH(object);
             int day = PyDateTime_GET_DAY(object);
@@ -642,22 +646,61 @@ rapidjson_dumps_internal(
             int sec = PyDateTime_DATE_GET_SECOND(object);
             int microsec = PyDateTime_DATE_GET_MICROSECOND(object);
 
-            const int ISOFORMAT_LEN = 32;
+            const int ISOFORMAT_LEN = 40;
             char isoformat[ISOFORMAT_LEN];
             memset(isoformat, 0, ISOFORMAT_LEN);
 
+            const int TIMEZONE_LEN = 10;
+            char timezone[TIMEZONE_LEN];
+            memset(timezone, 0, TIMEZONE_LEN);
+
+            if (datetimeMode == DATETIME_MODE_ISO8601 && PyObject_HasAttrString(object, "utcoffset")) {
+                PyObject* utcOffset = PyObject_CallMethod(object, "utcoffset", NULL);
+                if (!utcOffset)
+                    goto error;
+
+                if (utcOffset != Py_None) {
+                    PyObject* daysObj = PyObject_GetAttrString(utcOffset, "days");
+                    PyObject* secondsObj = PyObject_GetAttrString(utcOffset, "seconds");
+
+                    if (daysObj && secondsObj) {
+                        int days = PyLong_AsLong(daysObj);
+                        int seconds = PyLong_AsLong(secondsObj);
+
+                        int total_seconds = days * 24 * 3600 + seconds;
+
+                        char sign = '+';
+                        if (total_seconds < 0) {
+                            sign = '-';
+                            total_seconds = -total_seconds;
+                        }
+
+                        int tz_hour = total_seconds / 3600;
+                        int tz_min = (total_seconds % 3600) / 60;
+
+                        snprintf(timezone, TIMEZONE_LEN-1, "%c%02d:%02d", sign, tz_hour, tz_min);
+                    }
+
+                    Py_XDECREF(daysObj);
+                    Py_XDECREF(secondsObj);
+                }
+                Py_XDECREF(utcOffset);
+            }
+
             if (microsec > 0) {
                 snprintf(isoformat,
-                         ISOFORMAT_LEN,
-                         "%04d-%02d-%02dT%02d:%02d:%02d.%06d",
+                         ISOFORMAT_LEN-1,
+                         "%04d-%02d-%02dT%02d:%02d:%02d.%06d%s",
                          year, month, day,
-                         hour, min, sec, microsec);
+                         hour, min, sec, microsec,
+                         timezone);
             } else {
                 snprintf(isoformat,
-                         ISOFORMAT_LEN,
-                         "%04d-%02d-%02dT%02d:%02d:%02d",
+                         ISOFORMAT_LEN-1,
+                         "%04d-%02d-%02dT%02d:%02d:%02d%s",
                          year, month, day,
-                         hour, min, sec);
+                         hour, min, sec,
+                         timezone);
             }
 
             writer->String(isoformat);
@@ -714,6 +757,7 @@ rapidjson_dumps(PyObject* self, PyObject* args, PyObject* kwargs)
     int sortKeys = 0;
     int useDecimal = 0;
     unsigned maxRecursionDepth = MAX_RECURSION_DEPTH;
+    PyObject* datetimeModeObj = NULL;
     DatetimeMode datetimeMode = DATETIME_MODE_NONE;
 
     bool prettyPrint = false;
@@ -721,7 +765,7 @@ rapidjson_dumps(PyObject* self, PyObject* args, PyObject* kwargs)
     unsigned char indentCharCount = 4;
 
     static char* kwlist[] = {
-        "s",
+        "obj",
         "skipkeys",
         "ensure_ascii",
         "allow_nan",
@@ -733,7 +777,7 @@ rapidjson_dumps(PyObject* self, PyObject* args, PyObject* kwargs)
         "datetime_mode",
         NULL
     };
-    if (!PyArg_ParseTupleAndKeywords(args, kwargs, "O|pppOOppIi:rapidjson.dumps",
+    if (!PyArg_ParseTupleAndKeywords(args, kwargs, "O|pppOOppIO:rapidjson.dumps",
                                      kwlist,
                                      &value,
                                      &skipKeys,
@@ -744,7 +788,7 @@ rapidjson_dumps(PyObject* self, PyObject* args, PyObject* kwargs)
                                      &sortKeys,
                                      &useDecimal,
                                      &maxRecursionDepth,
-                                     &datetimeMode))
+                                     &datetimeModeObj))
         return NULL;
 
     if (defaultFn && !PyCallable_Check(defaultFn)) {
@@ -762,6 +806,10 @@ rapidjson_dumps(PyObject* self, PyObject* args, PyObject* kwargs)
             PyErr_SetString(PyExc_TypeError, "indent must be an int");
             return NULL;
         }
+    }
+
+    if (datetimeModeObj && PyLong_Check(datetimeModeObj)) {
+        datetimeMode = (DatetimeMode) PyLong_AsLong(datetimeModeObj);
     }
 
     if (!prettyPrint) {
@@ -794,15 +842,15 @@ rapidjson_dumps(PyObject* self, PyObject* args, PyObject* kwargs)
 
 static PyMethodDef
 rapidjson_functions[] = {
-    {"loads", (PyCFunction) rapidjson_loads, METH_VARARGS | METH_KEYWORDS, "load object from json string"},
-    {"dumps", (PyCFunction) rapidjson_dumps, METH_VARARGS | METH_KEYWORDS, "dump object as json string"},
+    {"loads", (PyCFunction) rapidjson_loads, METH_VARARGS | METH_KEYWORDS, rapidjson_loads_docstring},
+    {"dumps", (PyCFunction) rapidjson_dumps, METH_VARARGS | METH_KEYWORDS, rapidjson_dumps_docstring},
     {NULL, NULL, 0, NULL} /* sentinel */
 };
 
 static PyModuleDef rapidjson_module = {
     PyModuleDef_HEAD_INIT,
     "rapidjson",
-    "Python wrapper around rapidjson",
+    rapidjson_module_docstring,
     -1,
     rapidjson_functions
 };
@@ -817,7 +865,6 @@ PyInit_rapidjson()
         return NULL;
 
     rapidjson_decimal_type = PyObject_GetAttrString(decimalModule, "Decimal");
-    Py_INCREF(rapidjson_decimal_type);
     Py_DECREF(decimalModule);
 
     PyObject* module;
@@ -825,6 +872,10 @@ PyInit_rapidjson()
     module = PyModule_Create(&rapidjson_module);
     if (module == NULL)
         return NULL;
+
+    PyModule_AddIntConstant(module, "DATETIME_MODE_NONE", DATETIME_MODE_NONE);
+    PyModule_AddIntConstant(module, "DATETIME_MODE_ISO8601", DATETIME_MODE_ISO8601);
+    PyModule_AddIntConstant(module, "DATETIME_MODE_ISO8601_IGNORE_TZ", DATETIME_MODE_ISO8601_IGNORE_TZ);
 
     return module;
 }
