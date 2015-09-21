@@ -10,7 +10,9 @@
 #include "rapidjson/writer.h"
 #include "rapidjson/prettywriter.h"
 #include "rapidjson/error/en.h"
+
 #include "docstrings.h"
+#include "version.h"
 
 using namespace rapidjson;
 
@@ -876,6 +878,12 @@ PyInit_rapidjson()
     PyModule_AddIntConstant(module, "DATETIME_MODE_NONE", DATETIME_MODE_NONE);
     PyModule_AddIntConstant(module, "DATETIME_MODE_ISO8601", DATETIME_MODE_ISO8601);
     PyModule_AddIntConstant(module, "DATETIME_MODE_ISO8601_IGNORE_TZ", DATETIME_MODE_ISO8601_IGNORE_TZ);
+
+    PyModule_AddStringConstant(module, "__version__", PYTHON_RAPIDJSON_VERSION);
+    PyModule_AddStringConstant(
+        module,
+        "__author__",
+        PYTHON_RAPIDJSON_AUTHOR " <" PYTHON_RAPIDJSON_AUTHOR_EMAIL ">");
 
     return module;
 }
