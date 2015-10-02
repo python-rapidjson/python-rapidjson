@@ -66,7 +66,7 @@ To run these tests yourself, clone the repo and run:
 
 .. code-block::
 
-   $ tox -e py34 -m benchmark
+   $ tox -e py34 -- -m benchmark
 
 
 Incompatibility
