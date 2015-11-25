@@ -1217,8 +1217,10 @@ PyInit_rapidjson()
         return NULL;
 
     rapidjson_timezone_utc = PyObject_GetAttrString(rapidjson_timezone_type, "utc");
-    if (rapidjson_timezone_utc == NULL)
+    if (rapidjson_timezone_utc == NULL) {
+        Py_DECREF(rapidjson_timezone_type);
         return NULL;
+    }
 
     PyObject* decimalModule = PyImport_ImportModule("decimal");
     if (decimalModule == NULL)
