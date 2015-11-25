@@ -934,8 +934,7 @@ rapidjson_dumps_internal(
             }
         }
         else if (datetimeMode != DATETIME_MODE_NONE
-                 && (PyTime_Check(object) || PyDateTime_Check(object)))
-        {
+                 && (PyTime_Check(object) || PyDateTime_Check(object))) {
             int year, month, day, hour, min, sec, microsec;
             PyObject* dtObject = object;
             PyObject* asUTC = NULL;
@@ -1040,8 +1039,7 @@ rapidjson_dumps_internal(
             Py_XDECREF(asUTC);
             writer->String(isoformat);
         }
-        else if (datetimeMode != DATETIME_MODE_NONE && PyDate_Check(object))
-        {
+        else if (datetimeMode != DATETIME_MODE_NONE && PyDate_Check(object)) {
             int year = PyDateTime_GET_YEAR(object);
             int month = PyDateTime_GET_MONTH(object);
             int day = PyDateTime_GET_DAY(object);
@@ -1215,9 +1213,8 @@ PyInit_rapidjson()
     rapidjson_timezone_type = PyObject_GetAttrString(datetimeModule, "timezone");
     Py_DECREF(datetimeModule);
 
-    if (rapidjson_timezone_type == NULL) {
+    if (rapidjson_timezone_type == NULL)
         return NULL;
-    }
 
     rapidjson_timezone_utc = PyObject_GetAttrString(rapidjson_timezone_type, "utc");
     if (rapidjson_timezone_utc == NULL)
