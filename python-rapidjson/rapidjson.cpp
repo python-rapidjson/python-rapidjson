@@ -423,6 +423,10 @@ struct PyHandler {
                     res = false;
             }
             break;
+
+        default:
+            res = false;
+            break;
         }
         return res;
     }
