@@ -16,7 +16,7 @@ First install ``python-rapidjson``:
     $ pip install python-rapidjson
 
 
-RapidJSON tries to be as compatible with the standard library ``json`` module so
+RapidJSON tries to be compatible with the standard library ``json`` module so
 it should be a drop in replacement. Basic usage looks like this:
 
 .. code-block:: python
