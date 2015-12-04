@@ -672,6 +672,10 @@ rapidjson_loads(PyObject* self, PyObject* args, PyObject* kwargs)
 
     if (datetimeModeObj && PyLong_Check(datetimeModeObj)) {
         datetimeMode = (DatetimeMode) PyLong_AsLong(datetimeModeObj);
+        if (datetimeMode < DATETIME_MODE_NONE || datetimeMode > DATETIME_MODE_ISO8601_UTC) {
+            PyErr_SetString(PyExc_ValueError, "Invalid date_time");
+            return NULL;
+        }
     }
 
     char* jsonStrCopy = (char*) malloc(sizeof(char) * (jsonStrLen+1));

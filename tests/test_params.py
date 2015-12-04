@@ -163,6 +163,12 @@ def test_datetime_mode_dumps():
     with pytest.raises(TypeError):
         rapidjson.dumps(d)
 
+    with pytest.raises(ValueError):
+        rapidjson.dumps(d, datetime_mode=42)
+
+    with pytest.raises(ValueError):
+        rapidjson.loads('""', datetime_mode=42)
+
     with pytest.raises(TypeError):
         rapidjson.dumps(d, datetime_mode=rapidjson.DATETIME_MODE_NONE)
 
