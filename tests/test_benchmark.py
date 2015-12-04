@@ -1,3 +1,4 @@
+import datetime
 import pytest
 import time
 import sys
@@ -286,6 +287,62 @@ def test_double_performance_float_precision():
     ser_data, des_data = run_client_test(
         name, serialize, deserialize,
         data=doubles,
+        iterations=50000,
+    )
+    msg = "%-11s serialize: %0.3f  deserialize: %0.3f  total: %0.3f" % (
+        name, ser_data, des_data, ser_data + des_data
+    )
+    print(msg)
+
+
+birthdays_native = []
+birthdays_string = []
+
+for f in friends:
+    ndata = dict(f)
+    ndata['birthday'] = datetime.date(random.randint(1900, 2000),
+                                      random.randint(1, 12),
+                                      random.randint(1, 28))
+    ndata['birthtime'] = datetime.time(random.randint(0,23),
+                                       random.randint(0, 59),
+                                       random.randint(0, 59))
+    ndata['timestamp'] = datetime.datetime.now()
+    birthdays_native.append(ndata)
+
+    sdata = dict(ndata)
+    sdata['birthday'] = ndata['birthday'].isoformat()
+    sdata['birthtime'] = ndata['birthtime'].isoformat()
+    sdata['timestamp'] = ndata['timestamp'].isoformat()
+    birthdays_string.append(sdata)
+
+
+@pytest.mark.benchmark
+def test_datetime_performance():
+    from functools import partial
+
+    print("\nDatetimes:")
+    name = 'rapidjson (string)'
+    serialize = rapidjson.dumps
+    deserialize = rapidjson.loads
+
+    ser_data, des_data = run_client_test(
+        name, serialize, deserialize,
+        data=birthdays_string,
+        iterations=50000,
+    )
+    msg = "%-11s serialize: %0.3f  deserialize: %0.3f  total: %0.3f" % (
+        name, ser_data, des_data, ser_data + des_data
+    )
+
+    print(msg)
+
+    name = 'rapidjson (native)'
+    serialize = partial(rapidjson.dumps, datetime_mode=rapidjson.DATETIME_MODE_ISO8601)
+    deserialize = partial(rapidjson.loads, datetime_mode=rapidjson.DATETIME_MODE_ISO8601)
+
+    ser_data, des_data = run_client_test(
+        name, serialize, deserialize,
+        data=birthdays_native,
         iterations=50000,
     )
     msg = "%-11s serialize: %0.3f  deserialize: %0.3f  total: %0.3f" % (
