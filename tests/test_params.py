@@ -235,7 +235,7 @@ def test_datetime_values(value):
 
     dumped = rapidjson.dumps(value, datetime_mode=rapidjson.DATETIME_MODE_ISO8601)
     loaded = rapidjson.loads(dumped, datetime_mode=rapidjson.DATETIME_MODE_ISO8601)
-    assert loaded == value, dumped
+    assert loaded == value
 
 
 @pytest.mark.unit
