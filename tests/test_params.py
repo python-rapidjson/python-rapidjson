@@ -241,6 +241,13 @@ def test_datetime_values(value):
 @pytest.mark.unit
 @pytest.mark.parametrize(
     'value,cls', [
+        ('x999-02-03', str),
+        ('1999 02 03', str),
+        ('x0:02:20', str),
+        ('20.02:20', str),
+        ('x999-02-03T10:20:30', str),
+        ('1999-02-03t10:20:30', str),
+
         ('1999-02-03', date),
         ('20:02:20', time),
         ('20:02:20Z', time),
