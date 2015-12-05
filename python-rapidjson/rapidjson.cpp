@@ -36,6 +36,19 @@ enum DatetimeMode {
     DATETIME_MODE_ISO8601_UTC = 3
 };
 
+static int
+days_per_month(int year, int month) {
+    if (month == 1 || month == 3 || month == 5 || month == 7
+        || month == 8 || month == 10 || month == 12)
+        return 31;
+    else if (month == 4 || month == 6 || month == 9 || month == 11)
+        return 30;
+    else if (year % 4 == 0 && (year % 100 != 0 || year % 400 == 0))
+        return 29;
+    else
+        return 28;
+}
+
 struct PyHandler {
     int useDecimal;
     int allowNan;
@@ -326,8 +339,14 @@ struct PyHandler {
         return HandleSimpleType(value);
     }
 
+#define digit(idx) (str[idx] - '0')
+
     bool IsIso8601(const char* str, SizeType length) {
         bool res;
+        int hours = 0, mins = 0, secs = 0;
+        int year = -1, month = 0, day = 0;
+        int hofs = 0, mofs = 0;
+
         switch(length) {
         case 8:                     /* 20:02:20 */
         case 9:                     /* 20:02:20Z */
@@ -343,6 +362,10 @@ struct PyHandler {
                    isdigit(str[3]) && isdigit(str[4]) &&
                    isdigit(str[6]) && isdigit(str[7]));
             if (res) {
+                hours = digit(0)*10 + digit(1);
+                mins = digit(3)*10 + digit(4);
+                secs = digit(6)*10 + digit(7);
+
                 if (length == 9)
                     res = str[8] == 'Z';
                 else if (length == 14)
@@ -360,6 +383,10 @@ struct PyHandler {
                            str[length-3] == ':' &&
                            isdigit(str[length-2]) &&
                            isdigit(str[length-1]));
+                    if (res) {
+                        hofs = digit(length-5)*10 + digit(length-4);
+                        mofs = digit(length-2)*10 + digit(length-1);
+                    }
                     length -= 6;
                 }
                 if (res && length > 9 && length != 14) {
@@ -385,6 +412,14 @@ struct PyHandler {
                    isdigit(str[2]) && isdigit(str[3]) &&
                    isdigit(str[5]) && isdigit(str[6]) &&
                    isdigit(str[8]) && isdigit(str[9]));
+            if (res) {
+                year = digit(0)*1000
+                    + digit(1)*100
+                    + digit(2)*10
+                    + digit(3);
+                month = digit(5)*10 + digit(6);
+                day = digit(8)*10 + digit(9);
+            }
             if (res && length > 10) {
                 if (str[10] == ' ' || str[10] == 'T') {
                     res = (str[13] == ':' && str[16] == ':' &&
@@ -392,6 +427,9 @@ struct PyHandler {
                            isdigit(str[14]) && isdigit(str[15]) &&
                            isdigit(str[17]) && isdigit(str[18]));
                     if (res) {
+                        hours = digit(11)*10 + digit(12);
+                        mins = digit(14)*10 + digit(15);
+                        secs = digit(17)*10 + digit(18);
                         if (length == 25 || length == 29 || length == 32) {
                             res = ((str[length-6] == '+' || str[length-6] == '-') &&
                                    isdigit(str[length-5]) &&
@@ -399,6 +437,10 @@ struct PyHandler {
                                    str[length-3] == ':' &&
                                    isdigit(str[length-2]) &&
                                    isdigit(str[length-1]));
+                            if (res) {
+                                hofs = digit(length-5)*10 + digit(length-4);
+                                mofs = digit(length-2)*10 + digit(length-1);
+                            }
                             length -= 6;
                         }
                         if (res && (length == 20 || length == 24 || length == 27)) {
@@ -428,6 +470,13 @@ struct PyHandler {
             res = false;
             break;
         }
+
+        if (res && (hours > 23 || mins > 59 || secs > 59
+                    || year == 0 || month > 12
+                    || day > days_per_month(year, month)
+                    || hofs > 23 || mofs > 59))
+            res = false;
+
         return res;
     }
 
@@ -435,8 +484,6 @@ struct PyHandler {
         PyObject *value;
         int hours, mins, secs, usecs;
         int year, month, day;
-
-        #define digit(idx) (str[idx] - '0')
 
         switch(length) {
         case 8:                     /* 20:02:20 */
@@ -601,9 +648,9 @@ struct PyHandler {
             return false;
         else
             return HandleSimpleType(value);
-
-        #undef digit
     }
+
+#undef digit
 
     bool String(const char* str, SizeType length, bool copy) {
         if (datetimeMode != DATETIME_MODE_NONE && IsIso8601(str, length))
