@@ -108,6 +108,18 @@ unprecise_ujson = (
     partial(ujson.loads, precise_float=False)
 )
 
+datetime_none_rapid = (
+    'rapidjson (dtm=None)',
+    partial(rapidjson.dumps, datetime_mode=None),
+    partial(rapidjson.loads, datetime_mode=None)
+)
+
+datetime_iso8601_rapid = (
+    'rapidjson (dtm=ISO8601)',
+    partial(rapidjson.dumps, datetime_mode=rapidjson.DATETIME_MODE_ISO8601),
+    partial(rapidjson.loads, datetime_mode=rapidjson.DATETIME_MODE_ISO8601)
+)
+
 
 doubles = []
 unicode_strings = []
@@ -245,7 +257,9 @@ def test_json_dictionary_of_lists(name, serialize, deserialize):
 
 
 @pytest.mark.benchmark
-@pytest.mark.parametrize('name,serialize,deserialize', contenders)
+@pytest.mark.parametrize(
+    'name,serialize,deserialize',
+    contenders + [datetime_none_rapid, datetime_iso8601_rapid])
 def test_json_medium_complex_objects(name, serialize, deserialize):
     print("\n256 Medium Complex objects:")
     ser_data, des_data = run_client_test(
