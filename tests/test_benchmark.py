@@ -1,6 +1,5 @@
 import datetime
 import pytest
-import time
 import sys
 import random
 from functools import partial
@@ -30,6 +29,38 @@ try:
 except ImportError:
     ujson = None
 
+contenders = []
+unprecise_contenders = []
+
+if yajl:
+    contenders.append(('yajl', yajl.Encoder().encode, yajl.Decoder().decode))
+
+if simplejson:
+    contenders.append(('simplejson', simplejson.dumps, simplejson.loads))
+
+if json:
+    contenders.append(('stdlib json', json.dumps, json.loads))
+
+if rapidjson:
+    contenders.append(
+        ('rapidjson', rapidjson.dumps,
+         partial(rapidjson.loads, precise_float=True))
+    )
+    unprecise_contenders.append(
+        ('(rapidjson not precise)', rapidjson.dumps,
+         partial(rapidjson.loads, precise_float=False))
+    )
+
+if ujson:
+    contenders.append(
+        ('ujson', ujson.dumps, partial(ujson.loads, precise_float=True))
+    )
+    unprecise_contenders.append(
+        ('(ujson not precise)', ujson.dumps,
+         partial(ujson.loads, precise_float=False))
+    )
+
+
 default_data = {
     'words': """
         Lorem ipsum dolor sit amet, consectetur adipiscing
@@ -57,74 +88,11 @@ user = {
 
 friends = [ user, user, user, user, user, user, user, user ]
 
-
-def time_func(func, data, iterations):
-    start = time.time()
-    while iterations:
-        iterations -= 1
-        func(data)
-    return time.time() - start
-
-
-def run_client_test(
-        name, serialize, deserialize, iterations=100*1000, data=default_data
-):
-    squashed_data = serialize(data)
-    serialize_profile = time_func(serialize, data, iterations)
-    deserialize_profile = time_func(deserialize, squashed_data, iterations)
-    return serialize_profile, deserialize_profile
-
-contenders = []
-
-if yajl:
-    contenders.append(('yajl', yajl.Encoder().encode, yajl.Decoder().decode))
-
-if simplejson:
-    contenders.append(('simplejson', simplejson.dumps, simplejson.loads))
-
-if json:
-    contenders.append(('stdlib json', json.dumps, json.loads))
-
-if rapidjson:
-    contenders.append(
-        ('rapidjson', rapidjson.dumps,
-         partial(rapidjson.loads, precise_float=True))
-    )
-
-if ujson:
-    contenders.append(
-        ('ujson', ujson.dumps, partial(ujson.loads, precise_float=True))
-    )
-
-unprecise_rapid = (
-    'rapidjson (not precise)',
-    rapidjson.dumps,
-    partial(rapidjson.loads, precise_float=False)
-)
-
-unprecise_ujson = (
-    'ujson (not precise)',
-    ujson.dumps,
-    partial(ujson.loads, precise_float=False)
-)
-
-datetime_none_rapid = (
-    'rapidjson (dtm=None)',
-    partial(rapidjson.dumps, datetime_mode=None),
-    partial(rapidjson.loads, datetime_mode=None)
-)
-
-datetime_iso8601_rapid = (
-    'rapidjson (dtm=ISO8601)',
-    partial(rapidjson.dumps, datetime_mode=rapidjson.DATETIME_MODE_ISO8601),
-    partial(rapidjson.loads, datetime_mode=rapidjson.DATETIME_MODE_ISO8601)
-)
-
-
 doubles = []
 unicode_strings = []
 strings = []
 booleans = []
+datetimes = []
 list_dicts = []
 dict_lists = {}
 
@@ -138,6 +106,13 @@ for x in range(256):
     unicode_strings.append("نظام الحكم سلطاني وراثي في الذكور من ذرية السيد تركي بن سعيد بن سلطان ويشترط فيمن يختار لولاية الحكم من بينهم ان يكون مسلما رشيدا عاقلا ًوابنا شرعيا لابوين عمانيين ")
     strings.append("A pretty long string which is in a list")
     booleans.append(True)
+    datetimes.append([datetime.date(random.randint(1900, 2000),
+                                    random.randint(1, 12),
+                                    random.randint(1, 28)),
+                      datetime.time(random.randint(0,23),
+                                    random.randint(0, 59),
+                                    random.randint(0, 59)),
+                      datetime.datetime.now()])
 
 for y in range(100):
     arrays = []
@@ -147,219 +122,55 @@ for y in range(100):
         arrays.append({str(random.random() * 20): int(random.random()*1000000)})
         dict_lists[str(random.random() * 20)] = arrays
 
-
-@pytest.mark.benchmark
-@pytest.mark.parametrize('name,serialize,deserialize', contenders)
-def test_json_serialization(name, serialize, deserialize):
-    ser_data, des_data = run_client_test(name, serialize, deserialize)
-    msg = "\n%-11s serialize: %0.3f  deserialize: %0.3f  total: %0.3f" % (
-        name, ser_data, des_data, ser_data + des_data
-    )
-
-    print(msg)
-
-
-@pytest.mark.benchmark
-@pytest.mark.parametrize(
-    'name,serialize,deserialize',
-    contenders + [unprecise_ujson, unprecise_rapid]
-)
-def test_json_doubles(name, serialize, deserialize):
-    print("\nArray with 256 doubles:")
-    ser_data, des_data = run_client_test(
-        name, serialize, deserialize,
-        data=doubles,
-        iterations=50000,
-    )
-    msg = "%-11s serialize: %0.3f  deserialize: %0.3f  total: %0.3f" % (
-        name, ser_data, des_data, ser_data + des_data
-    )
-
-    print(msg)
+datasets = [('composite object', default_data),
+            ('256 doubles array', doubles),
+            ('256 unicode array', unicode_strings),
+            ('256 ascii array', strings),
+            ('256 Trues array', booleans),
+            ('100 dicts array', list_dicts),
+            ('100 arrays dict', dict_lists),
+            ('medium complex objects', medium_complex),
+]
 
 
-@pytest.mark.benchmark
-@pytest.mark.parametrize('name,serialize,deserialize', contenders)
-def test_json_unicode_strings(name, serialize, deserialize):
-    print("\nArray with 256 unicode strings:")
-    ser_data, des_data = run_client_test(
-        name, serialize, deserialize,
-        data=unicode_strings,
-        iterations=5000,
-    )
-    msg = "%-11s serialize: %0.3f  deserialize: %0.3f  total: %0.3f" % (
-        name, ser_data, des_data, ser_data + des_data
-    )
-
-    print(msg)
+@pytest.mark.benchmark(group='serialize')
+@pytest.mark.parametrize('serializer',
+                         [c[1] for c in contenders],
+                         ids=[c[0] for c in contenders])
+@pytest.mark.parametrize('data', [d[1] for d in datasets], ids=[d[0] for d in datasets])
+def test_dumps(serializer, data, benchmark):
+    benchmark(serializer, data)
 
 
-@pytest.mark.benchmark
-@pytest.mark.parametrize('name,serialize,deserialize', contenders)
-def test_json_scii_strings(name, serialize, deserialize):
-    print("\nArray with 256 ascii strings:")
-    ser_data, des_data = run_client_test(
-        name, serialize, deserialize,
-        data=strings,
-    )
-    msg = "%-11s serialize: %0.3f  deserialize: %0.3f  total: %0.3f" % (
-        name, ser_data, des_data, ser_data + des_data
-    )
-
-    print(msg)
+@pytest.mark.benchmark(group='deserialize')
+@pytest.mark.parametrize('serializer,deserializer',
+                         [(c[1], c[2]) for c in contenders],
+                         ids=[c[0] for c in contenders])
+@pytest.mark.parametrize('data', [d[1] for d in datasets], ids=[d[0] for d in datasets])
+def test_loads(serializer, deserializer, data, benchmark):
+    data = serializer(data)
+    benchmark(deserializer, data)
 
 
-@pytest.mark.benchmark
-@pytest.mark.parametrize('name,serialize,deserialize', contenders)
-def test_json_booleans(name, serialize, deserialize):
-    print("\nArray with 256 True's:")
-    ser_data, des_data = run_client_test(
-        name, serialize, deserialize,
-        data=booleans,
-    )
-    msg = "%-11s serialize: %0.3f  deserialize: %0.3f  total: %0.3f" % (
-        name, ser_data, des_data, ser_data + des_data
-    )
+# Special case 1: precise vs unprecise
 
-    print(msg)
+@pytest.mark.benchmark(group='deserialize')
+@pytest.mark.parametrize('serializer,deserializer',
+                         [(c[1], c[2]) for c in unprecise_contenders],
+                         ids=['256 doubles array ' + c[0] for c in unprecise_contenders])
+def test_loads_float(serializer, deserializer, benchmark):
+    data = serializer(doubles)
+    benchmark(deserializer, data)
 
 
-@pytest.mark.benchmark
-@pytest.mark.parametrize('name,serialize,deserialize', contenders)
-def test_json_list_of_dictionaries(name, serialize, deserialize):
-    print("\nArray of 100 dictionaries:")
-    ser_data, des_data = run_client_test(
-        name, serialize, deserialize,
-        data=list_dicts,
-        iterations=5,
-    )
-    msg = "%-11s serialize: %0.3f  deserialize: %0.3f  total: %0.3f" % (
-        name, ser_data, des_data, ser_data + des_data
-    )
+# Special case 2: load datetimes as plain strings vs datetime.xxx instances
 
-    print(msg)
-
-
-@pytest.mark.benchmark
-@pytest.mark.parametrize('name,serialize,deserialize', contenders)
-def test_json_dictionary_of_lists(name, serialize, deserialize):
-    print("\nDictionary of 100 Arrays:")
-    ser_data, des_data = run_client_test(
-        name, serialize, deserialize,
-        data=dict_lists,
-        iterations=5,
-    )
-    msg = "%-11s serialize: %0.3f  deserialize: %0.3f  total: %0.3f" % (
-        name, ser_data, des_data, ser_data + des_data
-    )
-
-    print(msg)
-
-
-@pytest.mark.benchmark
-@pytest.mark.parametrize(
-    'name,serialize,deserialize',
-    contenders + [datetime_none_rapid, datetime_iso8601_rapid])
-def test_json_medium_complex_objects(name, serialize, deserialize):
-    print("\n256 Medium Complex objects:")
-    ser_data, des_data = run_client_test(
-        name, serialize, deserialize,
-        data=medium_complex,
-        iterations=50000,
-    )
-    msg = "%-11s serialize: %0.3f  deserialize: %0.3f  total: %0.3f" % (
-        name, ser_data, des_data, ser_data + des_data
-    )
-
-    print(msg)
-
-
-@pytest.mark.benchmark
-def test_double_performance_float_precision():
-    from functools import partial
-
-    print("\nArray with 256 doubles:")
-    name = 'rapidjson (precise)'
-    serialize = rapidjson.dumps
-    deserialize = rapidjson.loads
-
-    ser_data, des_data = run_client_test(
-        name, serialize, deserialize,
-        data=doubles,
-        iterations=50000,
-    )
-    msg = "%-11s serialize: %0.3f  deserialize: %0.3f  total: %0.3f" % (
-        name, ser_data, des_data, ser_data + des_data
-    )
-
-    print(msg)
-
-    name = 'rapidjson (not precise)'
-    serialize = rapidjson.dumps
-    deserialize = partial(rapidjson.loads, precise_float=False)
-
-    ser_data, des_data = run_client_test(
-        name, serialize, deserialize,
-        data=doubles,
-        iterations=50000,
-    )
-    msg = "%-11s serialize: %0.3f  deserialize: %0.3f  total: %0.3f" % (
-        name, ser_data, des_data, ser_data + des_data
-    )
-    print(msg)
-
-
-birthdays_native = []
-birthdays_string = []
-
-for f in friends:
-    ndata = dict(f)
-    ndata['birthday'] = datetime.date(random.randint(1900, 2000),
-                                      random.randint(1, 12),
-                                      random.randint(1, 28))
-    ndata['birthtime'] = datetime.time(random.randint(0,23),
-                                       random.randint(0, 59),
-                                       random.randint(0, 59))
-    ndata['timestamp'] = datetime.datetime.now()
-    birthdays_native.append(ndata)
-
-    sdata = dict(ndata)
-    sdata['birthday'] = ndata['birthday'].isoformat()
-    sdata['birthtime'] = ndata['birthtime'].isoformat()
-    sdata['timestamp'] = ndata['timestamp'].isoformat()
-    birthdays_string.append(sdata)
-
-
-@pytest.mark.benchmark
-def test_datetime_performance():
-    from functools import partial
-
-    print("\nDatetimes:")
-    name = 'rapidjson (string)'
-    serialize = rapidjson.dumps
-    deserialize = rapidjson.loads
-
-    ser_data, des_data = run_client_test(
-        name, serialize, deserialize,
-        data=birthdays_string,
-        iterations=50000,
-    )
-    msg = "%-11s serialize: %0.3f  deserialize: %0.3f  total: %0.3f" % (
-        name, ser_data, des_data, ser_data + des_data
-    )
-
-    print(msg)
-
-    name = 'rapidjson (native)'
-    serialize = partial(rapidjson.dumps, datetime_mode=rapidjson.DATETIME_MODE_ISO8601)
-    deserialize = partial(rapidjson.loads, datetime_mode=rapidjson.DATETIME_MODE_ISO8601)
-
-    ser_data, des_data = run_client_test(
-        name, serialize, deserialize,
-        data=birthdays_native,
-        iterations=50000,
-    )
-    msg = "%-11s serialize: %0.3f  deserialize: %0.3f  total: %0.3f" % (
-        name, ser_data, des_data, ser_data + des_data
-    )
-    print(msg)
+@pytest.mark.benchmark(group='deserialize')
+@pytest.mark.parametrize('deserializer',
+                         [rapidjson.loads,
+                          partial(rapidjson.loads,
+                                  datetime_mode=rapidjson.DATETIME_MODE_ISO8601)],
+                         ids=['Ignore datetimes', 'Parse datetimes'])
+def test_loads_datetimes(deserializer, benchmark):
+    data = rapidjson.dumps(datetimes, datetime_mode=rapidjson.DATETIME_MODE_ISO8601)
+    benchmark(deserializer, data)
