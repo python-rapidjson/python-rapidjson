@@ -561,15 +561,18 @@ rapidjson_dumps_internal(
                 writer->Double(d);
         }
         else if (PyBytes_Check(object)) {
-            char* s = PyBytes_AsString(object);
-            if (s == NULL)
+            Py_ssize_t l;
+            char* s;
+
+            if (PyBytes_AsStringAndSize(object, &s, &l) == -1)
                 goto error;
 
-            writer->String(s);
+            writer->String(s, l);
         }
         else if (PyUnicode_Check(object)) {
-            char* s = PyUnicode_AsUTF8(object);
-            writer->String(s);
+            Py_ssize_t l;
+            char* s = PyUnicode_AsUTF8AndSize(object, &l);
+            writer->String(s, l);
         }
         else if (PyList_Check(object)) {
             writer->StartArray();
