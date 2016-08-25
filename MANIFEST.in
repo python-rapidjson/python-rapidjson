@@ -2,5 +2,7 @@ include LICENSE
 include MANIFEST.in
 include README.rst
 include setup.py
-recursive-include python-rapidjson *.cpp
-recursive-include thirdparty/rapidjson *.h *.md license.txt
+recursive-include python-rapidjson *.cpp *.h
+include rapidjson readme.md license.txt
+recursive-include rapidjson/include *.h
+prune rapidjson/doc

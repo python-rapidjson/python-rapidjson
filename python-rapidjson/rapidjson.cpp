@@ -305,47 +305,34 @@ struct PyHandler {
         return HandleSimpleType(value);
     }
 
-    bool Double(double d, const char* decimal, SizeType length, bool minus, size_t decimalPosition, int exp) {
-        PyObject* value;
-        if (!useDecimal)
-            value = PyFloat_FromDouble(d);
-        else {
-            const int MAX_FINAL_SIZE = 512;
-            const int MAX_EXP_SIZE = 11; // 32-bit
-            const int MAX_DECIMAL_SIZE = MAX_FINAL_SIZE - MAX_EXP_SIZE - 3; // e, +/-, \0
-
-            exp += decimalPosition - length;
-
-            if (length > MAX_DECIMAL_SIZE)
-                length = MAX_DECIMAL_SIZE;
-
-            char finalStr[MAX_DECIMAL_SIZE];
-            finalStr[0] = minus ? '-' : '+';
-            memcpy(finalStr+1, decimal, length);
-
-            if (exp == 0)
-                finalStr[length+1] = 0;
-            else {
-                char expStr[MAX_EXP_SIZE];
-                char* end = internal::i32toa(exp, expStr);
-                size_t len = end - expStr;
-
-                finalStr[length+1] = 'e';
-                memcpy(finalStr+length+2, expStr, len);
-                finalStr[length+2+len] = 0;
-            }
-
-            PyObject* raw = PyUnicode_FromString(finalStr);
-            if (raw == NULL) {
-                PyErr_SetString(PyExc_ValueError, "Error generating decimal representation");
-                return false;
-            }
-
-            value = PyObject_CallFunctionObjArgs(rapidjson_decimal_type, raw, NULL);
-            Py_DECREF(raw);
-        }
-
+    bool Double(double d) {
+        PyObject* value = PyFloat_FromDouble(d);
         return HandleSimpleType(value);
+    }
+
+    bool RawNumber(const char* str, SizeType length, bool copy) {
+        PyObject* pystr = PyUnicode_FromStringAndSize(str, length);
+
+        if (pystr == NULL) {
+            return false;
+        } else {
+            PyObject* value;
+
+            if (!useDecimal) {
+                value = PyFloat_FromString(pystr);
+            } else {
+                value = PyObject_CallFunctionObjArgs(rapidjson_decimal_type, pystr, NULL);
+            }
+
+            Py_DECREF(pystr);
+
+            if (value == NULL) {
+                PyErr_SetString(PyExc_ValueError, "Invalid float value");
+                return false;
+            } else {
+                return HandleSimpleType(value);
+            }
+        }
     }
 
 #define digit(idx) (str[idx] - '0')
