@@ -369,16 +369,6 @@ def test_uuid_hex(value, cls):
 
 
 @pytest.mark.unit
-def test_precise_float():
-    f = "1.234567890E+34"
-    f1 = "1.2345678900000002e+34"
-
-    assert rapidjson.loads(f) == float(f)
-    assert rapidjson.loads(f, precise_float=True) == float(f)
-    assert rapidjson.loads(f, precise_float=False) == float(f1)
-
-
-@pytest.mark.unit
 def test_object_hook():
     class Foo:
         def __init__(self, foo):
