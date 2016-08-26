@@ -1,3 +1,4 @@
+from datetime import date, datetime, time
 import math
 import pytest
 import rapidjson
@@ -148,19 +149,25 @@ def test_max_recursion_depth():
 
 
 @pytest.mark.unit
-def test_datetime_mode():
-    from datetime import datetime
+def test_datetime_mode_dumps():
     import pytz
 
     assert rapidjson.DATETIME_MODE_NONE == 0
     assert rapidjson.DATETIME_MODE_ISO8601 == 1
     assert rapidjson.DATETIME_MODE_ISO8601_IGNORE_TZ == 2
+    assert rapidjson.DATETIME_MODE_ISO8601_UTC == 3
 
     d = datetime.utcnow()
     dstr = d.isoformat()
 
     with pytest.raises(TypeError):
         rapidjson.dumps(d)
+
+    with pytest.raises(ValueError):
+        rapidjson.dumps(d, datetime_mode=42)
+
+    with pytest.raises(ValueError):
+        rapidjson.loads('""', datetime_mode=42)
 
     with pytest.raises(TypeError):
         rapidjson.dumps(d, datetime_mode=rapidjson.DATETIME_MODE_NONE)
@@ -169,7 +176,7 @@ def test_datetime_mode():
     assert rapidjson.dumps(d, datetime_mode=rapidjson.DATETIME_MODE_ISO8601_IGNORE_TZ) == '"%s"' % dstr
 
     d = d.replace(tzinfo=pytz.utc)
-    dstr = d.isoformat()
+    dstr = utcstr = d.isoformat()
 
     assert rapidjson.dumps(d, datetime_mode=rapidjson.DATETIME_MODE_ISO8601) == '"%s"' % dstr
     assert rapidjson.dumps(d, datetime_mode=rapidjson.DATETIME_MODE_ISO8601_IGNORE_TZ) == '"%s"' % dstr[:-6]
@@ -191,6 +198,99 @@ def test_datetime_mode():
 
     assert rapidjson.dumps(d, datetime_mode=rapidjson.DATETIME_MODE_ISO8601) == '"%s"' % dstr
     assert rapidjson.dumps(d, datetime_mode=rapidjson.DATETIME_MODE_ISO8601_IGNORE_TZ) == '"%s"' % dstr[:-6]
+    assert rapidjson.dumps(d, datetime_mode=rapidjson.DATETIME_MODE_ISO8601_UTC) == '"%s"' % utcstr
+
+
+@pytest.mark.unit
+def test_datetime_mode_loads():
+    import pytz
+
+    utc = datetime.now(pytz.utc)
+    utcstr = utc.isoformat()
+
+    jsond = rapidjson.dumps(utc, datetime_mode=rapidjson.DATETIME_MODE_ISO8601)
+
+    assert jsond == '"%s"' % utcstr
+    assert rapidjson.loads(jsond, datetime_mode=rapidjson.DATETIME_MODE_ISO8601) == utc
+
+    local = utc.astimezone(pytz.timezone('Europe/Rome'))
+    locstr = local.isoformat()
+
+    jsond = rapidjson.dumps(local, datetime_mode=rapidjson.DATETIME_MODE_ISO8601)
+
+    assert jsond == '"%s"' % locstr
+    assert rapidjson.loads(jsond) == locstr
+    assert rapidjson.loads(jsond, datetime_mode=rapidjson.DATETIME_MODE_ISO8601) == local
+
+    load_as_utc = rapidjson.loads(jsond, datetime_mode=rapidjson.DATETIME_MODE_ISO8601_UTC)
+
+    assert load_as_utc == utc
+    assert not load_as_utc.utcoffset()
+
+    load_as_naive = rapidjson.loads(jsond, datetime_mode=rapidjson.DATETIME_MODE_ISO8601_IGNORE_TZ)
+
+    assert load_as_naive == local.replace(tzinfo=None)
+
+
+@pytest.mark.unit
+@pytest.mark.parametrize(
+    'value', [date.today(), datetime.now(), time(10,20,30)])
+def test_datetime_values(value):
+    with pytest.raises(TypeError):
+        rapidjson.dumps(value)
+
+    dumped = rapidjson.dumps(value, datetime_mode=rapidjson.DATETIME_MODE_ISO8601)
+    loaded = rapidjson.loads(dumped, datetime_mode=rapidjson.DATETIME_MODE_ISO8601)
+    assert loaded == value
+
+
+@pytest.mark.unit
+@pytest.mark.parametrize(
+    'value,cls', [
+        ('x999-02-03', str),
+        ('1999 02 03', str),
+        ('x0:02:20', str),
+        ('20.02:20', str),
+        ('x999-02-03T10:20:30', str),
+        ('1999-02-03t10:20:30', str),
+
+        ('0000-01-01', str),
+        ('0001-99-99', str),
+        ('0001-01-32', str),
+        ('0001-02-29', str),
+
+        ('24:02:20', str),
+        ('23:62:20', str),
+        ('23:02:62', str),
+        ('20:02:20.123-25:00', str),
+        ('20:02:20.123-05:61', str),
+
+        ('1968-02-29', date),
+        ('1999-02-03', date),
+
+        ('20:02:20', time),
+        ('20:02:20Z', time),
+        ('20:02:20.123', time),
+        ('20:02:20.123Z', time),
+        ('20:02:20-05:00', time),
+        ('20:02:20.123456', time),
+        ('20:02:20.123456Z', time),
+        ('20:02:20.123-05:00', time),
+        ('20:02:20.123456-05:00', time),
+
+        ('1999-02-03T10:20:30', datetime),
+        ('1999-02-03T10:20:30Z', datetime),
+        ('1999-02-03T10:20:30.123', datetime),
+        ('1999-02-03T10:20:30.123Z', datetime),
+        ('1999-02-03T10:20:30-05:00', datetime),
+        ('1999-02-03T10:20:30.123456', datetime),
+        ('1999-02-03T10:20:30.123456Z', datetime),
+        ('1999-02-03T10:20:30.123-05:00', datetime),
+        ('1999-02-03T10:20:30.123456-05:00', datetime),
+    ])
+def test_datetime_iso8601(value, cls):
+    result = rapidjson.loads('"%s"' % value, datetime_mode=rapidjson.DATETIME_MODE_ISO8601)
+    assert isinstance(result, cls)
 
 
 @pytest.mark.unit

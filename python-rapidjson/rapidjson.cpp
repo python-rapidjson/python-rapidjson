@@ -2,6 +2,7 @@
 #include <datetime.h>
 
 #include <algorithm>
+#include <cctype>
 #include <string>
 #include <vector>
 
@@ -18,6 +19,8 @@ using namespace rapidjson;
 
 
 static PyObject* rapidjson_decimal_type = NULL;
+static PyObject* rapidjson_timezone_type = NULL;
+static PyObject* rapidjson_timezone_utc = NULL;
 
 struct HandlerContext {
     PyObject* object;
@@ -26,15 +29,36 @@ struct HandlerContext {
     bool isObject;
 };
 
+enum DatetimeMode {
+    DATETIME_MODE_NONE = 0,
+    DATETIME_MODE_ISO8601 = 1,
+    DATETIME_MODE_ISO8601_IGNORE_TZ = 2,
+    DATETIME_MODE_ISO8601_UTC = 3
+};
+
+static int
+days_per_month(int year, int month) {
+    if (month == 1 || month == 3 || month == 5 || month == 7
+        || month == 8 || month == 10 || month == 12)
+        return 31;
+    else if (month == 4 || month == 6 || month == 9 || month == 11)
+        return 30;
+    else if (year % 4 == 0 && (year % 100 != 0 || year % 400 == 0))
+        return 29;
+    else
+        return 28;
+}
+
 struct PyHandler {
     int useDecimal;
     int allowNan;
     PyObject* root;
     PyObject* objectHook;
+    DatetimeMode datetimeMode;
     std::vector<HandlerContext> stack;
 
-    PyHandler(int ud, PyObject* hook, int an)
-    : useDecimal(ud), allowNan(an), root(NULL), objectHook(hook)
+    PyHandler(int ud, PyObject* hook, int an, DatetimeMode dm)
+    : useDecimal(ud), allowNan(an), root(NULL), objectHook(hook), datetimeMode(dm)
     {
         stack.reserve(128);
     }
@@ -315,9 +339,326 @@ struct PyHandler {
         return HandleSimpleType(value);
     }
 
+#define digit(idx) (str[idx] - '0')
+
+    bool IsIso8601(const char* str, SizeType length) {
+        bool res;
+        int hours = 0, mins = 0, secs = 0;
+        int year = -1, month = 0, day = 0;
+        int hofs = 0, mofs = 0;
+
+        switch(length) {
+        case 8:                     /* 20:02:20 */
+        case 9:                     /* 20:02:20Z */
+        case 12:                    /* 20:02:20.123 */
+        case 13:                    /* 20:02:20.123Z */
+        case 14:                    /* 20:02:20-05:00 */
+        case 15:                    /* 20:02:20.123456 */
+        case 16:                    /* 20:02:20.123456Z */
+        case 18:                    /* 20:02:20.123-05:00 */
+        case 21:                    /* 20:02:20.123456-05:00 */
+            res = (str[2] == ':' && str[5] == ':' &&
+                   isdigit(str[0]) && isdigit(str[1]) &&
+                   isdigit(str[3]) && isdigit(str[4]) &&
+                   isdigit(str[6]) && isdigit(str[7]));
+            if (res) {
+                hours = digit(0)*10 + digit(1);
+                mins = digit(3)*10 + digit(4);
+                secs = digit(6)*10 + digit(7);
+
+                if (length == 9)
+                    res = str[8] == 'Z';
+                else if (length == 14)
+                    res = str[8] == '-';
+                else if (length > 8)
+                    res = str[8] == '.';
+                if (res && (length == 13 || length == 16)) {
+                    res = str[length-1] == 'Z';
+                    length--;
+                }
+                if (res && (length == 14 || length == 18 || length == 21)) {
+                    res = ((str[length-6] == '+' || str[length-6] == '-') &&
+                           isdigit(str[length-5]) &&
+                           isdigit(str[length-4]) &&
+                           str[length-3] == ':' &&
+                           isdigit(str[length-2]) &&
+                           isdigit(str[length-1]));
+                    if (res) {
+                        hofs = digit(length-5)*10 + digit(length-4);
+                        mofs = digit(length-2)*10 + digit(length-1);
+                    }
+                    length -= 6;
+                }
+                if (res && length > 9 && length != 14) {
+                    res = isdigit(str[9]) && isdigit(str[10]) && isdigit(str[11]);
+                    if (res && length > 12)
+                        res = isdigit(str[12]) && isdigit(str[13]) && isdigit(str[14]);
+                }
+            }
+            break;
+
+        case 10:                    /* 1999-02-03 */
+        case 19:                    /* 1999-02-03T10:20:30 */
+        case 20:                    /* 1999-02-03T10:20:30Z */
+        case 23:                    /* 1999-02-03T10:20:30.123 */
+        case 24:                    /* 1999-02-03T10:20:30.123Z */
+        case 25:                    /* 1999-02-03T10:20:30-05:00 */
+        case 26:                    /* 1999-02-03T10:20:30.123456 */
+        case 27:                    /* 1999-02-03T10:20:30.123456Z */
+        case 29:                    /* 1999-02-03T10:20:30.123-05:00 */
+        case 32:                    /* 1999-02-03T10:20:30.123456-05:00 */
+            res = (str[4] == '-' && str[7] == '-' &&
+                   isdigit(str[0]) && isdigit(str[1]) &&
+                   isdigit(str[2]) && isdigit(str[3]) &&
+                   isdigit(str[5]) && isdigit(str[6]) &&
+                   isdigit(str[8]) && isdigit(str[9]));
+            if (res) {
+                year = digit(0)*1000
+                    + digit(1)*100
+                    + digit(2)*10
+                    + digit(3);
+                month = digit(5)*10 + digit(6);
+                day = digit(8)*10 + digit(9);
+            }
+            if (res && length > 10) {
+                if (str[10] == ' ' || str[10] == 'T') {
+                    res = (str[13] == ':' && str[16] == ':' &&
+                           isdigit(str[11]) && isdigit(str[12]) &&
+                           isdigit(str[14]) && isdigit(str[15]) &&
+                           isdigit(str[17]) && isdigit(str[18]));
+                    if (res) {
+                        hours = digit(11)*10 + digit(12);
+                        mins = digit(14)*10 + digit(15);
+                        secs = digit(17)*10 + digit(18);
+                        if (length == 25 || length == 29 || length == 32) {
+                            res = ((str[length-6] == '+' || str[length-6] == '-') &&
+                                   isdigit(str[length-5]) &&
+                                   isdigit(str[length-4]) &&
+                                   str[length-3] == ':' &&
+                                   isdigit(str[length-2]) &&
+                                   isdigit(str[length-1]));
+                            if (res) {
+                                hofs = digit(length-5)*10 + digit(length-4);
+                                mofs = digit(length-2)*10 + digit(length-1);
+                            }
+                            length -= 6;
+                        }
+                        if (res && (length == 20 || length == 24 || length == 27)) {
+                            res = str[length-1] == 'Z';
+                            length--;
+                        }
+                        if (res && length == 23)
+                            res = (str[19] == '.' &&
+                                   isdigit(str[20]) &&
+                                   isdigit(str[21]) &&
+                                   isdigit(str[22]));
+                        else if (res && length == 26)
+                            res = (str[19] == '.' &&
+                                   isdigit(str[20]) &&
+                                   isdigit(str[21]) &&
+                                   isdigit(str[22]) &&
+                                   isdigit(str[23]) &&
+                                   isdigit(str[24]) &&
+                                   isdigit(str[25]));
+                    }
+                } else
+                    res = false;
+            }
+            break;
+
+        default:
+            res = false;
+            break;
+        }
+
+        if (res && (hours > 23 || mins > 59 || secs > 59
+                    || year == 0 || month > 12
+                    || day > days_per_month(year, month)
+                    || hofs > 23 || mofs > 59))
+            res = false;
+
+        return res;
+    }
+
+    bool HandleIso8601(const char* str, SizeType length) {
+        PyObject *value;
+        int hours, mins, secs, usecs;
+        int year, month, day;
+
+        switch(length) {
+        case 8:                     /* 20:02:20 */
+        case 9:                     /* 20:02:20Z */
+        case 12:                    /* 20:02:20.123 */
+        case 13:                    /* 20:02:20.123Z */
+        case 14:                    /* 20:02:20-05:00 */
+        case 15:                    /* 20:02:20.123456 */
+        case 16:                    /* 20:02:20.123456Z */
+        case 18:                    /* 20:02:20.123-05:00 */
+        case 21:                    /* 20:02:20.123456-05:00 */
+            hours = digit(0)*10 + digit(1);
+            mins = digit(3)*10 + digit(4);
+            secs = digit(6)*10 + digit(7);
+            if (length == 8 || length == 9 || length == 14)
+                usecs = 0;
+            else {
+                usecs = digit(9)*100000
+                    + digit(10) * 10000
+                    + digit(11) * 1000;
+                if (length == 15 || length == 16 || length == 21)
+                    usecs += digit(12)*100
+                        + digit(13) * 10
+                        + digit(14);
+            }
+            if (datetimeMode == DATETIME_MODE_ISO8601_IGNORE_TZ
+                || length == 8 || length == 12 || length == 15)
+                value = PyTime_FromTime(hours, mins, secs, usecs);
+            else if (length == 9 || length == 13 || length == 16)
+                value = PyDateTimeAPI->Time_FromTime(
+                    hours, mins, secs, usecs, rapidjson_timezone_utc,
+                    PyDateTimeAPI->TimeType);
+            else /* if (length == 14 || length == 18 || length == 21) */ {
+                int secsoffset = ((digit(length-5)*10 + digit(length-4)) * 3600
+                                  + (digit(length-2)*10 + digit(length-1)) * 60);
+                if (str[length-6] == '-')
+                    secsoffset = -secsoffset;
+                PyObject* offset = PyDateTimeAPI->Delta_FromDelta(
+                    0, secsoffset, 0, 1, PyDateTimeAPI->DeltaType);
+                if (offset == NULL)
+                    value = NULL;
+                else {
+                    PyObject* tz = PyObject_CallFunctionObjArgs(
+                        rapidjson_timezone_type, offset, NULL);
+                    Py_DECREF(offset);
+                    if (tz == NULL)
+                        value = NULL;
+                    else {
+                        value = PyDateTimeAPI->Time_FromTime(
+                            hours, mins, secs, usecs, tz,
+                            PyDateTimeAPI->TimeType);
+                        Py_DECREF(tz);
+
+                        if (value != NULL && datetimeMode == DATETIME_MODE_ISO8601_UTC) {
+                            PyObject* asUTC = PyObject_CallMethod(value, "astimezone", "O",
+                                                                  rapidjson_timezone_utc);
+
+                            Py_DECREF(value);
+
+                            if (asUTC == NULL)
+                                value = NULL;
+                            else
+                                value = asUTC;
+                        }
+                    }
+                }
+            }
+            break;
+
+        case 10:                    /* 1999-02-03 */
+            year = digit(0)*1000
+                + digit(1)*100
+                + digit(2)*10
+                + digit(3);
+            month = digit(5)*10 + digit(6);
+            day = digit(8)*10 + digit(9);
+            value = PyDate_FromDate(year, month, day);
+            break;
+
+        case 19:                    /* 1999-02-03T10:20:30 */
+        case 20:                    /* 1999-02-03T10:20:30Z */
+        case 23:                    /* 1999-02-03T10:20:30.123 */
+        case 24:                    /* 1999-02-03T10:20:30.123Z */
+        case 25:                    /* 1999-02-03T10:20:30-05:00 */
+        case 26:                    /* 1999-02-03T10:20:30.123456 */
+        case 27:                    /* 1999-02-03T10:20:30.123456Z */
+        case 29:                    /* 1999-02-03T10:20:30.123-05:00 */
+        case 32:                    /* 1999-02-03T10:20:30.123456-05:00 */
+            year = digit(0)*1000
+                + digit(1)*100
+                + digit(2)*10
+                + digit(3);
+            month = digit(5)*10 + digit(6);
+            day = digit(8)*10 + digit(9);
+            hours = digit(11)*10 + digit(12);
+            mins = digit(14)*10 + digit(15);
+            secs = digit(17)*10 + digit(18);
+            if (length == 19 || length == 20 || length == 25)
+                usecs = 0;
+            else {
+                usecs = digit(20)*100000
+                    + digit(21)*10000
+                    + digit(22)*1000;
+                if (length == 26 || length == 27 || length == 32)
+                    usecs += digit(23)*100
+                        + digit(24)*10
+                        + digit(25);
+            }
+            if (datetimeMode == DATETIME_MODE_ISO8601_IGNORE_TZ
+                || length == 19 || length == 23 || length == 26)
+                value = PyDateTime_FromDateAndTime(
+                    year, month, day, hours, mins, secs, usecs);
+            else if (length == 20 || length == 24 || length == 27)
+                value = PyDateTimeAPI->DateTime_FromDateAndTime(
+                    year, month, day, hours, mins, secs, usecs,
+                    rapidjson_timezone_utc, PyDateTimeAPI->DateTimeType);
+            else /* if (length == 25 || length == 29 || length == 32) */ {
+                int secsoffset = ((digit(length-5)*10 + digit(length-4)) * 3600
+                                  + (digit(length-2)*10 + digit(length-1)) * 60);
+                if (str[length-6] == '-')
+                    secsoffset = -secsoffset;
+                PyObject* offset = PyDateTimeAPI->Delta_FromDelta(
+                    0, secsoffset, 0, 1, PyDateTimeAPI->DeltaType);
+                if (offset == NULL)
+                    value = NULL;
+                else {
+                    PyObject* tz = PyObject_CallFunctionObjArgs(
+                        rapidjson_timezone_type, offset, NULL);
+                    Py_DECREF(offset);
+                    if (tz == NULL)
+                        value = NULL;
+                    else {
+                        value = PyDateTimeAPI->DateTime_FromDateAndTime(
+                            year, month, day, hours, mins, secs, usecs,
+                            tz, PyDateTimeAPI->DateTimeType);
+                        Py_DECREF(tz);
+
+                        if (value != NULL && datetimeMode == DATETIME_MODE_ISO8601_UTC) {
+                            PyObject* asUTC = PyObject_CallMethod(value, "astimezone", "O",
+                                                                  rapidjson_timezone_utc);
+
+                            Py_DECREF(value);
+
+                            if (asUTC == NULL)
+                                value = NULL;
+                            else
+                                value = asUTC;
+                        }
+                    }
+                }
+            }
+            break;
+
+        default:
+            PyErr_SetString(PyExc_ValueError,
+                            "not a datetime, nor a date, nor a time");
+            value = NULL;
+            break;
+        }
+
+        if (value == NULL)
+            return false;
+        else
+            return HandleSimpleType(value);
+    }
+
+#undef digit
+
     bool String(const char* str, SizeType length, bool copy) {
-        PyObject* value = PyUnicode_FromStringAndSize(str, length);
-        return HandleSimpleType(value);
+        if (datetimeMode != DATETIME_MODE_NONE && IsIso8601(str, length))
+            return HandleIso8601(str, length);
+        else {
+            PyObject* value = PyUnicode_FromStringAndSize(str, length);
+            return HandleSimpleType(value);
+        }
     }
 };
 
@@ -331,6 +672,8 @@ rapidjson_loads(PyObject* self, PyObject* args, PyObject* kwargs)
     int useDecimal = 0;
     int preciseFloat = 1;
     int allowNan = 1;
+    PyObject* datetimeModeObj = NULL;
+    DatetimeMode datetimeMode = DATETIME_MODE_NONE;
 
     static char* kwlist[] = {
         "s",
@@ -338,16 +681,18 @@ rapidjson_loads(PyObject* self, PyObject* args, PyObject* kwargs)
         "use_decimal",
         "precise_float",
         "allow_nan",
+        "datetime_mode",
         NULL
     };
 
-    if (!PyArg_ParseTupleAndKeywords(args, kwargs, "O|Oppp:rapidjson.loads",
+    if (!PyArg_ParseTupleAndKeywords(args, kwargs, "O|OpppO:rapidjson.loads",
                                      kwlist,
                                      &jsonObject,
                                      &objectHook,
                                      &useDecimal,
                                      &preciseFloat,
-                                     &allowNan))
+                                     &allowNan,
+                                     &datetimeModeObj))
 
     if (objectHook && !PyCallable_Check(objectHook)) {
         PyErr_SetString(PyExc_TypeError, "object_hook is not callable");
@@ -372,10 +717,18 @@ rapidjson_loads(PyObject* self, PyObject* args, PyObject* kwargs)
         return NULL;
     }
 
+    if (datetimeModeObj && PyLong_Check(datetimeModeObj)) {
+        datetimeMode = (DatetimeMode) PyLong_AsLong(datetimeModeObj);
+        if (datetimeMode < DATETIME_MODE_NONE || datetimeMode > DATETIME_MODE_ISO8601_UTC) {
+            PyErr_SetString(PyExc_ValueError, "Invalid date_time");
+            return NULL;
+        }
+    }
+
     char* jsonStrCopy = (char*) malloc(sizeof(char) * (jsonStrLen+1));
     memcpy(jsonStrCopy, jsonStr, jsonStrLen+1);
 
-    PyHandler handler(useDecimal, objectHook, allowNan);
+    PyHandler handler(useDecimal, objectHook, allowNan, datetimeMode);
     Reader reader;
     InsituStringStream ss(jsonStrCopy);
 
@@ -437,12 +790,6 @@ struct DictItem {
     bool operator<(const DictItem& other) const {
         return strcmp(other.key_str, this->key_str) < 0;
     }
-};
-
-enum DatetimeMode {
-    DATETIME_MODE_NONE = 0,
-    DATETIME_MODE_ISO8601 = 1,
-    DATETIME_MODE_ISO8601_IGNORE_TZ = 2
 };
 
 static const int MAX_RECURSION_DEPTH = 2048;
@@ -637,16 +984,11 @@ rapidjson_dumps_internal(
                 }
             }
         }
-        else if (PyDateTime_Check(object) &&
-                 (datetimeMode == DATETIME_MODE_ISO8601 || datetimeMode == DATETIME_MODE_ISO8601_IGNORE_TZ))
-        {
-            int year = PyDateTime_GET_YEAR(object);
-            int month = PyDateTime_GET_MONTH(object);
-            int day = PyDateTime_GET_DAY(object);
-            int hour = PyDateTime_DATE_GET_HOUR(object);
-            int min = PyDateTime_DATE_GET_MINUTE(object);
-            int sec = PyDateTime_DATE_GET_SECOND(object);
-            int microsec = PyDateTime_DATE_GET_MICROSECOND(object);
+        else if (datetimeMode != DATETIME_MODE_NONE
+                 && (PyTime_Check(object) || PyDateTime_Check(object))) {
+            int year, month, day, hour, min, sec, microsec;
+            PyObject* dtObject = object;
+            PyObject* asUTC = NULL;
 
             const int ISOFORMAT_LEN = 40;
             char isoformat[ISOFORMAT_LEN];
@@ -656,55 +998,108 @@ rapidjson_dumps_internal(
             char timezone[TIMEZONE_LEN];
             memset(timezone, 0, TIMEZONE_LEN);
 
-            if (datetimeMode == DATETIME_MODE_ISO8601 && PyObject_HasAttrString(object, "utcoffset")) {
+            if (datetimeMode != DATETIME_MODE_ISO8601_IGNORE_TZ
+                && PyObject_HasAttrString(object, "utcoffset")) {
                 PyObject* utcOffset = PyObject_CallMethod(object, "utcoffset", NULL);
+
                 if (!utcOffset)
                     goto error;
 
                 if (utcOffset != Py_None) {
-                    PyObject* daysObj = PyObject_GetAttrString(utcOffset, "days");
-                    PyObject* secondsObj = PyObject_GetAttrString(utcOffset, "seconds");
+                    if (datetimeMode == DATETIME_MODE_ISO8601_UTC && PyObject_IsTrue(utcOffset)) {
+                        asUTC = PyObject_CallMethod(object, "astimezone", "O", rapidjson_timezone_utc);
 
-                    if (daysObj && secondsObj) {
-                        int days = PyLong_AsLong(daysObj);
-                        int seconds = PyLong_AsLong(secondsObj);
-
-                        int total_seconds = days * 24 * 3600 + seconds;
-
-                        char sign = '+';
-                        if (total_seconds < 0) {
-                            sign = '-';
-                            total_seconds = -total_seconds;
+                        if (asUTC == NULL) {
+                            Py_DECREF(utcOffset);
+                            goto error;
                         }
 
-                        int tz_hour = total_seconds / 3600;
-                        int tz_min = (total_seconds % 3600) / 60;
+                        dtObject = asUTC;
+                        strcpy(timezone, "+00:00");
+                    } else {
+                        PyObject* daysObj = PyObject_GetAttrString(utcOffset, "days");
+                        PyObject* secondsObj = PyObject_GetAttrString(utcOffset, "seconds");
 
-                        snprintf(timezone, TIMEZONE_LEN-1, "%c%02d:%02d", sign, tz_hour, tz_min);
+                        if (daysObj && secondsObj) {
+                            int days = PyLong_AsLong(daysObj);
+                            int seconds = PyLong_AsLong(secondsObj);
+
+                            int total_seconds = days * 24 * 3600 + seconds;
+
+                            char sign = '+';
+                            if (total_seconds < 0) {
+                                sign = '-';
+                                total_seconds = -total_seconds;
+                            }
+
+                            int tz_hour = total_seconds / 3600;
+                            int tz_min = (total_seconds % 3600) / 60;
+
+                            snprintf(timezone, TIMEZONE_LEN-1, "%c%02d:%02d", sign, tz_hour, tz_min);
+                        }
+
+                        Py_XDECREF(daysObj);
+                        Py_XDECREF(secondsObj);
                     }
-
-                    Py_XDECREF(daysObj);
-                    Py_XDECREF(secondsObj);
                 }
-                Py_XDECREF(utcOffset);
+                Py_DECREF(utcOffset);
             }
 
-            if (microsec > 0) {
-                snprintf(isoformat,
-                         ISOFORMAT_LEN-1,
-                         "%04d-%02d-%02dT%02d:%02d:%02d.%06d%s",
-                         year, month, day,
-                         hour, min, sec, microsec,
-                         timezone);
+            if (PyDateTime_Check(dtObject)) {
+                year = PyDateTime_GET_YEAR(dtObject);
+                month = PyDateTime_GET_MONTH(dtObject);
+                day = PyDateTime_GET_DAY(dtObject);
+                hour = PyDateTime_DATE_GET_HOUR(dtObject);
+                min = PyDateTime_DATE_GET_MINUTE(dtObject);
+                sec = PyDateTime_DATE_GET_SECOND(dtObject);
+                microsec = PyDateTime_DATE_GET_MICROSECOND(dtObject);
+                if (microsec > 0) {
+                    snprintf(isoformat,
+                             ISOFORMAT_LEN-1,
+                             "%04d-%02d-%02dT%02d:%02d:%02d.%06d%s",
+                             year, month, day,
+                             hour, min, sec, microsec,
+                             timezone);
+                } else {
+                    snprintf(isoformat,
+                             ISOFORMAT_LEN-1,
+                             "%04d-%02d-%02dT%02d:%02d:%02d%s",
+                             year, month, day,
+                             hour, min, sec,
+                             timezone);
+                }
             } else {
-                snprintf(isoformat,
-                         ISOFORMAT_LEN-1,
-                         "%04d-%02d-%02dT%02d:%02d:%02d%s",
-                         year, month, day,
-                         hour, min, sec,
-                         timezone);
+                hour = PyDateTime_TIME_GET_HOUR(dtObject);
+                min = PyDateTime_TIME_GET_MINUTE(dtObject);
+                sec = PyDateTime_TIME_GET_SECOND(dtObject);
+                microsec = PyDateTime_TIME_GET_MICROSECOND(dtObject);
+                if (microsec > 0) {
+                    snprintf(isoformat,
+                             ISOFORMAT_LEN-1,
+                             "%02d:%02d:%02d.%06d%s",
+                             hour, min, sec, microsec,
+                             timezone);
+                } else {
+                    snprintf(isoformat,
+                             ISOFORMAT_LEN-1,
+                             "%02d:%02d:%02d%s",
+                             hour, min, sec,
+                             timezone);
+                }
             }
+            Py_XDECREF(asUTC);
+            writer->String(isoformat);
+        }
+        else if (datetimeMode != DATETIME_MODE_NONE && PyDate_Check(object)) {
+            int year = PyDateTime_GET_YEAR(object);
+            int month = PyDateTime_GET_MONTH(object);
+            int day = PyDateTime_GET_DAY(object);
 
+            const int ISOFORMAT_LEN = 12;
+            char isoformat[ISOFORMAT_LEN];
+            memset(isoformat, 0, ISOFORMAT_LEN);
+
+            snprintf(isoformat, ISOFORMAT_LEN-1, "%04d-%02d-%02d", year, month, day);
             writer->String(isoformat);
         }
         else if (defaultFn) {
@@ -812,6 +1207,10 @@ rapidjson_dumps(PyObject* self, PyObject* args, PyObject* kwargs)
 
     if (datetimeModeObj && PyLong_Check(datetimeModeObj)) {
         datetimeMode = (DatetimeMode) PyLong_AsLong(datetimeModeObj);
+        if (datetimeMode < DATETIME_MODE_NONE || datetimeMode > DATETIME_MODE_ISO8601_UTC) {
+            PyErr_SetString(PyExc_ValueError, "Invalid date_time");
+            return NULL;
+        }
     }
 
     if (!prettyPrint) {
@@ -862,6 +1261,22 @@ PyInit_rapidjson()
 {
     PyDateTime_IMPORT;
 
+    PyObject* datetimeModule = PyImport_ImportModule("datetime");
+    if (datetimeModule == NULL)
+        return NULL;
+
+    rapidjson_timezone_type = PyObject_GetAttrString(datetimeModule, "timezone");
+    Py_DECREF(datetimeModule);
+
+    if (rapidjson_timezone_type == NULL)
+        return NULL;
+
+    rapidjson_timezone_utc = PyObject_GetAttrString(rapidjson_timezone_type, "utc");
+    if (rapidjson_timezone_utc == NULL) {
+        Py_DECREF(rapidjson_timezone_type);
+        return NULL;
+    }
+
     PyObject* decimalModule = PyImport_ImportModule("decimal");
     if (decimalModule == NULL)
         return NULL;
@@ -878,6 +1293,7 @@ PyInit_rapidjson()
     PyModule_AddIntConstant(module, "DATETIME_MODE_NONE", DATETIME_MODE_NONE);
     PyModule_AddIntConstant(module, "DATETIME_MODE_ISO8601", DATETIME_MODE_ISO8601);
     PyModule_AddIntConstant(module, "DATETIME_MODE_ISO8601_IGNORE_TZ", DATETIME_MODE_ISO8601_IGNORE_TZ);
+    PyModule_AddIntConstant(module, "DATETIME_MODE_ISO8601_UTC", DATETIME_MODE_ISO8601_UTC);
 
     PyModule_AddStringConstant(module, "__version__", PYTHON_RAPIDJSON_VERSION);
     PyModule_AddStringConstant(
