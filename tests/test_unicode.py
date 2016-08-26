@@ -10,7 +10,7 @@ def test_unicode_1():
     ju = rapidjson.dumps(u)
     js = rapidjson.dumps(s)
     assert ju == js
-    assert ju == json.dumps(u)
+    assert ju.lower() == json.dumps(u).lower()
     assert rapidjson.dumps(u, ensure_ascii=False) == json.dumps(u, ensure_ascii=False)
 
 
@@ -21,7 +21,7 @@ def test_unicode_2():
     ju = rapidjson.dumps(u)
     js = rapidjson.dumps(s)
     assert ju == js
-    assert ju == json.dumps(u)
+    assert ju.lower() == json.dumps(u).lower()
     assert rapidjson.dumps(u, ensure_ascii=False) == json.dumps(u, ensure_ascii=False)
 
 
@@ -32,5 +32,5 @@ def test_unicode_3():
     ju = rapidjson.dumps(u)
     js = rapidjson.dumps(s)
     assert ju == js
-    assert ju == json.dumps(u)
+    assert ju.lower() == json.dumps(u).lower()
     assert rapidjson.dumps(u, ensure_ascii=False) == json.dumps(u, ensure_ascii=False)

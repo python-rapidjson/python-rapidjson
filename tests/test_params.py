@@ -22,8 +22,8 @@ def test_skipkeys():
 @pytest.mark.unit
 def test_ensure_ascii():
     s = '\N{GREEK SMALL LETTER ALPHA}\N{GREEK CAPITAL LETTER OMEGA}'
-    assert rapidjson.dumps(s) == '"\\u03b1\\u03a9"'
-    assert rapidjson.dumps(s, ensure_ascii=True) == '"\\u03b1\\u03a9"'
+    assert rapidjson.dumps(s) == '"\\u03B1\\u03A9"'
+    assert rapidjson.dumps(s, ensure_ascii=True) == '"\\u03B1\\u03A9"'
     assert rapidjson.dumps(s, ensure_ascii=False) == '"%s"' % s
 
 
