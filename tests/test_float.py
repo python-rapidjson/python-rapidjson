@@ -12,7 +12,7 @@ def test_infinity():
     assert loaded == inf
 
     d = Decimal(inf)
-    dumped = rapidjson.dumps(inf, use_decimal=True)
+    dumped = rapidjson.dumps(d, use_decimal=True)
     loaded = rapidjson.loads(dumped, use_decimal=True)
     assert loaded == inf
 
@@ -25,7 +25,7 @@ def test_negative_infinity():
     assert loaded == inf
 
     d = Decimal(inf)
-    dumped = rapidjson.dumps(inf, use_decimal=True)
+    dumped = rapidjson.dumps(d, use_decimal=True)
     loaded = rapidjson.loads(dumped, use_decimal=True)
     assert loaded == inf
 
@@ -40,7 +40,7 @@ def test_nan():
     assert math.isnan(loaded)
 
     d = Decimal(nan)
-    dumped = rapidjson.dumps(nan, use_decimal=True)
+    dumped = rapidjson.dumps(d, use_decimal=True)
     loaded = rapidjson.loads(dumped, use_decimal=True)
 
     assert math.isnan(d)
