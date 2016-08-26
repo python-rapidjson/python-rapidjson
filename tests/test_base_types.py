@@ -7,13 +7,19 @@ import random
 @pytest.mark.unit
 @pytest.mark.parametrize(
     'value', [
-        'A', 1, -1, 2.3, {'foo': 'bar'}, [1, 2, 'a', 1.2, {'foo': 'bar'},],
+        'A', 'cruel\x00world', 1, -1, 2.3, {'foo': 'bar'}, [1, 2, 'a', 1.2, {'foo': 'bar'},],
         sys.maxsize
 ])
 def test_base_values(value):
     dumped = rapidjson.dumps(value)
     loaded = rapidjson.loads(dumped)
     assert loaded == value
+
+
+@pytest.mark.unit
+def test_bytes_value():
+    dumped = rapidjson.dumps(b'cruel\x00world')
+    assert dumped == r'"cruel\u0000world"'
 
 
 @pytest.mark.unit
