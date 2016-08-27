@@ -79,15 +79,20 @@ def test_indent():
     with pytest.raises(TypeError):
         rapidjson.dumps(o, indent="\t")
 
+    with pytest.raises(TypeError):
+        rapidjson.dumps(o, indent=-1)
+
 
 @pytest.mark.unit
 def test_sort_keys():
     o = {"a": 1, "z": 2, "b": 3}
+    expected0 = '{\n"a": 1,\n"b": 3,\n"z": 2\n}'
     expected1 = '{"a":1,"b":3,"z":2}'
     expected2 = '{\n    "a": 1,\n    "b": 3,\n    "z": 2\n}'
 
     assert rapidjson.dumps(o, sort_keys=True) == expected1
     assert rapidjson.dumps(o, sort_keys=True, indent=4) == expected2
+    assert rapidjson.dumps(o, sort_keys=True, indent=0) == expected0
 
 
 @pytest.mark.unit
