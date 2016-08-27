@@ -1162,7 +1162,7 @@ rapidjson_dumps(PyObject* self, PyObject* args, PyObject* kwargs)
 
     bool prettyPrint = false;
     const char indentChar = ' ';
-    unsigned char indentCharCount = 4;
+    unsigned indentCharCount = 4;
 
     static char* kwlist[] = {
         "obj",
@@ -1199,11 +1199,11 @@ rapidjson_dumps(PyObject* self, PyObject* args, PyObject* kwargs)
     if (indent && indent != Py_None) {
         prettyPrint = true;
 
-        if (PyLong_Check(indent)) {
-            indentCharCount = PyLong_AsLong(indent);
+        if (PyLong_Check(indent) && PyLong_AsLong(indent) >= 0) {
+            indentCharCount = PyLong_AsUnsignedLong(indent);
         }
         else {
-            PyErr_SetString(PyExc_TypeError, "indent must be an int");
+            PyErr_SetString(PyExc_TypeError, "indent must be a non-negative int");
             return NULL;
         }
     }
