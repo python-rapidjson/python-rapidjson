@@ -12,38 +12,38 @@
 
    The author of the module.
 
-.. data:: DATETIME_MODE_NONE
+.. data:: DATETIME_MODE_NONE = 0
 
    This is the default ``datetime_mode``: *neither* :class:`datetime` *nor* :class:`date`
-   instances are recognized by :func:`loads` and :func:`dumps`.
+   instances are recognized by :func:`dumps` and :func:`loads`.
 
-.. data:: DATETIME_MODE_ISO8601
+.. data:: DATETIME_MODE_ISO8601 = 1
 
-   In this ``datetime_mode`` mode :func:`loads` and :func:`dumps` handle :class:`datetime`
+   In this ``datetime_mode`` mode :func:`dumps` and :func:`loads` handle :class:`datetime`
    *and* :class:`date` instances representing those values using the `ISO 8601`_ format.
 
-.. data:: DATETIME_MODE_ISO8601_IGNORE_TZ
+.. data:: DATETIME_MODE_ISO8601_IGNORE_TZ = 2
 
    This is like :data:`DATETIME_MODE_ISO8601` except that the value's timezone is ignored.
 
-.. data:: DATETIME_MODE_ISO8601_UTC
+.. data:: DATETIME_MODE_ISO8601_UTC = 3
 
    This is like :data:`DATETIME_MODE_ISO8601` except that the times are always *shifted* to
    the UTC_ timezone.
 
-.. data:: UUID_MODE_NONE
+.. data:: UUID_MODE_NONE = 0
 
    This is the default ``uuid_mode``: :class:`UUID` instances are *not* recognized by
-   :func:`loads` and :func:`dumps`.
+   :func:`dumps` and :func:`loads`.
 
-.. data:: UUID_MODE_CANONICAL
+.. data:: UUID_MODE_CANONICAL = 1
 
    In this ``uuid_mode``, :func:`loads` recognizes string values containing the
    ``xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx`` canonical representation as :class:`UUID`
    instances; :func:`dumps` emits same kind of representation for :class:`UUID` instances as a
    string value.
 
-.. data:: UUID_MODE_HEX
+.. data:: UUID_MODE_HEX = 2
 
    In this ``uuid_mode`` :func:`loads` recognizes string values containing exactly 32 hex
    digits *or* the ``xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx`` canonical representation as
