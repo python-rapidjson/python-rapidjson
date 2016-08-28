@@ -64,7 +64,7 @@ All JSON_ data types are supported using their native Python counterparts:
 
 .. code-block:: pycon
 
-    >>> import datetime
+    >>> import datetime, decimal, uuid
     >>> from pprint import pprint
     >>> from rapidjson import dumps, loads
     >>> from rapidjson import DATETIME_MODE_ISO8601, UUID_MODE_CANONICAL
@@ -95,6 +95,20 @@ All JSON_ data types are supported using their native Python counterparts:
     'be576345-65b5-4fc2-92c5-94e2f82e38fd'
     >>> rapidjson.loads(as_json, uuid_mode=UUID_MODE_CANONICAL)
     UUID('be576345-65b5-4fc2-92c5-94e2f82e38fd')
+    >>> pi = decimal.Decimal('3.1415926535897932384626433832795028841971')
+    >>> dumps(pi)
+    Traceback (most recent call last):
+      File "<stdin>", line 1, in <module>
+    TypeError: Decimal(…) is not JSON serializable
+    >>> dumps(pi, use_decimal=True)
+    '3.1415926535897932384626433832795028841971'
+    >>> as_json = _
+    >>> loads(as_json)
+    3.141592653589793
+    >>> type(loads(as_json))
+    <class 'float'>
+    >>> loads(as_json, use_decimal=True)
+    Decimal('3.1415926535897932384626433832795028841971')
 
 
 Incompatibilities
