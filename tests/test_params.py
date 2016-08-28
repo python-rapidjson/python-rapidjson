@@ -1,5 +1,7 @@
 from datetime import date, datetime, time
 import math
+import uuid
+
 import pytest
 import rapidjson
 
@@ -250,6 +252,47 @@ def test_datetime_values(value):
 
 
 @pytest.mark.unit
+def test_uuid_mode():
+    assert rapidjson.UUID_MODE_NONE == 0
+    assert rapidjson.UUID_MODE_CANONICAL == 1
+    assert rapidjson.UUID_MODE_HEX == 2
+
+    value = uuid.uuid1()
+    with pytest.raises(TypeError):
+        rapidjson.dumps(value)
+
+    with pytest.raises(ValueError):
+        rapidjson.dumps(value, uuid_mode=42)
+
+    with pytest.raises(ValueError):
+        rapidjson.loads('""', uuid_mode=42)
+
+    dumped = rapidjson.dumps(value, uuid_mode=rapidjson.UUID_MODE_CANONICAL)
+    loaded = rapidjson.loads(dumped, uuid_mode=rapidjson.UUID_MODE_CANONICAL)
+    assert loaded == value
+
+    # When loading, hex mode implies canonical format
+    loaded = rapidjson.loads(dumped, uuid_mode=rapidjson.UUID_MODE_HEX)
+    assert loaded == value
+
+    dumped = rapidjson.dumps(value, uuid_mode=rapidjson.UUID_MODE_HEX)
+    loaded = rapidjson.loads(dumped, uuid_mode=rapidjson.UUID_MODE_HEX)
+    assert loaded == value
+
+
+@pytest.mark.unit
+def test_uuid_and_datetime_mode_together():
+    value = [date.today(), uuid.uuid1()]
+    dumped = rapidjson.dumps(value,
+                             datetime_mode=rapidjson.DATETIME_MODE_ISO8601,
+                             uuid_mode=rapidjson.UUID_MODE_CANONICAL)
+    loaded = rapidjson.loads(dumped,
+                             datetime_mode=rapidjson.DATETIME_MODE_ISO8601,
+                             uuid_mode=rapidjson.UUID_MODE_CANONICAL)
+    assert loaded == value
+
+
+@pytest.mark.unit
 @pytest.mark.parametrize(
     'value,cls', [
         ('x999-02-03', str),
@@ -296,6 +339,33 @@ def test_datetime_values(value):
 def test_datetime_iso8601(value, cls):
     result = rapidjson.loads('"%s"' % value, datetime_mode=rapidjson.DATETIME_MODE_ISO8601)
     assert isinstance(result, cls)
+
+
+@pytest.mark.unit
+@pytest.mark.parametrize(
+    'value,cls', [
+        ('7a683da49aa011e5972e3085a99ccac7', str),
+        ('7a683da4 9aa0-11e5-972e-3085a99ccac7', str),
+        ('za683da4-9aa0-11e5-972e-3085a99ccac7', str),
+
+        ('7a683da4-9aa0-11e5-972e-3085a99ccac7', uuid.UUID),
+    ])
+def test_uuid_canonical(value, cls):
+    result = rapidjson.loads('"%s"' % value, uuid_mode=rapidjson.UUID_MODE_CANONICAL)
+    assert isinstance(result, cls), type(result)
+
+
+@pytest.mark.unit
+@pytest.mark.parametrize(
+    'value,cls', [
+        ('za683da49aa011e5972e3085a99ccac7', str),
+
+        ('7a683da49aa011e5972e3085a99ccac7', uuid.UUID),
+        ('7a683da4-9aa0-11e5-972e-3085a99ccac7', uuid.UUID),
+    ])
+def test_uuid_hex(value, cls):
+    result = rapidjson.loads('"%s"' % value, uuid_mode=rapidjson.UUID_MODE_HEX)
+    assert isinstance(result, cls), type(result)
 
 
 @pytest.mark.unit
