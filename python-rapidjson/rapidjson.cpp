@@ -721,7 +721,7 @@ rapidjson_loads(PyObject* self, PyObject* args, PyObject* kwargs)
     PyObject* uuidModeObj = NULL;
     UuidMode uuidMode = UUID_MODE_NONE;
 
-    static char* kwlist[] = {
+    static char const * kwlist[] = {
         "s",
         "object_hook",
         "use_decimal",
@@ -733,7 +733,7 @@ rapidjson_loads(PyObject* self, PyObject* args, PyObject* kwargs)
     };
 
     if (!PyArg_ParseTupleAndKeywords(args, kwargs, "O|OpppOO:rapidjson.loads",
-                                     kwlist,
+                                     (char **) kwlist,
                                      &jsonObject,
                                      &objectHook,
                                      &useDecimal,
@@ -1238,7 +1238,7 @@ rapidjson_dumps(PyObject* self, PyObject* args, PyObject* kwargs)
     const char indentChar = ' ';
     unsigned indentCharCount = 4;
 
-    static char* kwlist[] = {
+    static char const * kwlist[] = {
         "obj",
         "skipkeys",
         "ensure_ascii",
@@ -1253,7 +1253,7 @@ rapidjson_dumps(PyObject* self, PyObject* args, PyObject* kwargs)
         NULL
     };
     if (!PyArg_ParseTupleAndKeywords(args, kwargs, "O|pppOOppIOO:rapidjson.dumps",
-                                     kwlist,
+                                     (char **) kwlist,
                                      &value,
                                      &skipKeys,
                                      &ensureAscii,
