@@ -50,6 +50,11 @@
    :class:`UUID` instances; :func:`dumps` emits the 32 hex digits of :class:`UUID` instances as
    a string value.
 
+.. testsetup::
+
+    from rapidjson import (dumps, loads, DATETIME_MODE_NONE, DATETIME_MODE_ISO8601,
+                           DATETIME_MODE_ISO8601_IGNORE_TZ, DATETIME_MODE_ISO8601_UTC,
+                           UUID_MODE_NONE, UUID_MODE_CANONICAL, UUID_MODE_HEX)
 
 .. function:: dumps(obj, skipkeys=False, ensure_ascii=True, allow_nan=True, indent=None, \
                     default=None, sort_keys=False, use_decimal=False, \
@@ -75,7 +80,7 @@
    (:class:`str`, :class:`int`, :class:`float`, :class:`bool`, ``None``) will be skipped
    instead of raising a :exc:`TypeError`:
 
-   .. code-block:: pycon
+   .. doctest::
 
        >>> dumps({(0,): 'empty tuple'})
        Traceback (most recent call last):
@@ -88,7 +93,7 @@
    non-ASCII characters escaped.  If `ensure_ascii` is false, these characters will be output
    as-is:
 
-   .. code-block:: pycon
+   .. doctest::
 
        >>> dumps('The symbol for the Euro currency is €')
        '"The symbol for the Euro currency is \\u20ac"'
@@ -101,7 +106,7 @@
    compliance of the JSON specification.  If `allow_nan` is true, their JavaScript equivalents
    (``NaN``, ``Infinity``, ``-Infinity``) will be used:
 
-   .. code-block:: pycon
+   .. doctest::
 
        >>> nan = float('nan')
        >>> inf = float('inf')
@@ -144,7 +149,7 @@
    objects. If specified, it should be a function that gets called for such objects and returns
    a JSON encodable version of the object itself or raise a :exc:`TypeError`:
 
-   .. code-block:: pycon
+   .. doctest::
 
        >>> class Point(object):
        ...   def __init__(self, x, y):
@@ -162,13 +167,13 @@
        ...   else:
        ...     raise ValueError('%r is not JSON serializable' % obj)
        ...
-       >>> dumps(point, default=point_jsonifier)
+       >>> dumps(point, default=point_jsonifier) # doctest: +SKIP
        '{"y":2,"x":1}'
 
    When `sort_keys` is true (default: ``False``), the JSON representation of Python
    dictionaries is sorted by key:
 
-   .. code-block:: pycon
+   .. doctest::
 
        >>> dumps(point, default=point_jsonifier, sort_keys=True)
        '{"x":1,"y":2}'
@@ -177,7 +182,7 @@
    serialized as their textual representation like any other float value, instead of raising
    an error:
 
-   .. code-block:: pycon
+   .. doctest::
 
        >>> from decimal import Decimal
        >>> pi = Decimal('3.1415926535897932384626433832795028841971')
@@ -191,7 +196,7 @@
    With `max_recursion_depth` you can control the maximum depth that will be reached when
    serializing nested structures:
 
-   .. code-block:: pycon
+   .. doctest::
 
        >>> a = []
        >>> for i in range(10):
@@ -208,23 +213,23 @@
    `datetime_mode` is set to :data:`DATETIME_MODE_ISO8601` those values are serialized using
    the common `ISO 8601`_ format:
 
-   .. code-block:: pycon
+   .. doctest::
 
        >>> from datetime import date, datetime
        >>> today = date.today()
        >>> right_now = datetime.now()
-       >>> dumps({'a date': today, 'a timestamp': right_now})
+       >>> dumps({'date': today, 'timestamp': right_now})
        Traceback (most recent call last):
          File "<stdin>", line 1, in <module>
        TypeError: datetime(…) is not JSON serializable
        >>> dumps({'a date': today, 'a timestamp': right_now},
-       ...       datetime_mode=DATETIME_MODE_ISO8601)
-       '{"a timestamp":"2016-08-28T13:14:52.277256","a date":"2016-08-28"}'
+       ...       datetime_mode=DATETIME_MODE_ISO8601) # doctest: +SKIP
+       '{"timestamp":"2016-08-28T13:14:52.277256","date":"2016-08-28"}'
 
    Another mode is :data:`DATETIME_MODE_ISO8601_UTC`, that *shifts* all timestamps to the UTC_
    timezone before serializing them:
 
-   .. code-block:: pycon
+   .. doctest::
 
        >>> from datetime import timedelta, timezone
        >>> here = timezone(timedelta(hours=2))
@@ -233,32 +238,32 @@
        Traceback (most recent call last):
          File "<stdin>", line 1, in <module>
        TypeError: datetime.datetime(…) is not JSON serializable
-       >>> dumps(now, datetime_mode=DATETIME_MODE_ISO8601)
+       >>> dumps(now, datetime_mode=DATETIME_MODE_ISO8601) # doctest: +SKIP
        '"2016-08-28T20:31:11.084418+02:00"'
-       >>> dumps(now, datetime_mode=DATETIME_MODE_ISO8601_UTC)
+       >>> dumps(now, datetime_mode=DATETIME_MODE_ISO8601_UTC) # doctest: +SKIP
        '"2016-08-28T18:31:11.084418+00:00"'
 
    With :data:`DATETIME_MODE_ISO8601_IGNORE_TZ` the timezone, if present, is simply omitted:
 
-   .. code-block:: pycon
+   .. doctest::
 
-       >>> dumps(now, datetime_mode=DATETIME_MODE_ISO8601_IGNORE_TZ)
+       >>> dumps(now, datetime_mode=DATETIME_MODE_ISO8601_IGNORE_TZ) # doctest: +SKIP
        '"2016-08-28T20:31:11.084418"'
 
    Likewise, to handle :class:`UUID` instances there are two modes that can be specified with
    the `uuid_mode` argument, that will use the string representation of their values:
 
-   .. code-block:: pycon
+   .. doctest::
 
        >>> from uuid import uuid4
        >>> random_uuid = uuid4()
-       >>> rapidjson.dumps(random_uuid)
+       >>> dumps(random_uuid)
        Traceback (most recent call last):
          File "<stdin>", line 1, in <module>
        TypeError: UUID(…) is not JSON serializable
-       >>> dumps(random_uuid, uuid_mode=UUID_MODE_CANONICAL)
+       >>> dumps(random_uuid, uuid_mode=UUID_MODE_CANONICAL) # doctest: +SKIP
        '"be576345-65b5-4fc2-92c5-94e2f82e38fd"'
-       >>> dumps(random_uuid, uuid_mode=UUID_MODE_HEX)
+       >>> dumps(random_uuid, uuid_mode=UUID_MODE_HEX) # doctest: +SKIP
        '"be57634565b54fc292c594e2f82e38fd"'
 
 .. function:: loads(s, object_hook=None, use_decimal=False, precise_float=True, \
@@ -281,7 +286,7 @@
    `object_hook` may be used to inject a custom deserializer that can replace any :class:`dict`
    instance found in the JSON structure with a *derived* object instance:
 
-   .. code-block:: pycon
+   .. doctest::
 
        >>> class Point(object):
        ...   def __init__(self, x, y):
@@ -303,7 +308,7 @@
    the JSON structure will be returned as :class:`Decimal` instances instead of plain
    :class:`float`:
 
-   .. code-block:: pycon
+   .. doctest::
 
        >>> loads('1.2345', use_decimal=True)
        Decimal('1.2345')
@@ -311,7 +316,7 @@
    If `precise_float` is false (default: ``True``) then a faster but less precise algorithm
    will be used to parse floats values inside the JSON structure
 
-   .. code-block:: pycon
+   .. doctest::
 
        >>> loads('1.234567890123456789')
        1.2345678901234567
@@ -321,7 +326,7 @@
    If `allow_nan` is false (default: ``True``), then the values ``NaN`` and ``Infinity`` won't
    be recognized:
 
-   .. code-block:: pycon
+   .. doctest::
 
        >>> loads('[NaN, Infinity]')
        [nan, inf]
@@ -333,26 +338,26 @@
    With `datetime_mode` you can enable recognition of string literals containing an `ISO 8601`_
    representation as either :class:`date` or :class:`datetime` instances:
 
-   .. code-block:: pycon
+   .. doctest::
 
        >>> loads('"2016-01-02T01:02:03+01:00"')
        '2016-01-02T01:02:03+01:00'
        >>> loads('"2016-01-02T01:02:03+01:00"',
        ...       datetime_mode=DATETIME_MODE_ISO8601)
-       datetime(2016, 1, 2, 1, 2, 3, tzinfo=timezone(timedelta(0, 3600)))
+       datetime.datetime(2016, 1, 2, 1, 2, 3, tzinfo=...delta(0, 3600)))
        >>> loads('"2016-01-02T01:02:03+01:00"',
        ...       datetime_mode=DATETIME_MODE_ISO8601_UTC)
-       datetime(2016, 1, 2, 0, 2, 3, tzinfo=timezone.utc)
+       datetime.datetime(2016, 1, 2, 0, 2, 3, tzinfo=...utc)
        >>> loads('"2016-01-02T01:02:03+01:00"',
        ...       datetime_mode=DATETIME_MODE_ISO8601_IGNORE_TZ)
-       datetime(2016, 1, 2, 1, 2, 3)
+       datetime.datetime(2016, 1, 2, 1, 2, 3)
        >>> loads('"2016-01-02"', datetime_mode=DATETIME_MODE_ISO8601)
-       date(2016, 1, 2)
+       datetime.date(2016, 1, 2)
 
    With `uuid_mode` you can enable recognition of string literals containing two different
    representations of :class:`UUID` values:
 
-   .. code-block:: pycon
+   .. doctest::
 
        >>> loads('"aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"')
        'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa'

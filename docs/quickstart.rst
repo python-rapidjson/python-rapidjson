@@ -26,21 +26,20 @@ Basic examples
 
 Basic usage looks like this:
 
-.. code-block:: pycon
+.. doctest::
 
+    >>> from pprint import pprint
     >>> from rapidjson import dumps, loads
     >>> data = {'foo': 100, 'bar': 'baz'}
-    >>> dumps(data)
+    >>> dumps(data, sort_keys=True) # for doctest
     '{"bar":"baz","foo":100}'
-    >>> loads('{"bar":"baz","foo":100}')
+    >>> pprint(loads('{"bar":"baz","foo":100}'))
     {'bar': 'baz', 'foo': 100}
 
 All JSON_ data types are supported using their native Python counterparts:
 
-.. code-block:: pycon
+.. doctest::
 
-    >>> from pprint import pprint
-    >>> from rapidjson import dumps, loads
     >>> int_number = 42
     >>> float_number = 1.4142
     >>> string = "√2 ≅ 1.4142"
@@ -62,39 +61,38 @@ All JSON_ data types are supported using their native Python counterparts:
 
 ``python-rapidjson`` can optionally handle also a few other commonly used data types:
 
-.. code-block:: pycon
+.. doctest::
 
     >>> import datetime, decimal, uuid
-    >>> from pprint import pprint
-    >>> from rapidjson import dumps, loads
     >>> from rapidjson import DATETIME_MODE_ISO8601, UUID_MODE_CANONICAL
-    >>> today = datetime.date.today()
-    >>> right_now = datetime.datetime.now()
-    >>> dumps({'a date': today, 'a timestamp': right_now})
+    >>> some_day = datetime.date(2016, 8, 28)
+    >>> some_timestamp = datetime.datetime(2016, 8, 28, 13, 14, 15)
+    >>> dumps({'a date': some_day, 'a timestamp': some_timestamp})
     Traceback (most recent call last):
       File "<stdin>", line 1, in <module>
     TypeError: datetime.datetime(…) is not JSON serializable
-    >>> dumps({'a date': today, 'a timestamp': right_now},
-    ...       datetime_mode=DATETIME_MODE_ISO8601)
-    '{"a timestamp":"2016-08-28T13:14:52.277256","a date":"2016-08-28"}'
+    >>> dumps({'a date': some_day, 'a timestamp': some_timestamp},
+    ...       datetime_mode=DATETIME_MODE_ISO8601,
+    ...       sort_keys=True) # for doctests
+    '{"a date":"2016-08-28","a timestamp":"2016-08-28T13:14:15"}'
     >>> as_json = _
-    >>> loads(as_json)
-    {'a date': '2016-08-28', 'a timestamp': '2016-08-28T13:14:52.277256'}
+    >>> pprint(loads(as_json))
+    {'a date': '2016-08-28', 'a timestamp': '2016-08-28T13:14:15'}
     >>> pprint(loads(as_json, datetime_mode=DATETIME_MODE_ISO8601))
     {'a date': datetime.date(2016, 8, 28),
-     'a timestamp': datetime.datetime(2016, 8, 28, 13, 14, 52, 277256)}
-    >>> random_uuid = uuid.uuid4()
-    >>> rapidjson.dumps(random_uuid)
+     'a timestamp': datetime.datetime(2016, 8, 28, 13, 14, 15)}
+    >>> some_uuid = uuid.uuid5(uuid.NAMESPACE_DNS, 'python.org')
+    >>> dumps(some_uuid)
     Traceback (most recent call last):
       File "<stdin>", line 1, in <module>
     TypeError: UUID(…) is not JSON serializable
-    >>> dumps(random_uuid, uuid_mode=UUID_MODE_CANONICAL)
-    '"be576345-65b5-4fc2-92c5-94e2f82e38fd"'
+    >>> dumps(some_uuid, uuid_mode=UUID_MODE_CANONICAL)
+    '"886313e1-3b8a-5372-9b90-0c9aee199e5d"'
     >>> as_json = _
-    >>> rapidjson.loads(as_json)
-    'be576345-65b5-4fc2-92c5-94e2f82e38fd'
-    >>> rapidjson.loads(as_json, uuid_mode=UUID_MODE_CANONICAL)
-    UUID('be576345-65b5-4fc2-92c5-94e2f82e38fd')
+    >>> loads(as_json)
+    '886313e1-3b8a-5372-9b90-0c9aee199e5d'
+    >>> loads(as_json, uuid_mode=UUID_MODE_CANONICAL)
+    UUID('886313e1-3b8a-5372-9b90-0c9aee199e5d')
     >>> pi = decimal.Decimal('3.1415926535897932384626433832795028841971')
     >>> dumps(pi)
     Traceback (most recent call last):
