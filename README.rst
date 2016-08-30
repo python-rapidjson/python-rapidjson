@@ -66,8 +66,26 @@ To run these tests yourself, clone the repo and run:
 
 .. code-block::
 
-   $ tox -e py34 -- -m benchmark
+   $ tox -e py34 -- -m benchmark --compare-other-engines
 
+Without the option ``--compare-other-engines`` it will focus only on ``RapidJSON``.
+This is particularly handy coupled with the `compare past runs`__ functionality of
+``pytest-benchmark``:
+
+.. code-block::
+
+   $ tox -e py34 -- -m benchmark --benchmark-autosave
+   # hack, hack, hack!
+   $ tox -e py34 -- -m benchmark --benchmark-compare=0001
+
+   ----------------------- benchmark 'deserialize': 18 tests ------------------------
+   Name (time in us)                                                            Min…
+   ----------------------------------------------------------------------------------
+   test_loads[rapidjson-256 Trues array] (NOW)                         5.2320 (1.0)…
+   test_loads[rapidjson-256 Trues array] (0001)                        5.4180 (1.04)…
+   …
+
+__ http://pytest-benchmark.readthedocs.org/en/latest/comparing.html
 
 Incompatibility
 ---------------
