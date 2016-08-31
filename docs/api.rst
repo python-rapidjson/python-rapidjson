@@ -96,7 +96,7 @@
    .. doctest::
 
        >>> dumps('The symbol for the Euro currency is €')
-       '"The symbol for the Euro currency is \\u20ac"'
+       '"The symbol for the Euro currency is \\u20AC"'
        >>> dumps('The symbol for the Euro currency is €',
        ...       ensure_ascii=False)
        '"The symbol for the Euro currency is €"'
