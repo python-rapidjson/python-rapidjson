@@ -10,11 +10,8 @@ Contender = namedtuple('Contender', 'name,dumps,loads')
 def pytest_benchmark_group_stats(config, benchmarks, group_by):
     result = {}
     for bench in benchmarks:
-        if config.option.compare_other_engines:
-            engine, data_kind = bench.param.split('-')
-            group = result.setdefault("%s: %s" % (data_kind, bench.group), [])
-        else:
-            group = result.setdefault(bench.group, [])
+        engine, data_kind = bench.param.split('-')
+        group = result.setdefault("%s: %s" % (data_kind, bench.group), [])
         group.append(bench)
     return sorted(result.items())
 
