@@ -75,8 +75,6 @@ def test_default():
 
 @pytest.mark.unit
 def test_doubles():
-    doubles = []
-
     for x in range(100000):
         d = sys.maxsize * random.random()
         dumped = rapidjson.dumps(d)
