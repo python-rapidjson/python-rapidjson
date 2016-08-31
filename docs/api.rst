@@ -266,15 +266,14 @@
        >>> dumps(random_uuid, uuid_mode=UUID_MODE_HEX) # doctest: +SKIP
        '"be57634565b54fc292c594e2f82e38fd"'
 
-.. function:: loads(s, object_hook=None, use_decimal=False, precise_float=True, \
-                    allow_nan=True, datetime_mode=None, uuid_mode=None)
+.. function:: loads(s, object_hook=None, use_decimal=False, allow_nan=True, \
+                    datetime_mode=None, uuid_mode=None)
 
    :param str s: The JSON string to parse
    :param callable object_hook: an optional function that will be called with the result of
                                 any object literal decoded (a :class:`dict`) and should return
                                 the value to use instead of the :class:`dict`
    :param bool use_decimal: whether :class:`Decimal` should be used for float values
-   :param bool precise_float: use slower-but-more-precise float parser
    :param bool allow_nan: whether ``NaN`` values are recognized
    :param int datetime_mode: how should :class:`datetime` and :class:`date` instances be
                              handled
@@ -312,16 +311,6 @@
 
        >>> loads('1.2345', use_decimal=True)
        Decimal('1.2345')
-
-   If `precise_float` is false (default: ``True``) then a faster but less precise algorithm
-   will be used to parse floats values inside the JSON structure
-
-   .. doctest::
-
-       >>> loads('1.234567890123456789')
-       1.2345678901234567
-       >>> loads('1.234567890123456789', precise_float=False)
-       1.234567890123457
 
    If `allow_nan` is false (default: ``True``), then the values ``NaN`` and ``Infinity`` won't
    be recognized:
