@@ -317,7 +317,7 @@ struct PyHandler {
         for (int i = length - 1; i >= 0; --i) {
             // consider it a float if there is at least one non-digit character,
             // it may be either a decimal number or +-infinity or nan
-            if (!isdigit(str[i])) {
+            if (!isdigit(str[i]) && str[i] != '-') {
                 isFloat = true;
                 break;
             }

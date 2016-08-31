@@ -13,7 +13,7 @@ import random
 def test_base_values(value):
     dumped = rapidjson.dumps(value)
     loaded = rapidjson.loads(dumped)
-    assert loaded == value
+    assert loaded == value and type(loaded) is type(value)
 
 
 @pytest.mark.unit
