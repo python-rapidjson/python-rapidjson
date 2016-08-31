@@ -45,8 +45,6 @@ def test_larger_structure():
 
 @pytest.mark.unit
 def test_object_hook():
-    import simplejson as json
-
     def as_complex(dct):
         if '__complex__' in dct:
             return complex(dct['real'], dct['imag'])
