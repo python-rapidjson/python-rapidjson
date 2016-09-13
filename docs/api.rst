@@ -88,7 +88,8 @@
 
 .. function:: dumps(obj, skipkeys=False, ensure_ascii=True, allow_nan=True, indent=None, \
                     default=None, sort_keys=False, use_decimal=False, \
-                    max_recursion_depth=2048, datetime_mode=None, uuid_mode=None)
+                    max_recursion_depth=2048, native_numbers=False, datetime_mode=None, \
+                    uuid_mode=None)
 
    :param bool skipkeys: whether skip invalid :class:`dict` keys
    :param bool ensure_ascii: whether the output should contain only ASCII
@@ -101,6 +102,7 @@
                           alphabetically
    :param bool use_decimal: whether :class:`Decimal` should be handled
    :param int max_recursion_depth: maximum depth for nested structures
+   :param bool native_numbers: whether use arch's native numbers or not
    :param int datetime_mode: how should :class:`datetime`, :class:`time` and
                              :class:`date` instances be handled
    :param int uuid_mode: how should :class:`UUID` instances be handled
@@ -243,6 +245,20 @@
         File "<stdin>", line 1, in <module>
       OverflowError: Max recursion depth reached
 
+   If `native_numbers` is true (default: ``False``), then the numeric values
+   (i.e. *floats* and *integers*) will be handled using architecture *native*
+   arithmetic: while this is somewhat faster, it is subject to the underlying
+   C library ``long long`` and ``double`` limits:
+
+   .. doctest::
+
+      >>> dumps(123456789012345678901234567890)
+      '123456789012345678901234567890'
+      >>> dumps(123456789012345678901234567890, native_numbers=True)
+      Traceback (most recent call last):
+        File "<stdin>", line 1, in <module>
+      OverflowError: int too big to convert
+
    By default :class:`date`, :class:`datetime` and :class:`time` instances are
    not serializable. When `datetime_mode` is set to :data:`DM_ISO8601` those
    values are serialized using the common `ISO 8601`_ format:
@@ -355,7 +371,7 @@
       '"be57634565b54fc292c594e2f82e38fd"'
 
 .. function:: loads(s, object_hook=None, use_decimal=False, allow_nan=True, \
-                    datetime_mode=None, uuid_mode=None)
+                    native_numbers=False, datetime_mode=None, uuid_mode=None)
 
    :param str s: The JSON string to parse
    :param callable object_hook: an optional function that will be called with
@@ -365,8 +381,9 @@
    :param bool use_decimal: whether :class:`Decimal` should be used for float
                             values
    :param bool allow_nan: whether ``NaN`` values are recognized
-   :param int datetime_mode: how should :class:`date`, :class:`datetime` and
-                             :class:`time` instances be handled
+   :param bool native_numbers: whether use arch's native numbers or not
+   :param int datetime_mode: how should :class:`datetime` and :class:`date`
+                             instances be handled
    :param int uuid_mode: how should :class:`UUID` instances be handled
    :returns: An equivalent Python object.
 
@@ -415,6 +432,19 @@
       Traceback (most recent call last):
         File "<stdin>", line 1, in <module>
       ValueError: … Out of range float values are not JSON compliant
+
+   If `native_numbers` is true (default: ``False``), then the numeric values
+   (i.e. *floats* and *integers*) will be handled using architecture *native*
+   arithmetic: while this is quite faster, integers that do not fit into the
+   underlying C library ``long long`` limits will be converted (*truncated*)
+   to ``double`` numbers:
+
+   .. doctest::
+
+      >>> loads('123456789012345678901234567890')
+      123456789012345678901234567890
+      >>> loads('123456789012345678901234567890', native_numbers=True)
+      1.2345678901234566e+29
 
    With `datetime_mode` you can enable recognition of string literals
    containing an `ISO 8601`_ representation as either :class:`date`,
