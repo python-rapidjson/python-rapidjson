@@ -56,13 +56,15 @@
                            DATETIME_MODE_ISO8601_IGNORE_TZ, DATETIME_MODE_ISO8601_UTC,
                            UUID_MODE_NONE, UUID_MODE_CANONICAL, UUID_MODE_HEX)
 
-.. function:: dumps(obj, skipkeys=False, ensure_ascii=True, allow_nan=True, indent=None, \
+.. function:: dumps(obj, skipkeys=False, ensure_ascii=True, allow_nan=True, \
+                    native_numbers=False, indent=None, \
                     default=None, sort_keys=False, use_decimal=False, \
                     max_recursion_depth=2048, datetime_mode=None, uuid_mode=None)
 
    :param bool skipkeys: whether skip invalid :class:`dict` keys
    :param bool ensure_ascii: whether the output should contain only ASCII characters
    :param bool allow_nan: whether ``NaN`` values are handled or not
+   :param bool native_numbers: whether use arch's native numbers or not
    :param int indent: indentation width to produce pretty printed JSON
    :param callable default: a function that gets called for objects that can't otherwise be
                             serialized
@@ -116,6 +118,19 @@
        Traceback (most recent call last):
          File "<stdin>", line 1, in <module>
        ValueError: Out of range float values are not JSON compliant
+
+   If `native_numbers` is true (default: ``False``), then the numeric values (i.e. *floats* and
+   *integers*) will be handled using architecture *native* arithmetic: while this is somewhat
+   faster, it is subject to the underlying C library ``long long`` and ``double`` limits:
+
+   .. doctest::
+
+      >>> dumps(123456789012345678901234567890)
+      '123456789012345678901234567890'
+      >>> dumps(123456789012345678901234567890, native_numbers=True)
+      Traceback (most recent call last):
+        File "<stdin>", line 1, in <module>
+      OverflowError: int too big to convert
 
    When `indent` is ``None`` (the default), ``python-rapidjson`` produces the most compact JSON
    representation. By setting `indent` to 0 each array item and each dictionary value will be
@@ -267,7 +282,7 @@
        '"be57634565b54fc292c594e2f82e38fd"'
 
 .. function:: loads(s, object_hook=None, use_decimal=False, allow_nan=True, \
-                    datetime_mode=None, uuid_mode=None)
+                    native_numbers=False, datetime_mode=None, uuid_mode=None)
 
    :param str s: The JSON string to parse
    :param callable object_hook: an optional function that will be called with the result of
@@ -275,6 +290,7 @@
                                 the value to use instead of the :class:`dict`
    :param bool use_decimal: whether :class:`Decimal` should be used for float values
    :param bool allow_nan: whether ``NaN`` values are recognized
+   :param bool native_numbers: whether use arch's native numbers or not
    :param int datetime_mode: how should :class:`datetime` and :class:`date` instances be
                              handled
    :param int uuid_mode: how should :class:`UUID` instances be handled
@@ -323,6 +339,18 @@
        Traceback (most recent call last):
          File "<stdin>", line 1, in <module>
        ValueError: … Out of range float values are not JSON compliant
+
+   If `native_numbers` is true (default: ``False``), then the numeric values (i.e. *floats* and
+   *integers*) will be handled using architecture *native* arithmetic: while this is quite
+   faster, integers that do not fit into the underlying C library ``long long`` limits will be
+   converted (*truncated*) to ``double`` numbers:
+
+   .. doctest::
+
+      >>> loads('123456789012345678901234567890')
+      123456789012345678901234567890
+      >>> loads('123456789012345678901234567890', native_numbers=True)
+      1.2345678901234566e+29
 
    With `datetime_mode` you can enable recognition of string literals containing an `ISO 8601`_
    representation as either :class:`date` or :class:`datetime` instances:

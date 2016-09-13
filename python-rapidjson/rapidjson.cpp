@@ -722,6 +722,7 @@ rapidjson_loads(PyObject* self, PyObject* args, PyObject* kwargs)
     PyObject* objectHook = NULL;
     int useDecimal = 0;
     int allowNan = 1;
+    int nativeNumbers = 0;
     PyObject* datetimeModeObj = NULL;
     DatetimeMode datetimeMode = DATETIME_MODE_NONE;
     PyObject* uuidModeObj = NULL;
@@ -732,17 +733,19 @@ rapidjson_loads(PyObject* self, PyObject* args, PyObject* kwargs)
         "object_hook",
         "use_decimal",
         "allow_nan",
+        "native_numbers",
         "datetime_mode",
         "uuid_mode",
         NULL
     };
 
-    if (!PyArg_ParseTupleAndKeywords(args, kwargs, "O|OppOO:rapidjson.loads",
+    if (!PyArg_ParseTupleAndKeywords(args, kwargs, "O|OpppOO:rapidjson.loads",
                                      (char **) kwlist,
                                      &jsonObject,
                                      &objectHook,
                                      &useDecimal,
                                      &allowNan,
+                                     &nativeNumbers,
                                      &datetimeModeObj,
                                      &uuidModeObj))
 
@@ -793,11 +796,18 @@ rapidjson_loads(PyObject* self, PyObject* args, PyObject* kwargs)
     InsituStringStream ss(jsonStrCopy);
 
     if (allowNan)
-        reader.Parse<kParseInsituFlag |
-                     kParseNumbersAsStringsFlag |
-                     kParseNanAndInfFlag>(ss, handler);
+        if (nativeNumbers)
+            reader.Parse<kParseInsituFlag |
+                         kParseNanAndInfFlag>(ss, handler);
+        else
+            reader.Parse<kParseInsituFlag |
+                         kParseNumbersAsStringsFlag |
+                         kParseNanAndInfFlag>(ss, handler);
     else
-        reader.Parse<kParseInsituFlag | kParseNumbersAsStringsFlag>(ss, handler);
+        if (nativeNumbers)
+            reader.Parse<kParseInsituFlag>(ss, handler);
+        else
+            reader.Parse<kParseInsituFlag | kParseNumbersAsStringsFlag>(ss, handler);
 
     if (reader.HasParseError()) {
         SizeType offset = reader.GetErrorOffset();
@@ -865,6 +875,7 @@ rapidjson_dumps_internal(
     PyObject* value,
     int skipKeys,
     int allowNan,
+    int nativeNumbers,
     PyObject* defaultFn,
     int sortKeys,
     int useDecimal,
@@ -930,19 +941,36 @@ rapidjson_dumps_internal(
             Py_DECREF(decStrObj);
         }
         else if (PyLong_Check(object)) {
-            PyObject* intStrObj = PyObject_Str(object);
-            if (intStrObj == NULL)
-                return NULL;
+            if (nativeNumbers) {
+                int overflow;
+                long long i = PyLong_AsLongLongAndOverflow(object, &overflow);
+                if (i == -1 && PyErr_Occurred())
+                    return NULL;
 
-            Py_ssize_t size;
-            char* intStr = PyUnicode_AsUTF8AndSize(intStrObj, &size);
-            if (intStr == NULL) {
+                if (overflow == 0) {
+                    writer->Int64(i);
+                } else {
+                    unsigned long long ui = PyLong_AsUnsignedLongLong(object);
+                    if (PyErr_Occurred())
+                        return NULL;
+
+                    writer->Uint64(ui);
+                }
+            } else {
+                PyObject* intStrObj = PyObject_Str(object);
+                if (intStrObj == NULL)
+                    return NULL;
+
+                Py_ssize_t size;
+                char* intStr = PyUnicode_AsUTF8AndSize(intStrObj, &size);
+                if (intStr == NULL) {
+                    Py_DECREF(intStrObj);
+                    return NULL;
+                }
+
+                writer->RawValue(intStr, size, kNumberType);
                 Py_DECREF(intStrObj);
-                return NULL;
             }
-
-            writer->RawValue(intStr, size, kNumberType);
-            Py_DECREF(intStrObj);
         }
         else if (PyFloat_Check(object)) {
             double d = PyFloat_AsDouble(object);
@@ -1212,6 +1240,7 @@ error:
         value, \
         skipKeys, \
         allowNan, \
+        nativeNumbers, \
         defaultFn, \
         sortKeys, \
         useDecimal, \
@@ -1229,6 +1258,7 @@ rapidjson_dumps(PyObject* self, PyObject* args, PyObject* kwargs)
     int skipKeys = 0;
     int ensureAscii = 1;
     int allowNan = 1;
+    int nativeNumbers = 0;
     PyObject* indent = NULL;
     PyObject* defaultFn = NULL;
     int sortKeys = 0;
@@ -1248,6 +1278,7 @@ rapidjson_dumps(PyObject* self, PyObject* args, PyObject* kwargs)
         "skipkeys",
         "ensure_ascii",
         "allow_nan",
+        "native_numbers",
         "indent",
         "default",
         "sort_keys",
@@ -1257,12 +1288,13 @@ rapidjson_dumps(PyObject* self, PyObject* args, PyObject* kwargs)
         "uuid_mode",
         NULL
     };
-    if (!PyArg_ParseTupleAndKeywords(args, kwargs, "O|pppOOppIOO:rapidjson.dumps",
+    if (!PyArg_ParseTupleAndKeywords(args, kwargs, "O|ppppOOppIOO:rapidjson.dumps",
                                      (char **) kwlist,
                                      &value,
                                      &skipKeys,
                                      &ensureAscii,
                                      &allowNan,
+                                     &nativeNumbers,
                                      &indent,
                                      &defaultFn,
                                      &sortKeys,

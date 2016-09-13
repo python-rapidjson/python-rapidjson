@@ -60,6 +60,16 @@ def test_allow_nan():
 
 
 @pytest.mark.unit
+def test_native_numbers():
+    f = [-1, 1, 1.1, -2.2]
+    expected = '[-1,1,1.1,-2.2]'
+    assert rapidjson.dumps(f, native_numbers=True) == expected
+    assert rapidjson.dumps(f, native_numbers=False) == expected
+    assert rapidjson.loads(expected, native_numbers=True) == f
+    assert rapidjson.loads(expected, native_numbers=False) == f
+
+
+@pytest.mark.unit
 def test_indent():
     o = {"a": 1, "z": 2, "b": 3}
     expected1 = '{\n    "a": 1,\n    "z": 2,\n    "b": 3\n}'
