@@ -49,7 +49,6 @@ setup(
         'License :: OSI Approved :: MIT License',
         'Programming Language :: C++',
         'Programming Language :: Python :: 3',
-        'Programming Language :: Python',
     ],
     ext_modules=[rapidjson],
 )
