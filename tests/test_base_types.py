@@ -8,12 +8,12 @@ import random
 @pytest.mark.parametrize(
     'value', [
         'A', 'cruel\x00world', 1, -1, 2.3, {'foo': 'bar'}, [1, 2, 'a', 1.2, {'foo': 'bar'},],
-        sys.maxsize
+        sys.maxsize, sys.maxsize**2
 ])
 def test_base_values(value):
     dumped = rapidjson.dumps(value)
     loaded = rapidjson.loads(dumped)
-    assert loaded == value
+    assert loaded == value and type(loaded) is type(value)
 
 
 @pytest.mark.unit
@@ -45,8 +45,6 @@ def test_larger_structure():
 
 @pytest.mark.unit
 def test_object_hook():
-    import simplejson as json
-
     def as_complex(dct):
         if '__complex__' in dct:
             return complex(dct['real'], dct['imag'])
@@ -75,8 +73,6 @@ def test_default():
 
 @pytest.mark.unit
 def test_doubles():
-    doubles = []
-
     for x in range(100000):
         d = sys.maxsize * random.random()
         dumped = rapidjson.dumps(d)

@@ -29,7 +29,7 @@ with open('README.rst') as f:
 rapidjson = Extension(
     'rapidjson',
     sources=['./python-rapidjson/rapidjson.cpp'],
-    include_dirs=['./thirdparty/rapidjson/include'],
+    include_dirs=['./rapidjson/include'],
 )
 
 setup(

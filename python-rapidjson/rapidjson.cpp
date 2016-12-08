@@ -305,47 +305,54 @@ struct PyHandler {
         return HandleSimpleType(value);
     }
 
-    bool Double(double d, const char* decimal, SizeType length, bool minus, size_t decimalPosition, int exp) {
+    bool Double(double d) {
+        PyObject* value = PyFloat_FromDouble(d);
+        return HandleSimpleType(value);
+    }
+
+    bool RawNumber(const char* str, SizeType length, bool copy) {
         PyObject* value;
-        if (!useDecimal)
-            value = PyFloat_FromDouble(d);
-        else {
-            const int MAX_FINAL_SIZE = 512;
-            const int MAX_EXP_SIZE = 11; // 32-bit
-            const int MAX_DECIMAL_SIZE = MAX_FINAL_SIZE - MAX_EXP_SIZE - 3; // e, +/-, \0
+        bool isFloat = false;
 
-            exp += decimalPosition - length;
-
-            if (length > MAX_DECIMAL_SIZE)
-                length = MAX_DECIMAL_SIZE;
-
-            char finalStr[MAX_DECIMAL_SIZE];
-            finalStr[0] = minus ? '-' : '+';
-            memcpy(finalStr+1, decimal, length);
-
-            if (exp == 0)
-                finalStr[length+1] = 0;
-            else {
-                char expStr[MAX_EXP_SIZE];
-                char* end = internal::i32toa(exp, expStr);
-                size_t len = end - expStr;
-
-                finalStr[length+1] = 'e';
-                memcpy(finalStr+length+2, expStr, len);
-                finalStr[length+2+len] = 0;
+        for (int i = length - 1; i >= 0; --i) {
+            // consider it a float if there is at least one non-digit character,
+            // it may be either a decimal number or +-infinity or nan
+            if (!isdigit(str[i]) && str[i] != '-') {
+                isFloat = true;
+                break;
             }
+        }
 
-            PyObject* raw = PyUnicode_FromString(finalStr);
-            if (raw == NULL) {
-                PyErr_SetString(PyExc_ValueError, "Error generating decimal representation");
+        if (isFloat) {
+            PyObject* pystr = PyUnicode_FromStringAndSize(str, length);
+
+            if (pystr == NULL) {
                 return false;
             }
 
-            value = PyObject_CallFunctionObjArgs(rapidjson_decimal_type, raw, NULL);
-            Py_DECREF(raw);
+            if (!useDecimal) {
+                value = PyFloat_FromString(pystr);
+            } else {
+                value = PyObject_CallFunctionObjArgs(rapidjson_decimal_type, pystr, NULL);
+            }
+
+            Py_DECREF(pystr);
+        } else {
+            char zstr[length + 1];
+
+            strncpy(zstr, str, length);
+            zstr[length] = '\0';
+
+            value = PyLong_FromString(zstr, NULL, 10);
         }
 
-        return HandleSimpleType(value);
+        if (value == NULL) {
+            PyErr_SetString(PyExc_ValueError,
+                            isFloat ? "Invalid float value" : "Invalid integer value");
+            return false;
+        } else {
+            return HandleSimpleType(value);
+        }
     }
 
 #define digit(idx) (str[idx] - '0')
@@ -714,7 +721,6 @@ rapidjson_loads(PyObject* self, PyObject* args, PyObject* kwargs)
     PyObject* jsonObject;
     PyObject* objectHook = NULL;
     int useDecimal = 0;
-    int preciseFloat = 1;
     int allowNan = 1;
     PyObject* datetimeModeObj = NULL;
     DatetimeMode datetimeMode = DATETIME_MODE_NONE;
@@ -725,19 +731,17 @@ rapidjson_loads(PyObject* self, PyObject* args, PyObject* kwargs)
         "s",
         "object_hook",
         "use_decimal",
-        "precise_float",
         "allow_nan",
         "datetime_mode",
         "uuid_mode",
         NULL
     };
 
-    if (!PyArg_ParseTupleAndKeywords(args, kwargs, "O|OpppOO:rapidjson.loads",
+    if (!PyArg_ParseTupleAndKeywords(args, kwargs, "O|OppOO:rapidjson.loads",
                                      (char **) kwlist,
                                      &jsonObject,
                                      &objectHook,
                                      &useDecimal,
-                                     &preciseFloat,
                                      &allowNan,
                                      &datetimeModeObj,
                                      &uuidModeObj))
@@ -788,10 +792,12 @@ rapidjson_loads(PyObject* self, PyObject* args, PyObject* kwargs)
     Reader reader;
     InsituStringStream ss(jsonStrCopy);
 
-    if (preciseFloat)
-        reader.Parse<kParseInsituFlag | kParseFullPrecisionFlag>(ss, handler);
+    if (allowNan)
+        reader.Parse<kParseInsituFlag |
+                     kParseNumbersAsStringsFlag |
+                     kParseNanAndInfFlag>(ss, handler);
     else
-        reader.Parse<kParseInsituFlag>(ss, handler);
+        reader.Parse<kParseInsituFlag | kParseNumbersAsStringsFlag>(ss, handler);
 
     if (reader.HasParseError()) {
         SizeType offset = reader.GetErrorOffset();
@@ -920,24 +926,23 @@ rapidjson_dumps_internal(
                 return NULL;
             }
 
-            writer->RawNumber(decStr, size);
+            writer->RawValue(decStr, size, kNumberType);
             Py_DECREF(decStrObj);
         }
         else if (PyLong_Check(object)) {
-            int overflow;
-            long long i = PyLong_AsLongLongAndOverflow(object, &overflow);
-            if (i == -1 && PyErr_Occurred())
+            PyObject* intStrObj = PyObject_Str(object);
+            if (intStrObj == NULL)
                 return NULL;
 
-            if (overflow == 0) {
-                writer->Int64(i);
-            } else {
-                unsigned long long ui = PyLong_AsUnsignedLongLong(object);
-                if (PyErr_Occurred())
-                    return NULL;
-
-                writer->Uint64(ui);
+            Py_ssize_t size;
+            char* intStr = PyUnicode_AsUTF8AndSize(intStrObj, &size);
+            if (intStr == NULL) {
+                Py_DECREF(intStrObj);
+                return NULL;
             }
+
+            writer->RawValue(intStr, size, kNumberType);
+            Py_DECREF(intStrObj);
         }
         else if (PyFloat_Check(object)) {
             double d = PyFloat_AsDouble(object);
@@ -946,7 +951,7 @@ rapidjson_dumps_internal(
 
             if (Py_IS_NAN(d)) {
                 if (allowNan)
-                    writer->RawNumber("NaN", 3);
+                    writer->RawValue("NaN", 3, kNumberType);
                 else {
                     PyErr_SetString(PyExc_ValueError, "Out of range float values are not JSON compliant");
                     return NULL;
@@ -957,9 +962,9 @@ rapidjson_dumps_internal(
                     return NULL;
                 }
                 else if (d < 0)
-                    writer->RawNumber("-Infinity", 9);
+                    writer->RawValue("-Infinity", 9, kNumberType);
                 else
-                    writer->RawNumber("Infinity", 8);
+                    writer->RawValue("Infinity", 8, kNumberType);
             }
             else
                 writer->Double(d);

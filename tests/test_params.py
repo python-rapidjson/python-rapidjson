@@ -22,8 +22,8 @@ def test_skipkeys():
 @pytest.mark.unit
 def test_ensure_ascii():
     s = '\N{GREEK SMALL LETTER ALPHA}\N{GREEK CAPITAL LETTER OMEGA}'
-    assert rapidjson.dumps(s) == '"\\u03b1\\u03a9"'
-    assert rapidjson.dumps(s, ensure_ascii=True) == '"\\u03b1\\u03a9"'
+    assert rapidjson.dumps(s) == '"\\u03B1\\u03A9"'
+    assert rapidjson.dumps(s, ensure_ascii=True) == '"\\u03B1\\u03A9"'
     assert rapidjson.dumps(s, ensure_ascii=False) == '"%s"' % s
 
 
@@ -366,16 +366,6 @@ def test_uuid_canonical(value, cls):
 def test_uuid_hex(value, cls):
     result = rapidjson.loads('"%s"' % value, uuid_mode=rapidjson.UUID_MODE_HEX)
     assert isinstance(result, cls), type(result)
-
-
-@pytest.mark.unit
-def test_precise_float():
-    f = "1.234567890E+34"
-    f1 = "1.2345678900000002e+34"
-
-    assert rapidjson.loads(f) == float(f)
-    assert rapidjson.loads(f, precise_float=True) == float(f)
-    assert rapidjson.loads(f, precise_float=False) == float(f1)
 
 
 @pytest.mark.unit

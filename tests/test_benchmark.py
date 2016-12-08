@@ -90,16 +90,7 @@ def test_loads(contender, data, benchmark):
     benchmark(contender.loads, data)
 
 
-# Special case 1: precise vs unprecise
-
-@pytest.mark.benchmark(group='deserialize')
-@pytest.mark.parametrize('data', [doubles], ids=['256 doubles array'])
-def test_loads_float(inaccurate_floats_contender, data, benchmark):
-    data = inaccurate_floats_contender.dumps(doubles)
-    benchmark(inaccurate_floats_contender.loads, data)
-
-
-# Special case 2: load datetimes as plain strings vs datetime.xxx instances
+# Special case: load datetimes as plain strings vs datetime.xxx instances
 
 @pytest.mark.benchmark(group='deserialize')
 @pytest.mark.parametrize('data', [datetimes], ids=['256x3 datetimes'])

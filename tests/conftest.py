@@ -10,14 +10,8 @@ Contender = namedtuple('Contender', 'name,dumps,loads')
 def pytest_benchmark_group_stats(config, benchmarks, group_by):
     result = {}
     for bench in benchmarks:
-        if config.option.compare_other_engines:
-            engine, data_kind = bench.param.split('-')
-            if engine.endswith('not precise'):
-                group = result.setdefault("not precise floats: %s" % bench.group, [])
-            else:
-                group = result.setdefault("%s: %s" % (data_kind, bench.group), [])
-        else:
-            group = result.setdefault(bench.group, [])
+        engine, data_kind = bench.param.split('-')
+        group = result.setdefault("%s: %s" % (data_kind, bench.group), [])
         group.append(bench)
     return sorted(result.items())
 
@@ -28,18 +22,12 @@ def pytest_addoption(parser):
 
 
 contenders = []
-inaccurate_floats_contenders = []
 
 import rapidjson
 
 contenders.append(Contender('rapidjson',
                             rapidjson.dumps,
-                            partial(rapidjson.loads, precise_float=True)))
-
-inaccurate_floats_contenders.append(Contender('rapidjson not precise',
-                                              rapidjson.dumps,
-                                              partial(rapidjson.loads,
-                                                      precise_float=False)))
+                            rapidjson.loads))
 
 try:
     import yajl
@@ -76,10 +64,6 @@ else:
     contenders.append(Contender('ujson',
                                 ujson.dumps,
                                 partial(ujson.loads, precise_float=True)))
-    inaccurate_floats_contenders.append(Contender('ujson not precise',
-                                                  ujson.dumps,
-                                                  partial(ujson.loads,
-                                                          precise_float=False)))
 
 
 def pytest_generate_tests(metafunc):
@@ -88,16 +72,6 @@ def pytest_generate_tests(metafunc):
             metafunc.parametrize('contender', contenders, ids=attrgetter('name'))
         else:
             metafunc.parametrize('contender', contenders[:1], ids=attrgetter('name'))
-
-    if 'inaccurate_floats_contender' in metafunc.fixturenames:
-        if metafunc.config.option.compare_other_engines:
-            metafunc.parametrize('inaccurate_floats_contender',
-                                 inaccurate_floats_contenders,
-                                 ids=attrgetter('name'))
-        else:
-            metafunc.parametrize('inaccurate_floats_contender',
-                                 inaccurate_floats_contenders[:1],
-                                 ids=attrgetter('name'))
 
     if 'datetimes_loads_contender' in metafunc.fixturenames:
         metafunc.parametrize('datetimes_loads_contender',
