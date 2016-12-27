@@ -338,12 +338,9 @@ struct PyHandler {
 
             Py_DECREF(pystr);
         } else {
-            char zstr[length + 1];
+            std::string zstr(str, length);
 
-            strncpy(zstr, str, length);
-            zstr[length] = '\0';
-
-            value = PyLong_FromString(zstr, NULL, 10);
+            value = PyLong_FromString(zstr.c_str(), NULL, 10);
         }
 
         if (value == NULL) {
@@ -1060,8 +1057,7 @@ rapidjson_dumps_internal(
             memset(isoformat, 0, ISOFORMAT_LEN);
 
             const int TIMEZONE_LEN = 10;
-            char timezone[TIMEZONE_LEN];
-            memset(timezone, 0, TIMEZONE_LEN);
+            char timeZone[TIMEZONE_LEN] = { 0 };
 
             if (datetimeMode != DATETIME_MODE_ISO8601_IGNORE_TZ
                 && PyObject_HasAttrString(object, "utcoffset")) {
@@ -1080,7 +1076,7 @@ rapidjson_dumps_internal(
                         }
 
                         dtObject = asUTC;
-                        strcpy(timezone, "+00:00");
+                        strcpy(timeZone, "+00:00");
                     } else {
                         PyObject* daysObj = PyObject_GetAttrString(utcOffset, "days");
                         PyObject* secondsObj = PyObject_GetAttrString(utcOffset, "seconds");
@@ -1100,7 +1096,7 @@ rapidjson_dumps_internal(
                             int tz_hour = total_seconds / 3600;
                             int tz_min = (total_seconds % 3600) / 60;
 
-                            snprintf(timezone, TIMEZONE_LEN-1, "%c%02d:%02d", sign, tz_hour, tz_min);
+                            snprintf(timeZone, TIMEZONE_LEN-1, "%c%02d:%02d", sign, tz_hour, tz_min);
                         }
 
                         Py_XDECREF(daysObj);
@@ -1124,14 +1120,14 @@ rapidjson_dumps_internal(
                              "%04d-%02d-%02dT%02d:%02d:%02d.%06d%s",
                              year, month, day,
                              hour, min, sec, microsec,
-                             timezone);
+                             timeZone);
                 } else {
                     snprintf(isoformat,
                              ISOFORMAT_LEN-1,
                              "%04d-%02d-%02dT%02d:%02d:%02d%s",
                              year, month, day,
                              hour, min, sec,
-                             timezone);
+                             timeZone);
                 }
             } else {
                 hour = PyDateTime_TIME_GET_HOUR(dtObject);
@@ -1143,13 +1139,13 @@ rapidjson_dumps_internal(
                              ISOFORMAT_LEN-1,
                              "%02d:%02d:%02d.%06d%s",
                              hour, min, sec, microsec,
-                             timezone);
+                             timeZone);
                 } else {
                     snprintf(isoformat,
                              ISOFORMAT_LEN-1,
                              "%02d:%02d:%02d%s",
                              hour, min, sec,
-                             timezone);
+                             timeZone);
                 }
             }
             Py_XDECREF(asUTC);
