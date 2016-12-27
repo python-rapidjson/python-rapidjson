@@ -12,24 +12,17 @@ if sys.version_info < (3,):
     raise NotImplementedError("Only Python 3+ is supported.")
 
 ROOT_PATH = os.path.abspath(os.path.dirname(__file__))
+VERSION_H = os.path.join(ROOT_PATH, 'python-rapidjson/version.h')
 
-def find_version():
-    with open(os.path.join(ROOT_PATH, 'python-rapidjson/version.h')) as f:
-        data = f.read()
+with open(VERSION_H, encoding='utf-8') as f:
+    data = f.read()
 
-    v = re.search(r'PYTHON_RAPIDJSON_VERSION\s+(\S+)', data).group(1)
-    return v.replace('"', '')
+    VERSION = re.search(r'PYTHON_RAPIDJSON_VERSION\s+"([^"]+)"', data).group(1)
+    AUTHOR = re.search(r'PYTHON_RAPIDJSON_AUTHOR\s+"([^"]+)"', data).group(1)
+    EMAIL = re.search(r'PYTHON_RAPIDJSON_AUTHOR_EMAIL\s+"([^"]+)"', data).group(1)
 
-def find_author():
-    with open(os.path.join(ROOT_PATH, 'python-rapidjson/version.h')) as f:
-        data = f.read()
-
-    author = re.search(r'PYTHON_RAPIDJSON_AUTHOR\s+(\S+)', data).group(1)
-    email = re.search(r'PYTHON_RAPIDJSON_AUTHOR_EMAIL\s+(\S+)', data).group(1)
-    return (author.replace('"', ''), email.replace('"', ''))
-
-with open('README.rst') as f:
-    long_description = f.read()
+with open('README.rst', encoding='utf-8') as f:
+    LONG_DESCRIPTION = f.read()
 
 rapidjson = Extension(
     'rapidjson',
@@ -39,13 +32,13 @@ rapidjson = Extension(
 
 setup(
     name='python-rapidjson',
-    version=find_version(),
+    version=VERSION,
     description='Python wrapper around rapidjson',
-    long_description=long_description,
+    long_description=LONG_DESCRIPTION,
     license='MIT License',
     keywords='json rapidjson',
-    author=find_author()[0],
-    author_email=find_author()[1],
+    author=AUTHOR,
+    author_email=EMAIL,
     url='https://github.com/kenrobbins/python-rapidjson',
     download_url='https://github.com/kenrobbins/python-rapidjson',
     classifiers=[
