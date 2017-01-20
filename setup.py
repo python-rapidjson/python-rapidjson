@@ -39,8 +39,7 @@ setup(
     keywords='json rapidjson',
     author=AUTHOR,
     author_email=EMAIL,
-    url='https://github.com/kenrobbins/python-rapidjson',
-    download_url='https://github.com/kenrobbins/python-rapidjson',
+    url='https://github.com/python-rapidjson/python-rapidjson',
     classifiers=[
         'Development Status :: 3 - Alpha',
         'Intended Audience :: Developers',
