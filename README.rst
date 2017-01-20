@@ -28,6 +28,17 @@ it should be a drop in replacement. Basic usage looks like this:
     >>> rapidjson.loads('{"bar":"baz","foo":100}')
     {'bar': 'baz', 'foo': 100}
 
+If you want to install the development version (maybe to contribute fixes or
+enhancements) you may clone the repository:
+
+.. code-block:: bash
+
+    $ git clone --recursive https://github.com/python-rapidjson/python-rapidjson.git
+
+.. note:: The ``--recursive`` option is needed because we use a *submodule* to
+          include RapidJSON_ sources. Alternatively you can do a plain ``clone``
+          immediately followed by a ``git submodule update --init``.
+
 
 Performance
 -----------
