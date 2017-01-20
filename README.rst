@@ -1,9 +1,13 @@
-python-rapidjson
-================
-Python wrapper around RapidJSON. RapidJSON_ is an extremely fast C++ json
-serialization library.
+==================
+ python-rapidjson
+==================
 
-We do not support legacy python versions, you will need to upgrade to Python 3
+Python wrapper around RapidJSON
+===============================
+
+RapidJSON_ is an extremely fast C++ JSON serialization library.
+
+We do not support legacy Python versions, you will need to upgrade to Python 3
 to use this library.
 
 
@@ -97,6 +101,7 @@ This is particularly handy coupled with the `compare past runs`__ functionality 
    …
 
 __ http://pytest-benchmark.readthedocs.org/en/latest/comparing.html
+
 
 Incompatibility
 ---------------
