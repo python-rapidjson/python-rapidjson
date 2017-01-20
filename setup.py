@@ -1,10 +1,15 @@
 import os.path
 import re
+import sys
 
 try:
     from setuptools import setup, Extension
 except ImportError:
     from distutils.core import setup, Extension
+
+
+if sys.version_info < (3,):
+    raise NotImplementedError("Only Python 3+ is supported.")
 
 ROOT_PATH = os.path.abspath(os.path.dirname(__file__))
 
