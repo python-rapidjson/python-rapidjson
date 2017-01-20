@@ -831,22 +831,24 @@ rapidjson_loads(PyObject* self, PyObject* args, PyObject* kwargs)
 
 struct WriterContext {
     const char* key;
+    Py_ssize_t size;
     PyObject* object;
     PyObject* decref;
     unsigned level;
     bool isObject;
 
-    WriterContext(const char* k, PyObject* o, bool isO, int l, PyObject* d=NULL)
-    : key(k), object(o), decref(d), level(l), isObject(isO)
+    WriterContext(const char* k, Py_ssize_t s, PyObject* o, bool isO, int l, PyObject* d=NULL)
+    : key(k), size(s), object(o), decref(d), level(l), isObject(isO)
     {}
 };
 
 struct DictItem {
     char* key_str;
+    Py_ssize_t key_size;
     PyObject* item;
 
-    DictItem(char* k, PyObject* i)
-    : key_str(k), item(i)
+    DictItem(char* k, Py_ssize_t s, PyObject* i)
+    : key_str(k), key_size(s), item(i)
     {}
 
     bool operator<(const DictItem& other) const {
@@ -876,7 +878,7 @@ rapidjson_dumps_internal(
     std::vector<WriterContext> stack;
     stack.reserve(128);
 
-    stack.push_back(WriterContext(NULL, value, false, 0));
+    stack.push_back(WriterContext(NULL, 0, value, false, 0));
 
     while (!stack.empty()) {
         const WriterContext& current = stack.back();
@@ -893,7 +895,7 @@ rapidjson_dumps_internal(
 
         if (object == NULL) {
             if (current.key != NULL) {
-                writer->Key(current.key);
+                writer->Key(current.key, current.size);
             }
             else if (current.decref != NULL) {
                 Py_DECREF(current.decref);
@@ -985,29 +987,29 @@ rapidjson_dumps_internal(
         }
         else if (PyList_Check(object)) {
             writer->StartArray();
-            stack.push_back(WriterContext(NULL, NULL, false, currentLevel));
+            stack.push_back(WriterContext(NULL, 0, NULL, false, currentLevel));
 
             Py_ssize_t size = PyList_GET_SIZE(object);
 
             for (Py_ssize_t i = size - 1; i >= 0; --i) {
                 PyObject* item = PyList_GET_ITEM(object, i);
-                stack.push_back(WriterContext(NULL, item, false, nextLevel));
+                stack.push_back(WriterContext(NULL, 0, item, false, nextLevel));
             }
         }
         else if (PyTuple_Check(object)) {
             writer->StartArray();
-            stack.push_back(WriterContext(NULL, NULL, false, currentLevel));
+            stack.push_back(WriterContext(NULL, 0, NULL, false, currentLevel));
 
             Py_ssize_t size = PyTuple_GET_SIZE(object);
 
             for (Py_ssize_t i = size - 1; i >= 0; --i) {
                 PyObject* item = PyTuple_GET_ITEM(object, i);
-                stack.push_back(WriterContext(NULL, item, false, nextLevel));
+                stack.push_back(WriterContext(NULL, 0, item, false, nextLevel));
             }
         }
         else if (PyDict_Check(object)) {
             writer->StartObject();
-            stack.push_back(WriterContext(NULL, NULL, true, currentLevel));
+            stack.push_back(WriterContext(NULL, 0, NULL, true, currentLevel));
 
             Py_ssize_t pos = 0;
             PyObject* key;
@@ -1016,9 +1018,10 @@ rapidjson_dumps_internal(
             if (!sortKeys) {
                 while (PyDict_Next(object, &pos, &key, &item)) {
                     if (PyUnicode_Check(key)) {
-                        char* key_str = PyUnicode_AsUTF8(key);
-                        stack.push_back(WriterContext(NULL, item, false, nextLevel));
-                        stack.push_back(WriterContext(key_str, NULL, false, nextLevel));
+                        Py_ssize_t l;
+                        char* key_str = PyUnicode_AsUTF8AndSize(key, &l);
+                        stack.push_back(WriterContext(NULL, 0, item, false, nextLevel));
+                        stack.push_back(WriterContext(key_str, l, NULL, false, nextLevel));
                     }
                     else if (!skipKeys) {
                         PyErr_SetString(PyExc_TypeError, "keys must be a string");
@@ -1031,8 +1034,9 @@ rapidjson_dumps_internal(
 
                 while (PyDict_Next(object, &pos, &key, &item)) {
                     if (PyUnicode_Check(key)) {
-                        char* key_str = PyUnicode_AsUTF8(key);
-                        items.push_back(DictItem(key_str, item));
+                        Py_ssize_t l;
+                        char* key_str = PyUnicode_AsUTF8AndSize(key, &l);
+                        items.push_back(DictItem(key_str, l, item));
                     }
                     else if (!skipKeys) {
                         PyErr_SetString(PyExc_TypeError, "keys must be a string");
@@ -1044,8 +1048,8 @@ rapidjson_dumps_internal(
 
                 std::vector<DictItem>::const_iterator iter = items.begin();
                 for (; iter != items.end(); ++iter) {
-                    stack.push_back(WriterContext(NULL, iter->item, false, nextLevel));
-                    stack.push_back(WriterContext(iter->key_str, NULL, false, nextLevel));
+                    stack.push_back(WriterContext(NULL, 0, iter->item, false, nextLevel));
+                    stack.push_back(WriterContext(iter->key_str, iter->key_size, NULL, false, nextLevel));
                 }
             }
         }
@@ -1178,8 +1182,8 @@ rapidjson_dumps_internal(
                 goto error;
 
             // Decref the return value once it's done being dumped to a string.
-            stack.push_back(WriterContext(NULL, NULL, false, currentLevel, retval));
-            stack.push_back(WriterContext(NULL, retval, false, currentLevel));
+            stack.push_back(WriterContext(NULL, 0, NULL, false, currentLevel, retval));
+            stack.push_back(WriterContext(NULL, 0, retval, false, currentLevel));
         }
         else if (defaultFn) {
             PyObject* retval = PyObject_CallFunctionObjArgs(defaultFn, object, NULL);
@@ -1187,8 +1191,8 @@ rapidjson_dumps_internal(
                 goto error;
 
             // Decref the return value once it's done being dumped to a string.
-            stack.push_back(WriterContext(NULL, NULL, false, currentLevel, retval));
-            stack.push_back(WriterContext(NULL, retval, false, currentLevel));
+            stack.push_back(WriterContext(NULL, 0, NULL, false, currentLevel, retval));
+            stack.push_back(WriterContext(NULL, 0, retval, false, currentLevel));
         }
         else {
             PyObject* repr = PyObject_Repr(object);

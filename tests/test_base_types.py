@@ -7,7 +7,9 @@ import random
 @pytest.mark.unit
 @pytest.mark.parametrize(
     'value', [
-        'A', 'cruel\x00world', 1, -1, 2.3, {'foo': 'bar'}, [1, 2, 'a', 1.2, {'foo': 'bar'},],
+        'A', 'cruel\x00world', 1, -1, 2.3,
+        {'foo': 'bar', '\x00': 'issue57', 'issue57': '\x00'},
+        [1, 2, 'a', 1.2, {'foo': 'bar'},],
         sys.maxsize, sys.maxsize**2
 ])
 def test_base_values(value):
