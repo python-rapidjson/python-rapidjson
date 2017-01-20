@@ -12,7 +12,14 @@ if sys.version_info < (3,):
     raise NotImplementedError("Only Python 3+ is supported.")
 
 ROOT_PATH = os.path.abspath(os.path.dirname(__file__))
-VERSION_H = os.path.join(ROOT_PATH, 'python-rapidjson/version.h')
+
+if not os.path.isdir(os.path.join(ROOT_PATH, 'rapidjson', 'include')):
+    raise RuntimeError("RapidJSON sources not found: if you cloned the git repository,"
+                       " you should initialize the rapidjson submodule as explained in"
+                       " the README.rst; in all other cases you may want to report the"
+                       " issue.")
+
+VERSION_H = os.path.join(ROOT_PATH, 'python-rapidjson', 'version.h')
 
 with open(VERSION_H, encoding='utf-8') as f:
     data = f.read()
