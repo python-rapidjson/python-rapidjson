@@ -20,7 +20,6 @@ First install ``python-rapidjson``:
 
     $ pip install python-rapidjson
 
-
 RapidJSON tries to be compatible with the standard library ``json`` module so
 it should be a drop in replacement. Basic usage looks like this:
 
@@ -41,8 +40,8 @@ enhancements) you may clone the repository:
     $ git clone --recursive https://github.com/python-rapidjson/python-rapidjson.git
 
 .. note:: The ``--recursive`` option is needed because we use a *submodule* to
-          include RapidJSON_ sources. Alternatively you can do a plain ``clone``
-          immediately followed by a ``git submodule update --init``.
+          include RapidJSON_ sources. Alternatively you can do a plain
+          ``clone`` immediately followed by a ``git submodule update --init``.
 
 
 Performance
@@ -57,7 +56,8 @@ the benchmarks.
 
 Each number show the factor between the time taken by each contender and
 ``python-rapidjson`` (in other words, they are *normalized* against a value of
-1.0 for ``python-rapidjson``): the lower the number, the speedier the contender.
+1.0 for ``python-rapidjson``): the lower the number, the speedier the
+contender.
 
 In **bold** the winner.
 
@@ -120,9 +120,9 @@ To run these tests yourself, clone the repo and run:
 
    $ tox -e py34 -- -m benchmark --compare-other-engines
 
-Without the option ``--compare-other-engines`` it will focus only on ``RapidJSON``.
-This is particularly handy coupled with the `compare past runs`__ functionality of
-``pytest-benchmark``:
+Without the option ``--compare-other-engines`` it will focus only on
+``RapidJSON``.  This is particularly handy coupled with the `compare past
+runs`__ functionality of ``pytest-benchmark``:
 
 .. code-block::
 
@@ -137,9 +137,9 @@ This is particularly handy coupled with the `compare past runs`__ functionality 
    test_loads[rapidjson-256 Trues array] (0001)                        5.4180 (1.04)…
    …
 
-To reproduce the tables above, use the option ``--benchmark-json`` so that the the
-results are written in the specified filename the run the ``benchmark-tables.py``
-script giving that filename as the only argument:
+To reproduce the tables above, use the option ``--benchmark-json`` so that the
+the results are written in the specified filename the run the
+``benchmark-tables.py`` script giving that filename as the only argument:
 
 .. code-block::
 
@@ -160,9 +160,9 @@ not to support:
   supported by ``RapidJSON`` so it isn't a high priority. We do support
   ``indent`` kwarg that would get you nice looking JSON anyways.
 
-* Coercing keys when dumping. ``json`` will turn ``True`` into ``'True'`` if you
-  dump it out but when you load it back in it'll still be a string. We want the
-  dump and load to return the exact same objects so we have decided not to do
-  this coercing.
+* Coercing keys when dumping. ``json`` will turn ``True`` into ``'True'`` if
+  you dump it out but when you load it back in it'll still be a string. We
+  want the dump and load to return the exact same objects so we have decided
+  not to do this coercing.
 
 .. _RapidJSON: https://github.com/miloyip/rapidjson
