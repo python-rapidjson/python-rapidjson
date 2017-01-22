@@ -54,7 +54,6 @@ setup(
         'Programming Language :: C++',
         'Programming Language :: Python :: 3 :: Only',
         'Programming Language :: Python :: 3',
-        'Programming Language :: Python',
     ],
     python_requires=">=3",
     ext_modules=[rapidjson],
