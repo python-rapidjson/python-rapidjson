@@ -4,8 +4,15 @@ import sys
 
 try:
     from setuptools import setup, Extension
+    try:
+        # This is needed for some old versions of setuptools
+        import packaging.specifiers
+    except ImportError:
+        pass
+    other_setup_options = {'python_requires': '>=3'}
 except ImportError:
     from distutils.core import setup, Extension
+    other_setup_options = {}
 
 
 if sys.version_info < (3,):
@@ -56,6 +63,6 @@ setup(
         'Programming Language :: Python :: 3',
         'Programming Language :: Python',
     ],
-    python_requires=">=3",
     ext_modules=[rapidjson],
+    **other_setup_options,
 )
