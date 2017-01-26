@@ -14,6 +14,8 @@ except ImportError:
     from distutils.core import setup, Extension
     other_setup_options = {}
 
+from distutils import sysconfig
+
 
 if sys.version_info < (3,):
     raise NotImplementedError("Only Python 3+ is supported.")
@@ -38,11 +40,22 @@ with open(VERSION_H, encoding='utf-8') as f:
 with open('README.rst', encoding='utf-8') as f:
     LONG_DESCRIPTION = f.read()
 
-rapidjson = Extension(
-    'rapidjson',
-    sources=['./python-rapidjson/rapidjson.cpp'],
-    include_dirs=['./rapidjson/include'],
-)
+extension_options = {
+    'sources': ['./python-rapidjson/rapidjson.cpp'],
+    'include_dirs': ['./rapidjson/include'],
+}
+
+if 'gcc' in sysconfig.get_config_var('CC'):
+    cflags = sysconfig.get_config_var('CFLAGS')
+    # Avoid warning about invalid flag for C++
+    if '-Wstrict-prototypes' in cflags:
+        cflags = cflags.replace('-Wstrict-prototypes', '')
+        sysconfig.get_config_vars()['CFLAGS'] = cflags
+
+    # Add -pedantic, so we get an error when using non-standard features
+    extension_options['extra_compile_args'] = ['-pedantic', '-Werror']
+
+rapidjson = Extension('rapidjson', **extension_options)
 
 setup(
     name='python-rapidjson',
