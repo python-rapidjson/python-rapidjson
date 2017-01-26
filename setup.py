@@ -40,9 +40,18 @@ with open(VERSION_H, encoding='utf-8') as f:
 with open('README.rst', encoding='utf-8') as f:
     LONG_DESCRIPTION = f.read()
 
+
+rj_include_dir = './rapidjson/include'
+
+for idx, arg in enumerate(sys.argv[:]):
+    if arg.startswith('--rj-include-dir='):
+        sys.argv.pop(idx)
+        rj_include_dir = arg.split('=', 1)[1]
+        break
+
 extension_options = {
     'sources': ['./python-rapidjson/rapidjson.cpp'],
-    'include_dirs': ['./rapidjson/include'],
+    'include_dirs': [rj_include_dir],
 }
 
 if 'gcc' in sysconfig.get_config_var('CC'):

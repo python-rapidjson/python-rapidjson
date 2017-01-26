@@ -47,6 +47,14 @@ enhancements) you may clone the repository:
           include RapidJSON_ sources. Alternatively you can do a plain
           ``clone`` immediately followed by a ``git submodule update --init``.
 
+          Alternatively, if you already have (a *compatible* version of)
+          RapidJSON includes around, you can compile the module specifying
+          their location with the option ``--rj-include-dir``, for example:
+
+          .. code-block:: shell
+
+             $ python3 setup.py build --rj-include-dir=/usr/include/rapidjson
+
 
 Performance
 -----------
