@@ -10,6 +10,10 @@ RapidJSON_ is an extremely fast C++ JSON serialization library.
 We do not support legacy Python versions, you will need to upgrade to Python 3
 to use this library.
 
+Latest version documentation is automatically rendered by `Read the Docs`__.
+
+__ http://python-rapidjson.readthedocs.io/en/latest/
+
 
 Getting Started
 ---------------
