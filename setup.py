@@ -89,5 +89,5 @@ setup(
         'Programming Language :: Python',
     ],
     ext_modules=[rapidjson],
-    **other_setup_options,
+    **other_setup_options
 )
