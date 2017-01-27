@@ -61,8 +61,8 @@ if 'gcc' in sysconfig.get_config_var('CC'):
         cflags = cflags.replace('-Wstrict-prototypes', '')
         sysconfig.get_config_vars()['CFLAGS'] = cflags
 
-    # Add -pedantic, so we get an error when using non-standard features
-    extension_options['extra_compile_args'] = ['-pedantic', '-Werror']
+    # Add -pedantic, so we get a warning when using non-standard features
+    extension_options['extra_compile_args'] = ['-pedantic']
 
 rapidjson = Extension('rapidjson', **extension_options)
 
