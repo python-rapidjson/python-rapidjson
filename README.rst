@@ -14,6 +14,14 @@ Latest version documentation is automatically rendered by `Read the Docs`__.
 
 __ http://python-rapidjson.readthedocs.io/en/latest/
 
+.. image:: https://travis-ci.org/python-rapidjson/python-rapidjson.svg?branch=master
+   :target: https://travis-ci.org/python-rapidjson/python-rapidjson
+   :alt: Build status
+
+.. image:: https://readthedocs.org/projects/python-rapidjson/badge/?version=latest
+   :target: http://python-rapidjson.readthedocs.io/en/latest/?badge=latest
+   :alt: Documentation status
+
 
 Getting Started
 ---------------
