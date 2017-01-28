@@ -393,3 +393,50 @@ def test_object_hook():
             object_hook=hook)
     assert isinstance(res, Foo)
     assert res.foo == "bar"
+
+
+@pytest.mark.unit
+@pytest.mark.parametrize(
+    'posargs,kwargs', (
+        ( (), {} ),
+        ( (None,), {} ),
+        ( (True,), {} ),
+        ( ('{}',), { 'this_keyword_arg_shall_never_exist': True } ),
+        ( ('[]',), { 'object_hook': True } ),
+        ( ('[]',), { 'datetime_mode': 'no' } ),
+        ( ('[]',), { 'datetime_mode': -100 } ),
+        ( ('[]',), { 'datetime_mode': 100 } ),
+        ( ('[]',), { 'uuid_mode': 'no' } ),
+        ( ('[]',), { 'uuid_mode': -100 } ),
+        ( ('[]',), { 'uuid_mode': 100 } ),
+    ))
+def test_invalid_loads_params(posargs, kwargs):
+    try:
+        rapidjson.loads(*posargs, **kwargs)
+    except (TypeError, ValueError) as e:
+        pass
+    else:
+        assert False, "Expected either a TypeError or a ValueError"
+
+
+@pytest.mark.unit
+@pytest.mark.parametrize(
+    'posargs,kwargs', (
+        ( (), {} ),
+        ( ([],), { 'this_keyword_arg_shall_never_exist': True } ),
+        ( ([],), { 'default': True } ),
+        ( ([],), { 'indent': -1 }),
+        ( ([],), { 'datetime_mode': 'no' } ),
+        ( ([],), { 'datetime_mode': -100 } ),
+        ( ([],), { 'datetime_mode': 100 } ),
+        ( ([],), { 'uuid_mode': 'no' } ),
+        ( ([],), { 'uuid_mode': -100 } ),
+        ( ([],), { 'uuid_mode': 100 } ),
+    ))
+def test_invalid_dumps_params(posargs, kwargs):
+    try:
+        rapidjson.dumps(*posargs, **kwargs)
+    except (TypeError, ValueError) as e:
+        pass
+    else:
+        assert False, "Expected either a TypeError or a ValueError"
