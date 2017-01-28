@@ -742,6 +742,7 @@ rapidjson_loads(PyObject* self, PyObject* args, PyObject* kwargs)
                                      &allowNan,
                                      &datetimeModeObj,
                                      &uuidModeObj))
+        return NULL;
 
     if (objectHook && !PyCallable_Check(objectHook)) {
         PyErr_SetString(PyExc_TypeError, "object_hook is not callable");
