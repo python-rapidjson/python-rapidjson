@@ -8,7 +8,7 @@ import rapidjson
 
 @pytest.mark.unit
 def test_skipkeys():
-    o = {True: False, 1: 1, 1.1: 1.1, (1,2): "foo", b"asdf": 1, None: None}
+    o = {True: False, -1: 1, 1.1: 1.1, (1,2): "foo", b"asdf": 1, None: None}
 
     with pytest.raises(TypeError):
         rapidjson.dumps(o)
