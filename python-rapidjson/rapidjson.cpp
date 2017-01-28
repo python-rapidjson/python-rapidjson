@@ -766,18 +766,30 @@ rapidjson_loads(PyObject* self, PyObject* args, PyObject* kwargs)
         return NULL;
     }
 
-    if (datetimeModeObj && PyLong_Check(datetimeModeObj)) {
-        datetimeMode = (DatetimeMode) PyLong_AsLong(datetimeModeObj);
-        if (datetimeMode < DATETIME_MODE_NONE || datetimeMode > DATETIME_MODE_ISO8601_UTC) {
-            PyErr_SetString(PyExc_ValueError, "Invalid date_time");
+    if (datetimeModeObj) {
+        if (PyLong_Check(datetimeModeObj)) {
+            datetimeMode = (DatetimeMode) PyLong_AsLong(datetimeModeObj);
+            if (datetimeMode < DATETIME_MODE_NONE || datetimeMode > DATETIME_MODE_ISO8601_UTC) {
+                PyErr_SetString(PyExc_ValueError, "Invalid datetime_mode");
+                return NULL;
+            }
+        }
+        else {
+            PyErr_SetString(PyExc_TypeError, "datetime_mode must be an integer value");
             return NULL;
         }
     }
 
-    if (uuidModeObj && PyLong_Check(uuidModeObj)) {
-        uuidMode = (UuidMode) PyLong_AsLong(uuidModeObj);
-        if (uuidMode < UUID_MODE_NONE || uuidMode > UUID_MODE_HEX) {
-            PyErr_SetString(PyExc_ValueError, "Invalid uuid_time");
+    if (uuidModeObj) {
+        if (PyLong_Check(uuidModeObj)) {
+            uuidMode = (UuidMode) PyLong_AsLong(uuidModeObj);
+            if (uuidMode < UUID_MODE_NONE || uuidMode > UUID_MODE_HEX) {
+                PyErr_SetString(PyExc_ValueError, "Invalid uuid_mode");
+                return NULL;
+            }
+        }
+        else {
+            PyErr_SetString(PyExc_TypeError, "uuid_mode must be an integer value");
             return NULL;
         }
     }
@@ -1289,18 +1301,30 @@ rapidjson_dumps(PyObject* self, PyObject* args, PyObject* kwargs)
         }
     }
 
-    if (datetimeModeObj && PyLong_Check(datetimeModeObj)) {
-        datetimeMode = (DatetimeMode) PyLong_AsLong(datetimeModeObj);
-        if (datetimeMode < DATETIME_MODE_NONE || datetimeMode > DATETIME_MODE_ISO8601_UTC) {
-            PyErr_SetString(PyExc_ValueError, "Invalid date_time");
+    if (datetimeModeObj) {
+        if (PyLong_Check(datetimeModeObj)) {
+            datetimeMode = (DatetimeMode) PyLong_AsLong(datetimeModeObj);
+            if (datetimeMode < DATETIME_MODE_NONE || datetimeMode > DATETIME_MODE_ISO8601_UTC) {
+                PyErr_SetString(PyExc_ValueError, "Invalid datetime_mode");
+                return NULL;
+            }
+        }
+        else {
+            PyErr_SetString(PyExc_TypeError, "datetime_mode must be an integer value");
             return NULL;
         }
     }
 
-    if (uuidModeObj && PyLong_Check(uuidModeObj)) {
-        uuidMode = (UuidMode) PyLong_AsLong(uuidModeObj);
-        if (uuidMode < UUID_MODE_NONE || uuidMode > UUID_MODE_HEX) {
-            PyErr_SetString(PyExc_ValueError, "Invalid uuid_time");
+    if (uuidModeObj) {
+        if (PyLong_Check(uuidModeObj)) {
+            uuidMode = (UuidMode) PyLong_AsLong(uuidModeObj);
+            if (uuidMode < UUID_MODE_NONE || uuidMode > UUID_MODE_HEX) {
+                PyErr_SetString(PyExc_ValueError, "Invalid uuid_mode");
+                return NULL;
+            }
+        }
+        else {
+            PyErr_SetString(PyExc_TypeError, "uuid_mode must be an integer value");
             return NULL;
         }
     }
