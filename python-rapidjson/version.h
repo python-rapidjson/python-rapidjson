@@ -1,3 +1,3 @@
-#define PYTHON_RAPIDJSON_VERSION "0.0.9"
+#define PYTHON_RAPIDJSON_VERSION "0.0.10"
 #define PYTHON_RAPIDJSON_AUTHOR "Ken Robbins"
 #define PYTHON_RAPIDJSON_AUTHOR_EMAIL "ken@kenrobbins.com"

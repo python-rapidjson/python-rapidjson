@@ -1,7 +1,7 @@
 Changes
 -------
 
-0.0.10 (unreleased)
+0.0.10 (2017-03-02)
 ~~~~~~~~~~~~~~~~~~~
 
 * Fix source distribution to contain all required stuff (`PR #64`__)
