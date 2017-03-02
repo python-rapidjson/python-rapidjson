@@ -1,6 +1,14 @@
 Changes
 -------
 
+0.0.10 (unreleased)
+~~~~~~~~~~~~~~~~~~~
+
+* Fix source distribution to contain all required stuff (`PR #64`__)
+
+  __ https://github.com/python-rapidjson/python-rapidjson/pull/64
+
+
 0.0.9 (2017-03-02)
 ~~~~~~~~~~~~~~~~~~
 
