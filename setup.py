@@ -40,6 +40,8 @@ with open(VERSION_H, encoding='utf-8') as f:
 with open('README.rst', encoding='utf-8') as f:
     LONG_DESCRIPTION = f.read()
 
+with open('CHANGES.rst', encoding='utf-8') as f:
+    CHANGES = f.read()
 
 rj_include_dir = './rapidjson/include'
 
@@ -70,7 +72,7 @@ setup(
     name='python-rapidjson',
     version=VERSION,
     description='Python wrapper around rapidjson',
-    long_description=LONG_DESCRIPTION,
+    long_description=LONG_DESCRIPTION + '\n\n' + CHANGES,
     license='MIT License',
     keywords='json rapidjson',
     author=AUTHOR,
