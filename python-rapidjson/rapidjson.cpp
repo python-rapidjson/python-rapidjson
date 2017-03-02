@@ -1454,5 +1454,7 @@ PyInit_rapidjson()
         "__author__",
         PYTHON_RAPIDJSON_AUTHOR " <" PYTHON_RAPIDJSON_AUTHOR_EMAIL ">");
 
+    PyModule_AddStringConstant(module, "__rapidjson_version__", RAPIDJSON_VERSION_STRING);
+
     return module;
 }
