@@ -1,9 +1,13 @@
-include LICENSE
-include MANIFEST.in
-include README.rst
-include CHANGES.rst
-include setup.py
-recursive-include python-rapidjson *.cpp *.h
-include rapidjson readme.md license.txt
+include .dir-locals.el
+include LICENSE MANIFEST.in *.cfg *.ini *.py *.rst *.txt
+include python-rapidjson/*.cpp python-rapidjson/*.h
+include tests/*.py
+
+exclude .gitmodules
+
+recursive-include docs Makefile *.png *.rst *.bat *.sh *.css *.py
+prune docs/_build
+
+prune rapidjson
+include rapidjson/readme.md rapidjson/license.txt
 recursive-include rapidjson/include *.h
-prune rapidjson/doc
