@@ -4,13 +4,17 @@
 
 .. default-domain:: py
 
+.. data:: __author__
+
+   The author of the module.
+
 .. data:: __version__
 
    The version of the module.
 
-.. data:: __author__
+.. data:: __rapidjson_version__
 
-   The author of the module.
+   The version of the RapidJSON_ library this module is built with.
 
 .. data:: DATETIME_MODE_NONE = 0
 
@@ -365,4 +369,5 @@
 
 
 .. _ISO 8601: https://en.wikipedia.org/wiki/ISO_8601
+.. _RapidJSON: https://github.com/miloyip/rapidjson
 .. _UTC: https://en.wikipedia.org/wiki/Coordinated_Universal_Time
