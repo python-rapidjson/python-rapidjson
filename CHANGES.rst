@@ -1,7 +1,7 @@
 Changes
 -------
 
-0.0.9 (unreleased)
+0.0.9 (2017-03-02)
 ~~~~~~~~~~~~~~~~~~
 
 * CI testing on GitHub
