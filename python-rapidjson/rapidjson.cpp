@@ -147,12 +147,11 @@ struct PyHandler {
         stack.pop_back();
 
         PyObject* value = PyObject_CallFunctionObjArgs(objectHook, dict, NULL);
-        // In case the dict is returned from the function.
-        if (value == dict)
-            Py_INCREF(value);
 
         if (value == NULL)
             return false;
+
+        Py_INCREF(value);
 
         if (!stack.empty()) {
             const HandlerContext& current = stack.back();
@@ -166,10 +165,11 @@ struct PyHandler {
 
                 int rc = PyDict_SetItem(current.object, key, value);
                 Py_DECREF(key);
-                Py_DECREF(value);
 
-                if (rc == -1)
+                if (rc == -1) {
+                    Py_DECREF(value);
                     return false;
+                }
             }
             else {
                 Py_ssize_t listLen = PyList_GET_SIZE(current.object);
@@ -186,7 +186,7 @@ struct PyHandler {
             root = value;
         }
 
-        Py_DECREF(dict);
+        Py_DECREF(value);
         return true;
     }
 
