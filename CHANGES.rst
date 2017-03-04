@@ -1,6 +1,15 @@
 Changes
 -------
 
+next (unreleased)
+~~~~~~~~~~~~~~~~~
+
+* Fix a couple of refcount handling glitches, hopefully targeting `issue
+  48`__.
+
+  __ https://github.com/python-rapidjson/python-rapidjson/issues/48
+
+
 0.0.10 (2017-03-02)
 ~~~~~~~~~~~~~~~~~~~
 
