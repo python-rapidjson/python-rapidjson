@@ -104,7 +104,6 @@ struct PyHandler {
 
     bool HandleSimpleType(PyObject* value) {
         if (!Handle(value)) {
-            Py_DECREF(value);
             return false;
         }
 
@@ -126,7 +125,6 @@ struct PyHandler {
         }
 
         if (!Handle(dict)) {
-            Py_DECREF(dict);
             return false;
         }
 
@@ -199,7 +197,6 @@ struct PyHandler {
         }
 
         if (!Handle(list)) {
-            Py_DECREF(list);
             return false;
         }
 
