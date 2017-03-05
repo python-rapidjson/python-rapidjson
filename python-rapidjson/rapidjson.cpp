@@ -23,6 +23,25 @@ static PyObject* rapidjson_timezone_type = NULL;
 static PyObject* rapidjson_timezone_utc = NULL;
 static PyObject* rapidjson_uuid_type = NULL;
 
+
+/* These are the names of oftenly used methods or literal values, interned in the
+   module initialization function, to avoid repeated creation/destruction of
+   PyUnicode values from plain C strings.
+
+   We cannot use _Py_IDENTIFIER() because that upsets the GNU C++ compiler in
+   -pedantic mode. */
+
+static PyObject* astimezone_name = NULL;
+static PyObject* utcoffset_name = NULL;
+static PyObject* total_seconds_name = NULL;
+static PyObject* timestamp_name = NULL;
+static PyObject* hex_name = NULL;
+
+static PyObject* nan_string_value = NULL;
+static PyObject* plus_inf_string_value = NULL;
+static PyObject* minus_inf_string_value = NULL;
+
+
 struct HandlerContext {
     PyObject* object;
     const char* key;
@@ -220,17 +239,11 @@ struct PyHandler {
             return false;
         }
 
-        PyObject* str = PyUnicode_FromStringAndSize("nan", 3);
-        if (str == NULL)
-            return false;
-
         PyObject* value;
         if (!useDecimal)
-            value = PyFloat_FromString(str);
+            value = PyFloat_FromString(nan_string_value);
         else
-            value = PyObject_CallFunctionObjArgs(rapidjson_decimal_type, str, NULL);
-
-        Py_DECREF(str);
+            value = PyObject_CallFunctionObjArgs(rapidjson_decimal_type, nan_string_value, NULL);
 
         if (value == NULL)
             return false;
@@ -244,23 +257,14 @@ struct PyHandler {
             return false;
         }
 
-        PyObject* str;
-
-        if (minus)
-            str = PyUnicode_FromStringAndSize("-Infinity", 9);
-        else
-            str = PyUnicode_FromStringAndSize("Infinity", 8);
-
-        if (str == NULL)
-            return false;
-
         PyObject* value;
         if (!useDecimal)
-            value = PyFloat_FromString(str);
+            value = PyFloat_FromString(minus ? minus_inf_string_value : plus_inf_string_value);
         else
-            value = PyObject_CallFunctionObjArgs(rapidjson_decimal_type, str, NULL);
-
-        Py_DECREF(str);
+            value = PyObject_CallFunctionObjArgs(rapidjson_decimal_type,
+                                                 minus
+                                                 ? minus_inf_string_value
+                                                 : plus_inf_string_value, NULL);
 
         if (value == NULL)
             return false;
@@ -548,8 +552,8 @@ struct PyHandler {
                         Py_DECREF(tz);
 
                         if (value != NULL && datetimeMode == DATETIME_MODE_ISO8601_UTC) {
-                            PyObject* asUTC = PyObject_CallMethod(value, "astimezone", "O",
-                                                                  rapidjson_timezone_utc);
+                            PyObject* asUTC = PyObject_CallMethodObjArgs(
+                                value, astimezone_name, rapidjson_timezone_utc, NULL);
 
                             Py_DECREF(value);
 
@@ -632,8 +636,8 @@ struct PyHandler {
                         Py_DECREF(tz);
 
                         if (value != NULL && datetimeMode == DATETIME_MODE_ISO8601_UTC) {
-                            PyObject* asUTC = PyObject_CallMethod(value, "astimezone", "O",
-                                                                  rapidjson_timezone_utc);
+                            PyObject* asUTC = PyObject_CallMethodObjArgs(
+                                value, astimezone_name, rapidjson_timezone_utc, NULL);
 
                             Py_DECREF(value);
 
@@ -1074,15 +1078,16 @@ rapidjson_dumps_internal(
             char timeZone[TIMEZONE_LEN] = { 0 };
 
             if (datetimeMode != DATETIME_MODE_ISO8601_IGNORE_TZ
-                && PyObject_HasAttrString(object, "utcoffset")) {
-                PyObject* utcOffset = PyObject_CallMethod(object, "utcoffset", NULL);
+                && PyObject_HasAttr(object, utcoffset_name)) {
+                PyObject* utcOffset = PyObject_CallMethodObjArgs(object, utcoffset_name, NULL);
 
                 if (!utcOffset)
                     goto error;
 
                 if (utcOffset != Py_None) {
                     if (datetimeMode == DATETIME_MODE_ISO8601_UTC && PyObject_IsTrue(utcOffset)) {
-                        asUTC = PyObject_CallMethod(object, "astimezone", "O", rapidjson_timezone_utc);
+                        asUTC = PyObject_CallMethodObjArgs(object, astimezone_name,
+                                                           rapidjson_timezone_utc, NULL);
 
                         if (asUTC == NULL) {
                             Py_DECREF(utcOffset);
@@ -1092,29 +1097,35 @@ rapidjson_dumps_internal(
                         dtObject = asUTC;
                         strcpy(timeZone, "+00:00");
                     } else {
-                        PyObject* daysObj = PyObject_GetAttrString(utcOffset, "days");
-                        PyObject* secondsObj = PyObject_GetAttrString(utcOffset, "seconds");
+                        int seconds_from_utc = 0;
 
-                        if (daysObj && secondsObj) {
-                            int days = PyLong_AsLong(daysObj);
-                            int seconds = PyLong_AsLong(secondsObj);
+                        if (PyObject_IsTrue(utcOffset)) {
+                            PyObject* tsObj = PyObject_CallMethodObjArgs(utcOffset,
+                                                                         total_seconds_name,
+                                                                         NULL);
 
-                            int total_seconds = days * 24 * 3600 + seconds;
-
-                            char sign = '+';
-                            if (total_seconds < 0) {
-                                sign = '-';
-                                total_seconds = -total_seconds;
+                            if (tsObj == NULL) {
+                                Py_DECREF(utcOffset);
+                                goto error;
                             }
 
-                            int tz_hour = total_seconds / 3600;
-                            int tz_min = (total_seconds % 3600) / 60;
+                            seconds_from_utc = PyFloat_AsDouble(tsObj);
 
-                            snprintf(timeZone, TIMEZONE_LEN-1, "%c%02d:%02d", sign, tz_hour, tz_min);
+                            Py_DECREF(tsObj);
                         }
 
-                        Py_XDECREF(daysObj);
-                        Py_XDECREF(secondsObj);
+                        char sign = '+';
+
+                        if (seconds_from_utc < 0) {
+                            sign = '-';
+                            seconds_from_utc = -seconds_from_utc;
+                        }
+
+                        int tz_hour = seconds_from_utc / 3600;
+                        int tz_min = (seconds_from_utc % 3600) / 60;
+
+                        snprintf(timeZone, TIMEZONE_LEN-1, "%c%02d:%02d",
+                                 sign, tz_hour, tz_min);
                     }
                 }
                 Py_DECREF(utcOffset);
@@ -1183,7 +1194,7 @@ rapidjson_dumps_internal(
             if (uuidMode == UUID_MODE_CANONICAL)
                 retval = PyObject_Str(object);
             else
-                retval = PyObject_GetAttrString(object, "hex");
+                retval = PyObject_GetAttr(object, hex_name);
             if (retval == NULL)
                 goto error;
 
@@ -1373,6 +1384,38 @@ static PyModuleDef rapidjson_module = {
 PyMODINIT_FUNC
 PyInit_rapidjson()
 {
+    astimezone_name = PyUnicode_InternFromString("astimezone");
+    if (astimezone_name == NULL)
+        return NULL;
+
+    utcoffset_name = PyUnicode_InternFromString("utcoffset");
+    if (utcoffset_name == NULL)
+        return NULL;
+
+    total_seconds_name = PyUnicode_InternFromString("total_seconds");
+    if (total_seconds_name == NULL)
+        return NULL;
+
+    timestamp_name = PyUnicode_InternFromString("timestamp");
+    if (timestamp_name == NULL)
+        return NULL;
+
+    hex_name = PyUnicode_InternFromString("hex");
+    if (hex_name == NULL)
+        return NULL;
+
+    nan_string_value = PyUnicode_InternFromString("nan");
+    if (nan_string_value == NULL)
+        return NULL;
+
+    plus_inf_string_value = PyUnicode_InternFromString("+Infinity");
+    if (plus_inf_string_value == NULL)
+        return NULL;
+
+    minus_inf_string_value = PyUnicode_InternFromString("-Infinity");
+    if (minus_inf_string_value == NULL)
+        return NULL;
+
     PyDateTime_IMPORT;
 
     PyObject* datetimeModule = PyImport_ImportModule("datetime");
