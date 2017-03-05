@@ -1,7 +1,8 @@
 import datetime
-import pytest
-import sys
 import random
+import sys
+
+import pytest
 
 
 composite_object = {

@@ -23,11 +23,11 @@ def pytest_addoption(parser):
 
 contenders = []
 
-import rapidjson
+import rapidjson as rj
 
 contenders.append(Contender('rapidjson',
-                            rapidjson.dumps,
-                            rapidjson.loads))
+                            rj.dumps,
+                            rj.loads))
 
 try:
     import yajl
@@ -75,7 +75,7 @@ def pytest_generate_tests(metafunc):
 
     if 'datetimes_loads_contender' in metafunc.fixturenames:
         metafunc.parametrize('datetimes_loads_contender',
-                             [rapidjson.loads,
-                              partial(rapidjson.loads,
-                                      datetime_mode=rapidjson.DATETIME_MODE_ISO8601)],
+                             [rj.loads,
+                              partial(rj.loads,
+                                      datetime_mode=rj.DATETIME_MODE_ISO8601)],
                              ids=['Ignore datetimes', 'Parse datetimes'])

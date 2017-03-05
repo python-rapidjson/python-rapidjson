@@ -1,7 +1,9 @@
-import pytest
-import sys
-import rapidjson
 import random
+import sys
+
+import pytest
+
+import rapidjson as rj
 
 
 @pytest.mark.unit
@@ -13,14 +15,14 @@ import random
         sys.maxsize, sys.maxsize**2
 ])
 def test_base_values(value):
-    dumped = rapidjson.dumps(value)
-    loaded = rapidjson.loads(dumped)
+    dumped = rj.dumps(value)
+    loaded = rj.loads(dumped)
     assert loaded == value and type(loaded) is type(value)
 
 
 @pytest.mark.unit
 def test_bytes_value():
-    dumped = rapidjson.dumps(b'cruel\x00world')
+    dumped = rj.dumps(b'cruel\x00world')
     assert dumped == r'"cruel\u0000world"'
 
 
@@ -39,8 +41,8 @@ def test_larger_structure():
         'float': 100999.123456
     }
 
-    dumped = rapidjson.dumps(value)
-    loaded = rapidjson.loads(dumped)
+    dumped = rj.dumps(value)
+    loaded = rj.loads(dumped)
 
     assert loaded == value
 
@@ -53,7 +55,7 @@ def test_object_hook():
 
         return dct
 
-    result = rapidjson.loads(
+    result = rj.loads(
         '{"__complex__": true, "real": 1, "imag": 2}',
         object_hook=as_complex
     )
@@ -69,7 +71,7 @@ def test_default():
 
         raise TypeError(repr(obj) + " is not JSON serializable")
 
-    result = rapidjson.dumps(2 + 1j, default=encode_complex)
+    result = rj.dumps(2 + 1j, default=encode_complex)
     assert result == '[2.0,1.0]'
 
 
@@ -77,8 +79,8 @@ def test_default():
 def test_doubles():
     for x in range(100000):
         d = sys.maxsize * random.random()
-        dumped = rapidjson.dumps(d)
-        loaded = rapidjson.loads(dumped)
+        dumped = rj.dumps(d)
+        loaded = rj.loads(dumped)
         assert loaded == d
 
 
@@ -88,8 +90,8 @@ def test_unicode():
    chinese='本站所提供的資料和服務都不收費，因此網站所需要的資金全來自廣告及捐款。若您願意捐款補助'
 
    for text in [arabic, chinese]:
-       dumped = rapidjson.dumps(text)
-       loaded = rapidjson.loads(dumped)
+       dumped = rj.dumps(text)
+       loaded = rj.loads(dumped)
        assert text == loaded
 
 
@@ -98,26 +100,26 @@ def test_serialize_sets():
     def default_iterable(obj):
         return list(obj)
 
-    rapidjson.dumps([set()], default=default_iterable)
+    rj.dumps([set()], default=default_iterable)
 
     with pytest.raises(TypeError):
-        rapidjson.dumps([set()])
+        rj.dumps([set()])
 
 
 @pytest.mark.unit
 def test_constants():
     for c in [None, True, False]:
-        assert rapidjson.loads(rapidjson.dumps(c)) is c
-        assert rapidjson.loads(rapidjson.dumps([c]))[0] is c
-        assert rapidjson.loads(rapidjson.dumps({'a': c}))['a'] is c
+        assert rj.loads(rj.dumps(c)) is c
+        assert rj.loads(rj.dumps([c]))[0] is c
+        assert rj.loads(rj.dumps({'a': c}))['a'] is c
 
 
 # TODO: Figure out what we want to do here
 bad_tests = """
 @pytest.mark.unit
 def test_true_false():
-    dumped1 = sorted(rapidjson.dumps({True: False, False: True}))
-    dumped2 = sorted(rapidjson.dumps({
+    dumped1 = sorted(rj.dumps({True: False, False: True}))
+    dumped2 = sorted(rj.dumps({
         2: 3.0,
         4.0: long_type(5),
         False: 1,
