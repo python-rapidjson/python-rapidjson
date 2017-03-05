@@ -16,40 +16,40 @@
 
    The version of the RapidJSON_ library this module is built with.
 
-.. data:: DATETIME_MODE_NONE = 0
+.. data:: DATETIME_MODE_NONE
 
    This is the default ``datetime_mode``: *neither* :class:`datetime` *nor*
    :class:`date` instances are recognized by :func:`dumps` and :func:`loads`.
 
-.. data:: DATETIME_MODE_ISO8601 = 1
+.. data:: DATETIME_MODE_ISO8601
 
    In this ``datetime_mode`` mode :func:`dumps` and :func:`loads` handle
    :class:`datetime` *and* :class:`date` instances representing those values
    using the `ISO 8601`_ format.
 
-.. data:: DATETIME_MODE_ISO8601_IGNORE_TZ = 2
+.. data:: DATETIME_MODE_ISO8601_IGNORE_TZ
 
    This is like :data:`DATETIME_MODE_ISO8601` except that the value's timezone
    is ignored.
 
-.. data:: DATETIME_MODE_ISO8601_UTC = 3
+.. data:: DATETIME_MODE_ISO8601_UTC
 
    This is like :data:`DATETIME_MODE_ISO8601` except that the times are always
    *shifted* to the UTC_ timezone.
 
-.. data:: UUID_MODE_NONE = 0
+.. data:: UUID_MODE_NONE
 
    This is the default ``uuid_mode``: :class:`UUID` instances are *not*
    recognized by :func:`dumps` and :func:`loads`.
 
-.. data:: UUID_MODE_CANONICAL = 1
+.. data:: UUID_MODE_CANONICAL
 
    In this ``uuid_mode``, :func:`loads` recognizes string values containing
    the ``xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx`` canonical representation as
    :class:`UUID` instances; :func:`dumps` emits same kind of representation
    for :class:`UUID` instances as a string value.
 
-.. data:: UUID_MODE_HEX = 2
+.. data:: UUID_MODE_HEX
 
    In this ``uuid_mode`` :func:`loads` recognizes string values containing
    exactly 32 hex digits *or* the ``xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx``
