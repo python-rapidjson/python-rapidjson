@@ -18,41 +18,43 @@
 
 .. data:: DATETIME_MODE_NONE = 0
 
-   This is the default ``datetime_mode``: *neither* :class:`datetime` *nor* :class:`date`
-   instances are recognized by :func:`dumps` and :func:`loads`.
+   This is the default ``datetime_mode``: *neither* :class:`datetime` *nor*
+   :class:`date` instances are recognized by :func:`dumps` and :func:`loads`.
 
 .. data:: DATETIME_MODE_ISO8601 = 1
 
-   In this ``datetime_mode`` mode :func:`dumps` and :func:`loads` handle :class:`datetime`
-   *and* :class:`date` instances representing those values using the `ISO 8601`_ format.
+   In this ``datetime_mode`` mode :func:`dumps` and :func:`loads` handle
+   :class:`datetime` *and* :class:`date` instances representing those values
+   using the `ISO 8601`_ format.
 
 .. data:: DATETIME_MODE_ISO8601_IGNORE_TZ = 2
 
-   This is like :data:`DATETIME_MODE_ISO8601` except that the value's timezone is ignored.
+   This is like :data:`DATETIME_MODE_ISO8601` except that the value's timezone
+   is ignored.
 
 .. data:: DATETIME_MODE_ISO8601_UTC = 3
 
-   This is like :data:`DATETIME_MODE_ISO8601` except that the times are always *shifted* to
-   the UTC_ timezone.
+   This is like :data:`DATETIME_MODE_ISO8601` except that the times are always
+   *shifted* to the UTC_ timezone.
 
 .. data:: UUID_MODE_NONE = 0
 
-   This is the default ``uuid_mode``: :class:`UUID` instances are *not* recognized by
-   :func:`dumps` and :func:`loads`.
+   This is the default ``uuid_mode``: :class:`UUID` instances are *not*
+   recognized by :func:`dumps` and :func:`loads`.
 
 .. data:: UUID_MODE_CANONICAL = 1
 
-   In this ``uuid_mode``, :func:`loads` recognizes string values containing the
-   ``xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx`` canonical representation as :class:`UUID`
-   instances; :func:`dumps` emits same kind of representation for :class:`UUID` instances as a
-   string value.
+   In this ``uuid_mode``, :func:`loads` recognizes string values containing
+   the ``xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx`` canonical representation as
+   :class:`UUID` instances; :func:`dumps` emits same kind of representation
+   for :class:`UUID` instances as a string value.
 
 .. data:: UUID_MODE_HEX = 2
 
-   In this ``uuid_mode`` :func:`loads` recognizes string values containing exactly 32 hex
-   digits *or* the ``xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx`` canonical representation as
-   :class:`UUID` instances; :func:`dumps` emits the 32 hex digits of :class:`UUID` instances as
-   a string value.
+   In this ``uuid_mode`` :func:`loads` recognizes string values containing
+   exactly 32 hex digits *or* the ``xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx``
+   canonical representation as :class:`UUID` instances; :func:`dumps` emits
+   the 32 hex digits of :class:`UUID` instances as a string value.
 
 .. testsetup::
 
@@ -65,24 +67,26 @@
                     max_recursion_depth=2048, datetime_mode=None, uuid_mode=None)
 
    :param bool skipkeys: whether skip invalid :class:`dict` keys
-   :param bool ensure_ascii: whether the output should contain only ASCII characters
+   :param bool ensure_ascii: whether the output should contain only ASCII
+                             characters
    :param bool allow_nan: whether ``NaN`` values are handled or not
    :param int indent: indentation width to produce pretty printed JSON
-   :param callable default: a function that gets called for objects that can't otherwise be
-                            serialized
-   :param bool sort_keys: whether dictionary keys should be sorted alphabetically
+   :param callable default: a function that gets called for objects that can't
+                            otherwise be serialized
+   :param bool sort_keys: whether dictionary keys should be sorted
+                          alphabetically
    :param bool use_decimal: whether :class:`Decimal` should be handled
    :param int max_recursion_depth: maximum depth for nested structures
-   :param int datetime_mode: how should :class:`datetime` and :class:`date` instances be
-                             handled
+   :param int datetime_mode: how should :class:`datetime` and :class:`date`
+                             instances be handled
    :param int uuid_mode: how should :class:`UUID` instances be handled
    :returns: A Python :class:`str` instance.
 
    Encode given Python `obj` instance into a JSON string.
 
-   If `skipkeys` is true (default: ``False``), then dict keys that are not of a basic type
-   (:class:`str`, :class:`int`, :class:`float`, :class:`bool`, ``None``) will be skipped
-   instead of raising a :exc:`TypeError`:
+   If `skipkeys` is true (default: ``False``), then dict keys that are not of
+   a basic type (:class:`str`, :class:`int`, :class:`float`, :class:`bool`,
+   ``None``) will be skipped instead of raising a :exc:`TypeError`:
 
    .. doctest::
 
@@ -93,9 +97,9 @@
        >>> dumps({(0,): 'empty tuple'}, skipkeys=True)
        '{}'
 
-   If `ensure_ascii` is true (the default), the output is guaranteed to have all incoming
-   non-ASCII characters escaped.  If `ensure_ascii` is false, these characters will be output
-   as-is:
+   If `ensure_ascii` is true (the default), the output is guaranteed to have
+   all incoming non-ASCII characters escaped.  If `ensure_ascii` is false,
+   these characters will be output as-is:
 
    .. doctest::
 
@@ -105,10 +109,11 @@
        ...       ensure_ascii=False)
        '"The symbol for the Euro currency is €"'
 
-   If `allow_nan` is false (default: ``True``), then it will be a :exc:`ValueError` to
-   serialize out of range :class:`float` values (``nan``, ``inf``, ``-inf``) in strict
-   compliance of the JSON specification.  If `allow_nan` is true, their JavaScript equivalents
-   (``NaN``, ``Infinity``, ``-Infinity``) will be used:
+   If `allow_nan` is false (default: ``True``), then it will be a
+   :exc:`ValueError` to serialize out of range :class:`float` values (``nan``,
+   ``inf``, ``-inf``) in strict compliance of the JSON specification.  If
+   `allow_nan` is true, their JavaScript equivalents (``NaN``, ``Infinity``,
+   ``-Infinity``) will be used:
 
    .. doctest::
 
@@ -121,10 +126,10 @@
          File "<stdin>", line 1, in <module>
        ValueError: Out of range float values are not JSON compliant
 
-   When `indent` is ``None`` (the default), ``python-rapidjson`` produces the most compact JSON
-   representation. By setting `indent` to 0 each array item and each dictionary value will be
-   followed by a newline. A positive integer means that each *level* will be indented by that
-   many spaces:
+   When `indent` is ``None`` (the default), ``python-rapidjson`` produces the
+   most compact JSON representation. By setting `indent` to 0 each array item
+   and each dictionary value will be followed by a newline. A positive integer
+   means that each *level* will be indented by that many spaces:
 
    .. code-block:: pycon
 
@@ -149,9 +154,10 @@
          }
        ]
 
-   The `default` argument may be used to specify a custom serializer for otherwise not handled
-   objects. If specified, it should be a function that gets called for such objects and returns
-   a JSON encodable version of the object itself or raise a :exc:`TypeError`:
+   The `default` argument may be used to specify a custom serializer for
+   otherwise not handled objects. If specified, it should be a function that
+   gets called for such objects and returns a JSON encodable version of the
+   object itself or raise a :exc:`TypeError`:
 
    .. doctest::
 
@@ -174,17 +180,17 @@
        >>> dumps(point, default=point_jsonifier) # doctest: +SKIP
        '{"y":2,"x":1}'
 
-   When `sort_keys` is true (default: ``False``), the JSON representation of Python
-   dictionaries is sorted by key:
+   When `sort_keys` is true (default: ``False``), the JSON representation of
+   Python dictionaries is sorted by key:
 
    .. doctest::
 
        >>> dumps(point, default=point_jsonifier, sort_keys=True)
        '{"x":1,"y":2}'
 
-   If `use_decimal` is true (default: ``False``), :class:`Decimal` instances will be
-   serialized as their textual representation like any other float value, instead of raising
-   an error:
+   If `use_decimal` is true (default: ``False``), :class:`Decimal` instances
+   will be serialized as their textual representation like any other float
+   value, instead of raising an error:
 
    .. doctest::
 
@@ -197,8 +203,8 @@
        >>> dumps(pi, use_decimal=True)
        '3.1415926535897932384626433832795028841971'
 
-   With `max_recursion_depth` you can control the maximum depth that will be reached when
-   serializing nested structures:
+   With `max_recursion_depth` you can control the maximum depth that will be
+   reached when serializing nested structures:
 
    .. doctest::
 
@@ -213,9 +219,9 @@
          File "<stdin>", line 1, in <module>
        OverflowError: Max recursion depth reached
 
-   By default :class:`date` and :class:`datetime` instances are not serializable. When
-   `datetime_mode` is set to :data:`DATETIME_MODE_ISO8601` those values are serialized using
-   the common `ISO 8601`_ format:
+   By default :class:`date` and :class:`datetime` instances are not
+   serializable. When `datetime_mode` is set to :data:`DATETIME_MODE_ISO8601`
+   those values are serialized using the common `ISO 8601`_ format:
 
    .. doctest::
 
@@ -230,8 +236,8 @@
        ...       datetime_mode=DATETIME_MODE_ISO8601) # doctest: +SKIP
        '{"timestamp":"2016-08-28T13:14:52.277256","date":"2016-08-28"}'
 
-   Another mode is :data:`DATETIME_MODE_ISO8601_UTC`, that *shifts* all timestamps to the UTC_
-   timezone before serializing them:
+   Another mode is :data:`DATETIME_MODE_ISO8601_UTC`, that *shifts* all
+   timestamps to the UTC_ timezone before serializing them:
 
    .. doctest::
 
@@ -247,15 +253,17 @@
        >>> dumps(now, datetime_mode=DATETIME_MODE_ISO8601_UTC) # doctest: +SKIP
        '"2016-08-28T18:31:11.084418+00:00"'
 
-   With :data:`DATETIME_MODE_ISO8601_IGNORE_TZ` the timezone, if present, is simply omitted:
+   With :data:`DATETIME_MODE_ISO8601_IGNORE_TZ` the timezone, if present, is
+   simply omitted:
 
    .. doctest::
 
        >>> dumps(now, datetime_mode=DATETIME_MODE_ISO8601_IGNORE_TZ) # doctest: +SKIP
        '"2016-08-28T20:31:11.084418"'
 
-   Likewise, to handle :class:`UUID` instances there are two modes that can be specified with
-   the `uuid_mode` argument, that will use the string representation of their values:
+   Likewise, to handle :class:`UUID` instances there are two modes that can be
+   specified with the `uuid_mode` argument, that will use the string
+   representation of their values:
 
    .. doctest::
 
@@ -274,20 +282,24 @@
                     datetime_mode=None, uuid_mode=None)
 
    :param str s: The JSON string to parse
-   :param callable object_hook: an optional function that will be called with the result of
-                                any object literal decoded (a :class:`dict`) and should return
-                                the value to use instead of the :class:`dict`
-   :param bool use_decimal: whether :class:`Decimal` should be used for float values
+   :param callable object_hook: an optional function that will be called with
+                                the result of any object literal decoded (a
+                                :class:`dict`) and should return the value to
+                                use instead of the :class:`dict`
+   :param bool use_decimal: whether :class:`Decimal` should be used for float
+                            values
    :param bool allow_nan: whether ``NaN`` values are recognized
-   :param int datetime_mode: how should :class:`datetime` and :class:`date` instances be
-                             handled
+   :param int datetime_mode: how should :class:`datetime` and :class:`date`
+                             instances be handled
    :param int uuid_mode: how should :class:`UUID` instances be handled
    :returns: An equivalent Python object.
 
-   Decode the given Python string `s` containing a JSON formatted value into Python object.
+   Decode the given Python string `s` containing a JSON formatted value into
+   Python object.
 
-   `object_hook` may be used to inject a custom deserializer that can replace any :class:`dict`
-   instance found in the JSON structure with a *derived* object instance:
+   `object_hook` may be used to inject a custom deserializer that can replace
+   any :class:`dict` instance found in the JSON structure with a *derived*
+   object instance:
 
    .. doctest::
 
@@ -307,17 +319,17 @@
        >>> loads('{"x":1,"y":2}', object_hook=point_dejsonifier)
        Point(1, 2)
 
-   If `use_decimal` is true (default: ``False``) then all floating point literals present in
-   the JSON structure will be returned as :class:`Decimal` instances instead of plain
-   :class:`float`:
+   If `use_decimal` is true (default: ``False``) then all floating point
+   literals present in the JSON structure will be returned as :class:`Decimal`
+   instances instead of plain :class:`float`:
 
    .. doctest::
 
        >>> loads('1.2345', use_decimal=True)
        Decimal('1.2345')
 
-   If `allow_nan` is false (default: ``True``), then the values ``NaN`` and ``Infinity`` won't
-   be recognized:
+   If `allow_nan` is false (default: ``True``), then the values ``NaN`` and
+   ``Infinity`` won't be recognized:
 
    .. doctest::
 
@@ -328,8 +340,9 @@
          File "<stdin>", line 1, in <module>
        ValueError: … Out of range float values are not JSON compliant
 
-   With `datetime_mode` you can enable recognition of string literals containing an `ISO 8601`_
-   representation as either :class:`date` or :class:`datetime` instances:
+   With `datetime_mode` you can enable recognition of string literals
+   containing an `ISO 8601`_ representation as either :class:`date` or
+   :class:`datetime` instances:
 
    .. doctest::
 
@@ -347,8 +360,8 @@
        >>> loads('"2016-01-02"', datetime_mode=DATETIME_MODE_ISO8601)
        datetime.date(2016, 1, 2)
 
-   With `uuid_mode` you can enable recognition of string literals containing two different
-   representations of :class:`UUID` values:
+   With `uuid_mode` you can enable recognition of string literals containing
+   two different representations of :class:`UUID` values:
 
    .. doctest::
 
