@@ -5,7 +5,7 @@ Changes
 ~~~~~~~~~~~~~~~~~~~
 
 * Fix a couple of refcount handling glitches, hopefully targeting `issue
-  48`__.
+  #48`__.
 
   __ https://github.com/python-rapidjson/python-rapidjson/issues/48
 
