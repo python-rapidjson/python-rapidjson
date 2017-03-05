@@ -483,7 +483,7 @@ struct PyHandler {
 
         if (res && (hours > 23 || mins > 59 || secs > 59
                     || year == 0 || month > 12
-                    || day > days_per_month(year, month)
+                    || (month > 0 && day > days_per_month(year, month))
                     || hofs > 23 || mofs > 59))
             res = false;
 
