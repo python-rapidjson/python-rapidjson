@@ -1,8 +1,8 @@
 Changes
 -------
 
-next (unreleased)
-~~~~~~~~~~~~~~~~~
+0.0.11 (2017-03-05)
+~~~~~~~~~~~~~~~~~~~
 
 * Fix a couple of refcount handling glitches, hopefully targeting `issue
   48`__.
