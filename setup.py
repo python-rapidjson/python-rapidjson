@@ -56,10 +56,11 @@ extension_options = {
     'include_dirs': [rj_include_dir],
 }
 
-if 'gcc' in sysconfig.get_config_var('CC'):
+cc = sysconfig.get_config_var('CC')
+if cc and 'gcc' in cc:
     cflags = sysconfig.get_config_var('CFLAGS')
     # Avoid warning about invalid flag for C++
-    if '-Wstrict-prototypes' in cflags:
+    if cflags and '-Wstrict-prototypes' in cflags:
         cflags = cflags.replace('-Wstrict-prototypes', '')
         sysconfig.get_config_vars()['CFLAGS'] = cflags
 
