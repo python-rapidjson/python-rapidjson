@@ -29,6 +29,13 @@ contenders.append(Contender('rapidjson',
                             rapidjson.dumps,
                             rapidjson.loads))
 
+numbers_contenders = [
+    Contender('Wide numbers', rapidjson.dumps, rapidjson.loads),
+    Contender('Native numbers',
+              partial(rapidjson.dumps, native_numbers=True),
+              partial(rapidjson.loads, native_numbers=True))
+]
+
 try:
     import yajl
 except ImportError:
@@ -79,3 +86,6 @@ def pytest_generate_tests(metafunc):
                               partial(rapidjson.loads,
                                       datetime_mode=rapidjson.DATETIME_MODE_ISO8601)],
                              ids=['Ignore datetimes', 'Parse datetimes'])
+
+    if 'numbers_contender' in metafunc.fixturenames:
+        metafunc.parametrize('numbers_contender', numbers_contenders, ids=attrgetter('name'))

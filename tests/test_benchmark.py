@@ -32,6 +32,7 @@ user = {
 friends = [ user, user, user, user, user, user, user, user ]
 
 doubles = []
+numbers = []
 unicode_strings = []
 strings = []
 booleans = []
@@ -46,6 +47,8 @@ complex_object = [
 
 for x in range(256):
     doubles.append(sys.maxsize * random.random())
+    numbers.append(sys.maxsize * random.random())
+    numbers.append(random.randint(0, sys.maxsize))
     unicode_strings.append("نظام الحكم سلطاني وراثي في الذكور من ذرية السيد تركي بن سعيد بن سلطان ويشترط فيمن يختار لولاية الحكم من بينهم ان يكون مسلما رشيدا عاقلا ًوابنا شرعيا لابوين عمانيين ")
     strings.append("A pretty long string which is in a list")
     booleans.append(True)
@@ -90,7 +93,7 @@ def test_loads(contender, data, benchmark):
     benchmark(contender.loads, data)
 
 
-# Special case: load datetimes as plain strings vs datetime.xxx instances
+# Special case 1: load datetimes as plain strings vs datetime.xxx instances
 
 @pytest.mark.benchmark(group='deserialize')
 @pytest.mark.parametrize('data', [datetimes], ids=['256x3 datetimes'])
@@ -98,3 +101,17 @@ def test_loads_datetimes(datetimes_loads_contender, data, benchmark):
     from rapidjson import dumps, DATETIME_MODE_ISO8601
     data = dumps(data, datetime_mode=DATETIME_MODE_ISO8601)
     benchmark(datetimes_loads_contender, data)
+
+
+# Special case 2: native numbers
+
+@pytest.mark.benchmark(group='serialize')
+@pytest.mark.parametrize('data', [numbers], ids=['512 numbers array'])
+def test_dumps_numbers(numbers_contender, data, benchmark):
+    benchmark(numbers_contender.dumps, data)
+
+@pytest.mark.benchmark(group='deserialize')
+@pytest.mark.parametrize('data', [numbers], ids=['512 numbers array'])
+def test_loads_numbers(numbers_contender, data, benchmark):
+    data = numbers_contender.dumps(data)
+    benchmark(numbers_contender.loads, data)
