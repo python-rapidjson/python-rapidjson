@@ -33,14 +33,14 @@ static PyObject* uuid_type = NULL;
    -pedantic mode. */
 
 static PyObject* astimezone_name = NULL;
-static PyObject* utcoffset_name = NULL;
-static PyObject* total_seconds_name = NULL;
-static PyObject* timestamp_name = NULL;
 static PyObject* hex_name = NULL;
+static PyObject* timestamp_name = NULL;
+static PyObject* total_seconds_name = NULL;
+static PyObject* utcoffset_name = NULL;
 
+static PyObject* minus_inf_string_value = NULL;
 static PyObject* nan_string_value = NULL;
 static PyObject* plus_inf_string_value = NULL;
-static PyObject* minus_inf_string_value = NULL;
 
 
 struct HandlerContext {
@@ -1435,54 +1435,147 @@ PyInit_rapidjson()
     if (astimezone_name == NULL)
         return NULL;
 
-    utcoffset_name = PyUnicode_InternFromString("utcoffset");
-    if (utcoffset_name == NULL)
+    hex_name = PyUnicode_InternFromString("hex");
+    if (hex_name == NULL) {
+        Py_DECREF(astimezone_name);
         return NULL;
-
-    total_seconds_name = PyUnicode_InternFromString("total_seconds");
-    if (total_seconds_name == NULL)
-        return NULL;
+    }
 
     timestamp_name = PyUnicode_InternFromString("timestamp");
-    if (timestamp_name == NULL)
+    if (timestamp_name == NULL) {
+        Py_DECREF(astimezone_name);
+        Py_DECREF(hex_name);
         return NULL;
+    }
 
-    hex_name = PyUnicode_InternFromString("hex");
-    if (hex_name == NULL)
+    total_seconds_name = PyUnicode_InternFromString("total_seconds");
+    if (total_seconds_name == NULL) {
+        Py_DECREF(astimezone_name);
+        Py_DECREF(hex_name);
+        Py_DECREF(timestamp_name);
         return NULL;
+    }
 
-    nan_string_value = PyUnicode_InternFromString("nan");
-    if (nan_string_value == NULL)
+    utcoffset_name = PyUnicode_InternFromString("utcoffset");
+    if (utcoffset_name == NULL) {
+        Py_DECREF(astimezone_name);
+        Py_DECREF(hex_name);
+        Py_DECREF(timestamp_name);
+        Py_DECREF(total_seconds_name);
         return NULL;
-
-    plus_inf_string_value = PyUnicode_InternFromString("+Infinity");
-    if (plus_inf_string_value == NULL)
-        return NULL;
+    }
 
     minus_inf_string_value = PyUnicode_InternFromString("-Infinity");
-    if (minus_inf_string_value == NULL)
+    if (minus_inf_string_value == NULL) {
+        Py_DECREF(astimezone_name);
+        Py_DECREF(hex_name);
+        Py_DECREF(timestamp_name);
+        Py_DECREF(total_seconds_name);
+        Py_DECREF(utcoffset_name);
         return NULL;
+    }
+
+    nan_string_value = PyUnicode_InternFromString("nan");
+    if (nan_string_value == NULL) {
+        Py_DECREF(astimezone_name);
+        Py_DECREF(hex_name);
+        Py_DECREF(timestamp_name);
+        Py_DECREF(total_seconds_name);
+        Py_DECREF(utcoffset_name);
+        Py_DECREF(minus_inf_string_value);
+        return NULL;
+    }
+
+    plus_inf_string_value = PyUnicode_InternFromString("+Infinity");
+    if (plus_inf_string_value == NULL) {
+        Py_DECREF(astimezone_name);
+        Py_DECREF(hex_name);
+        Py_DECREF(timestamp_name);
+        Py_DECREF(total_seconds_name);
+        Py_DECREF(utcoffset_name);
+        Py_DECREF(minus_inf_string_value);
+        Py_DECREF(nan_string_value);
+        return NULL;
+    }
 
     PyDateTime_IMPORT;
 
     PyObject* datetimeModule = PyImport_ImportModule("datetime");
-    if (datetimeModule == NULL)
+    if (datetimeModule == NULL) {
+        Py_DECREF(astimezone_name);
+        Py_DECREF(hex_name);
+        Py_DECREF(timestamp_name);
+        Py_DECREF(total_seconds_name);
+        Py_DECREF(utcoffset_name);
+        Py_DECREF(minus_inf_string_value);
+        Py_DECREF(nan_string_value);
+        Py_DECREF(plus_inf_string_value);
         return NULL;
+    }
+
+    PyObject* decimalModule = PyImport_ImportModule("decimal");
+    if (decimalModule == NULL) {
+        return NULL;
+    }
+
+    decimal_type = PyObject_GetAttrString(decimalModule, "Decimal");
+    Py_DECREF(decimalModule);
+
+    if (decimal_type == NULL) {
+        Py_DECREF(astimezone_name);
+        Py_DECREF(hex_name);
+        Py_DECREF(timestamp_name);
+        Py_DECREF(total_seconds_name);
+        Py_DECREF(utcoffset_name);
+        Py_DECREF(minus_inf_string_value);
+        Py_DECREF(nan_string_value);
+        Py_DECREF(plus_inf_string_value);
+        Py_DECREF(datetimeModule);
+        return NULL;
+    }
 
     timezone_type = PyObject_GetAttrString(datetimeModule, "timezone");
     Py_DECREF(datetimeModule);
 
-    if (timezone_type == NULL)
+    if (timezone_type == NULL) {
+        Py_DECREF(astimezone_name);
+        Py_DECREF(hex_name);
+        Py_DECREF(timestamp_name);
+        Py_DECREF(total_seconds_name);
+        Py_DECREF(utcoffset_name);
+        Py_DECREF(minus_inf_string_value);
+        Py_DECREF(nan_string_value);
+        Py_DECREF(plus_inf_string_value);
+        Py_DECREF(decimal_type);
         return NULL;
+    }
 
     timezone_utc = PyObject_GetAttrString(timezone_type, "utc");
     if (timezone_utc == NULL) {
+        Py_DECREF(astimezone_name);
+        Py_DECREF(hex_name);
+        Py_DECREF(timestamp_name);
+        Py_DECREF(total_seconds_name);
+        Py_DECREF(utcoffset_name);
+        Py_DECREF(minus_inf_string_value);
+        Py_DECREF(nan_string_value);
+        Py_DECREF(plus_inf_string_value);
+        Py_DECREF(decimal_type);
         Py_DECREF(timezone_type);
         return NULL;
     }
 
     PyObject* uuidModule = PyImport_ImportModule("uuid");
     if (uuidModule == NULL) {
+        Py_DECREF(astimezone_name);
+        Py_DECREF(hex_name);
+        Py_DECREF(timestamp_name);
+        Py_DECREF(total_seconds_name);
+        Py_DECREF(utcoffset_name);
+        Py_DECREF(minus_inf_string_value);
+        Py_DECREF(nan_string_value);
+        Py_DECREF(plus_inf_string_value);
+        Py_DECREF(decimal_type);
         Py_DECREF(timezone_type);
         Py_DECREF(timezone_utc);
         return NULL;
@@ -1492,23 +1585,15 @@ PyInit_rapidjson()
     Py_DECREF(uuidModule);
 
     if (uuid_type == NULL) {
-        Py_DECREF(timezone_type);
-        Py_DECREF(timezone_utc);
-        return NULL;
-    }
-
-    PyObject* decimalModule = PyImport_ImportModule("decimal");
-    if (decimalModule == NULL) {
-        Py_DECREF(timezone_type);
-        Py_DECREF(timezone_utc);
-        Py_DECREF(uuid_type);
-        return NULL;
-    }
-
-    decimal_type = PyObject_GetAttrString(decimalModule, "Decimal");
-    Py_DECREF(decimalModule);
-
-    if (decimal_type == NULL) {
+        Py_DECREF(astimezone_name);
+        Py_DECREF(hex_name);
+        Py_DECREF(timestamp_name);
+        Py_DECREF(total_seconds_name);
+        Py_DECREF(utcoffset_name);
+        Py_DECREF(minus_inf_string_value);
+        Py_DECREF(nan_string_value);
+        Py_DECREF(plus_inf_string_value);
+        Py_DECREF(decimal_type);
         Py_DECREF(timezone_type);
         Py_DECREF(timezone_utc);
         Py_DECREF(uuid_type);
@@ -1519,10 +1604,6 @@ PyInit_rapidjson()
 
     m = PyModule_Create(&module);
     if (m == NULL) {
-        Py_DECREF(timezone_type);
-        Py_DECREF(timezone_utc);
-        Py_DECREF(decimal_type);
-        Py_DECREF(uuid_type);
         return NULL;
     }
 
