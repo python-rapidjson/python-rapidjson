@@ -1,3 +1,4 @@
+from calendar import timegm
 from datetime import date, datetime, time
 import math
 import uuid
@@ -158,53 +159,82 @@ def test_max_recursion_depth():
 def test_datetime_mode_dumps():
     import pytz
 
-    assert rj.DATETIME_MODE_NONE == 0
-    assert rj.DATETIME_MODE_ISO8601 == 1
-    assert rj.DATETIME_MODE_ISO8601_IGNORE_TZ == 2
-    assert rj.DATETIME_MODE_ISO8601_UTC == 3
-
     d = datetime.utcnow()
     dstr = d.isoformat()
 
     with pytest.raises(TypeError):
         rj.dumps(d)
 
-    with pytest.raises(ValueError):
-        rj.dumps(d, datetime_mode=42)
-
-    with pytest.raises(ValueError):
-        rj.loads('""', datetime_mode=42)
-
     with pytest.raises(TypeError):
         rj.dumps(d, datetime_mode=rj.DATETIME_MODE_NONE)
 
     assert rj.dumps(d, datetime_mode=rj.DATETIME_MODE_ISO8601) == '"%s"' % dstr
-    assert rj.dumps(d, datetime_mode=rj.DATETIME_MODE_ISO8601_IGNORE_TZ) == '"%s"' % dstr
+    assert rj.dumps(
+        d, datetime_mode=(rj.DATETIME_MODE_ISO8601 | rj.DATETIME_MODE_IGNORE_TZ)
+    ) == '"%s"' % dstr
 
-    d = d.replace(tzinfo=pytz.utc)
+    d = utcd = d.replace(tzinfo=pytz.utc)
     dstr = utcstr = d.isoformat()
 
     assert rj.dumps(d, datetime_mode=rj.DATETIME_MODE_ISO8601) == '"%s"' % dstr
-    assert rj.dumps(d, datetime_mode=rj.DATETIME_MODE_ISO8601_IGNORE_TZ) == '"%s"' % dstr[:-6]
+    assert rj.dumps(
+        d, datetime_mode=(rj.DATETIME_MODE_ISO8601 | rj.DATETIME_MODE_IGNORE_TZ)
+    ) == '"%s"' % dstr[:-6]
 
     d = d.astimezone(pytz.timezone('Pacific/Chatham'))
     dstr = d.isoformat()
 
     assert rj.dumps(d, datetime_mode=rj.DATETIME_MODE_ISO8601) == '"%s"' % dstr
-    assert rj.dumps(d, datetime_mode=rj.DATETIME_MODE_ISO8601_IGNORE_TZ) == '"%s"' % dstr[:-6]
+    assert rj.dumps(
+        d, datetime_mode=(rj.DATETIME_MODE_ISO8601 | rj.DATETIME_MODE_IGNORE_TZ)
+    ) == '"%s"' % dstr[:-6]
 
     d = d.astimezone(pytz.timezone('Asia/Kathmandu'))
     dstr = d.isoformat()
 
     assert rj.dumps(d, datetime_mode=rj.DATETIME_MODE_ISO8601) == '"%s"' % dstr
-    assert rj.dumps(d, datetime_mode=rj.DATETIME_MODE_ISO8601_IGNORE_TZ) == '"%s"' % dstr[:-6]
+    assert rj.dumps(
+        d, datetime_mode=(rj.DATETIME_MODE_ISO8601 | rj.DATETIME_MODE_IGNORE_TZ)
+    ) == '"%s"' % dstr[:-6]
 
     d = d.astimezone(pytz.timezone('America/New_York'))
     dstr = d.isoformat()
 
     assert rj.dumps(d, datetime_mode=rj.DATETIME_MODE_ISO8601) == '"%s"' % dstr
-    assert rj.dumps(d, datetime_mode=rj.DATETIME_MODE_ISO8601_IGNORE_TZ) == '"%s"' % dstr[:-6]
-    assert rj.dumps(d, datetime_mode=rj.DATETIME_MODE_ISO8601_UTC) == '"%s"' % utcstr
+    assert rj.dumps(
+        d, datetime_mode=(rj.DATETIME_MODE_ISO8601 | rj.DATETIME_MODE_IGNORE_TZ)
+    ) == '"%s"' % dstr[:-6]
+    assert rj.dumps(
+        d, datetime_mode=(rj.DATETIME_MODE_ISO8601 | rj.DATETIME_MODE_SHIFT_TO_UTC)
+    ) == '"%s"' % utcstr
+
+    assert rj.dumps(
+        d, datetime_mode=rj.DATETIME_MODE_UNIX_TIME
+    ) == str(d.timestamp())
+
+    assert rj.dumps(
+        d, datetime_mode=rj.DATETIME_MODE_UNIX_TIME | rj.DATETIME_MODE_SHIFT_TO_UTC
+    ) == str(utcd.timestamp())
+
+    assert rj.dumps(
+        d, datetime_mode= rj.DATETIME_MODE_UNIX_TIME | rj.DATETIME_MODE_ONLY_SECONDS
+    ) == str(d.timestamp()).split('.')[0]
+
+    d = datetime.now()
+
+    assert rj.dumps(
+        d, datetime_mode=rj.DATETIME_MODE_ISO8601 | rj.DATETIME_MODE_NAIVE_IS_UTC
+    ) == '"%s+00:00"' % d.isoformat()
+
+    assert rj.dumps(
+        d, datetime_mode=rj.DATETIME_MODE_UNIX_TIME | rj.DATETIME_MODE_NAIVE_IS_UTC
+    ) == ('%d.%06d' % (timegm(d.timetuple()), d.microsecond)).rstrip('0')
+
+    assert rj.dumps(
+        d, datetime_mode=(rj.DATETIME_MODE_UNIX_TIME
+                          | rj.DATETIME_MODE_NAIVE_IS_UTC
+                          | rj.DATETIME_MODE_ONLY_SECONDS)
+    ) == str(timegm(d.timetuple()))
 
 
 @pytest.mark.unit
@@ -228,12 +258,14 @@ def test_datetime_mode_loads():
     assert rj.loads(jsond) == locstr
     assert rj.loads(jsond, datetime_mode=rj.DATETIME_MODE_ISO8601) == local
 
-    load_as_utc = rj.loads(jsond, datetime_mode=rj.DATETIME_MODE_ISO8601_UTC)
+    load_as_utc = rj.loads(jsond, datetime_mode=(rj.DATETIME_MODE_ISO8601
+                                                 | rj.DATETIME_MODE_SHIFT_TO_UTC))
 
     assert load_as_utc == utc
     assert not load_as_utc.utcoffset()
 
-    load_as_naive = rj.loads(jsond, datetime_mode=rj.DATETIME_MODE_ISO8601_IGNORE_TZ)
+    load_as_naive = rj.loads(jsond, datetime_mode=(rj.DATETIME_MODE_ISO8601
+                                                   | rj.DATETIME_MODE_IGNORE_TZ))
 
     assert load_as_naive == local.replace(tzinfo=None)
 
@@ -401,9 +433,13 @@ def test_object_hook():
         ( ('{}',), { 'this_keyword_arg_shall_never_exist': True } ),
         ( ('[]',), { 'object_hook': True } ),
         ( ('[]',), { 'datetime_mode': 'no' } ),
+        ( ('[]',), { 'datetime_mode': 1.0 } ),
         ( ('[]',), { 'datetime_mode': -100 } ),
-        ( ('[]',), { 'datetime_mode': 100 } ),
+        ( ('[]',), { 'datetime_mode': rj.DATETIME_MODE_UNIX_TIME + 1 } ),
+        ( ('[]',), { 'datetime_mode': rj.DATETIME_MODE_UNIX_TIME } ),
+        ( ('[]',), { 'datetime_mode': rj.DATETIME_MODE_SHIFT_TO_UTC } ),
         ( ('[]',), { 'uuid_mode': 'no' } ),
+        ( ('[]',), { 'uuid_mode': 1.0 } ),
         ( ('[]',), { 'uuid_mode': -100 } ),
         ( ('[]',), { 'uuid_mode': 100 } ),
     ))
@@ -424,9 +460,12 @@ def test_invalid_loads_params(posargs, kwargs):
         ( ([],), { 'default': True } ),
         ( ([],), { 'indent': -1 }),
         ( ([],), { 'datetime_mode': 'no' } ),
+        ( ([],), { 'datetime_mode': 1.0 } ),
         ( ([],), { 'datetime_mode': -100 } ),
-        ( ([],), { 'datetime_mode': 100 } ),
+        ( ([],), { 'datetime_mode': rj.DATETIME_MODE_UNIX_TIME + 1 } ),
+        ( ([],), { 'datetime_mode': rj.DATETIME_MODE_SHIFT_TO_UTC } ),
         ( ([],), { 'uuid_mode': 'no' } ),
+        ( ([],), { 'uuid_mode': 1.0 } ),
         ( ([],), { 'uuid_mode': -100 } ),
         ( ([],), { 'uuid_mode': 100 } ),
     ))
