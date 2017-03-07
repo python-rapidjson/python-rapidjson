@@ -16,19 +16,19 @@
 
    The version of the RapidJSON_ library this module is built with.
 
-.. data:: DATETIME_MODE_NONE
+.. data:: DM_NONE
 
    This is the default ``datetime_mode``: *neither* :class:`date` *nor*
    :class:`datetime` *nor* :class:`time` instances are recognized by
    :func:`dumps` and :func:`loads`.
 
-.. data:: DATETIME_MODE_ISO8601
+.. data:: DM_ISO8601
 
    In this ``datetime_mode`` mode :func:`dumps` and :func:`loads` handle
    :class:`date`, :class:`datetime` *and* :class:`date` instances representing
    those values using the `ISO 8601`_ format.
 
-.. data:: DATETIME_MODE_UNIX_TIME
+.. data:: DM_UNIX_TIME
 
    This mode tells RapidJSON to serialize :class:`date`, :class:`datetime` and
    :class:`time` as *numeric timestamps*: for the formers it is exactly the
@@ -40,27 +40,26 @@
    Since this is obviously *irreversible*, this flag is usable **only** for
    :func:`dumps`: an error is raised when passed to :func:`loads`.
 
-.. data:: DATETIME_MODE_ONLY_SECONDS
+.. data:: DM_ONLY_SECONDS
 
-   This is usable in combination with :data:`DATETIME_MODE_UNIX_TIME` so that
-   an integer representation is used, ignoring *microseconds*.
+   This is usable in combination with :data:`DM_UNIX_TIME` so that an integer
+   representation is used, ignoring *microseconds*.
 
-.. data:: DATETIME_MODE_IGNORE_TZ
+.. data:: DM_IGNORE_TZ
 
-   This can be used combined with :data:`DATETIME_MODE_ISO8601` or
-   :data:`DATETIME_MODE_UNIX_TIME`, to ignore the value's timezones.
+   This can be used combined with :data:`DM_ISO8601` or :data:`DM_UNIX_TIME`,
+   to ignore the value's timezones.
 
-.. data:: DATETIME_MODE_NAIVE_IS_UTC
+.. data:: DM_NAIVE_IS_UTC
 
-   This can be used combined with :data:`DATETIME_MODE_ISO8601` or
-   :data:`DATETIME_MODE_UNIX_TIME`, to tell RapidJSON that the naïve values
-   (that is, without an explicit timezone) are already in UTC_ timezone.
+   This can be used combined with :data:`DM_ISO8601` or :data:`DM_UNIX_TIME`,
+   to tell RapidJSON that the naïve values (that is, without an explicit
+   timezone) are already in UTC_ timezone.
 
-.. data:: DATETIME_MODE_SHIFT_TO_UTC
+.. data:: DM_SHIFT_TO_UTC
 
-   This can be used combined with :data:`DATETIME_MODE_ISO8601` or
-   :data:`DATETIME_MODE_UNIX_TIME`, to always *shift* values the UTC_
-   timezone.
+   This can be used combined with :data:`DM_ISO8601` or :data:`DM_UNIX_TIME`,
+   to always *shift* values the UTC_ timezone.
 
 .. data:: UUID_MODE_NONE
 
@@ -83,11 +82,8 @@
 
 .. testsetup::
 
-   from rapidjson import (dumps, loads,
-                          DATETIME_MODE_NONE, DATETIME_MODE_ISO8601,
-                          DATETIME_MODE_UNIX_TIME, DATETIME_MODE_ONLY_SECONDS,
-                          DATETIME_MODE_IGNORE_TZ, DATETIME_MODE_NAIVE_IS_UTC,
-                          DATETIME_MODE_SHIFT_TO_UTC,
+   from rapidjson import (dumps, loads, DM_NONE, DM_ISO8601, DM_UNIX_TIME,
+                          DM_ONLY_SECONDS, DM_IGNORE_TZ, DM_NAIVE_IS_UTC, DM_SHIFT_TO_UTC,
                           UUID_MODE_NONE, UUID_MODE_CANONICAL, UUID_MODE_HEX)
 
 .. function:: dumps(obj, skipkeys=False, ensure_ascii=True, allow_nan=True, indent=None, \
@@ -248,8 +244,8 @@
       OverflowError: Max recursion depth reached
 
    By default :class:`date`, :class:`datetime` and :class:`time` instances are
-   not serializable. When `datetime_mode` is set to :data:`DATETIME_MODE_ISO8601`
-   those values are serialized using the common `ISO 8601`_ format:
+   not serializable. When `datetime_mode` is set to :data:`DM_ISO8601` those
+   values are serialized using the common `ISO 8601`_ format:
 
    .. doctest::
 
@@ -262,82 +258,81 @@
         File "<stdin>", line 1, in <module>
       TypeError: datetime(…) is not JSON serializable
       >>> dumps(['date', date, 'time', time, 'timestamp', right_now],
-      ...       datetime_mode=DATETIME_MODE_ISO8601)
+      ...       datetime_mode=DM_ISO8601)
       '["date","2016-08-28","time","13:14:52.277256","timestamp","2016-08-28T13:14:52.277256"]'
 
    The `right_now` value is a naïve datetime (because it does not carry the
    timezone information) and is normally assumed to be in the local timezone,
    whatever your system thinks it is. When you instead *know* that your value,
    even being naïve are actually in the UTC_ timezone, you can use the
-   :data:`DATETIME_MODE_NAIVE_IS_UTC` flag to inform RapidJSON about that:
+   :data:`DM_NAIVE_IS_UTC` flag to inform RapidJSON about that:
 
    .. doctest::
 
-      >>> mode = DATETIME_MODE_ISO8601 | DATETIME_MODE_NAIVE_IS_UTC
+      >>> mode = DM_ISO8601 | DM_NAIVE_IS_UTC
       >>> dumps(['time', time, 'timestamp', right_now], datetime_mode=mode)
       '["time","13:14:52.277256+00:00","timestamp","2016-08-28T13:14:52.277256+00:00"]'
 
-   A variant is :data:`DATETIME_MODE_SHIFT_TO_UTC`, that *shifts* all datetime
-   values to the UTC_ timezone before serializing them:
+   A variant is :data:`DM_SHIFT_TO_UTC`, that *shifts* all datetime values to
+   the UTC_ timezone before serializing them:
 
    .. doctest::
 
       >>> from datetime import timedelta, timezone
       >>> here = timezone(timedelta(hours=2))
       >>> now = datetime(2016, 8, 28, 20, 31, 11, 84418, here)
-      >>> dumps(now, datetime_mode=DATETIME_MODE_ISO8601)
+      >>> dumps(now, datetime_mode=DM_ISO8601)
       '"2016-08-28T20:31:11.084418+02:00"'
-      >>> mode = DATETIME_MODE_ISO8601 | DATETIME_MODE_SHIFT_TO_UTC
+      >>> mode = DM_ISO8601 | DM_SHIFT_TO_UTC
       >>> dumps(now, datetime_mode=mode)
       '"2016-08-28T18:31:11.084418+00:00"'
 
-   With :data:`DATETIME_MODE_IGNORE_TZ` the timezone, if present, is simply
-   omitted:
+   With :data:`DM_IGNORE_TZ` the timezone, if present, is simply omitted:
 
    .. doctest::
 
-      >>> mode = DATETIME_MODE_ISO8601 | DATETIME_MODE_IGNORE_TZ
+      >>> mode = DM_ISO8601 | DM_IGNORE_TZ
       >>> dumps(now, datetime_mode=mode)
       '"2016-08-28T20:31:11.084418"'
 
    Another :ref:`one-way only <no-unix-time-loads>` alternative format is
-   `Unix time`_: with :data:`DATETIME_MODE_UNIX_TIME` :class:`date`,
-   :class:`datetime` and :class:`time` instances are serialized as a number of
-   seconds, respectively since the ``EPOCH`` for the first two kinds and since
-   midnight for the latter:
+   `Unix time`_: with :data:`DM_UNIX_TIME` :class:`date`, :class:`datetime`
+   and :class:`time` instances are serialized as a number of seconds,
+   respectively since the ``EPOCH`` for the first two kinds and since midnight
+   for the latter:
 
    .. doctest::
 
-      >>> mode = DATETIME_MODE_UNIX_TIME
+      >>> mode = DM_UNIX_TIME
       >>> dumps([now, now.date(), now.time()], datetime_mode=mode)
       '[1472409071.084418,1472335200.0,73871.084418]'
       >>> unixtime = float(dumps(now, datetime_mode=mode))
       >>> datetime.fromtimestamp(unixtime, here) == now
       True
 
-   Combining it with the :data:`DATETIME_MODE_ONLY_SECONDS` will produce
-   integer values instead, dropping *microseconds*:
+   Combining it with the :data:`DM_ONLY_SECONDS` will produce integer values
+   instead, dropping *microseconds*:
 
    .. doctest::
 
-      >>> mode = DATETIME_MODE_UNIX_TIME | DATETIME_MODE_ONLY_SECONDS
+      >>> mode = DM_UNIX_TIME | DM_ONLY_SECONDS
       >>> dumps([now, now.date(), now.time()], datetime_mode=mode)
       '[1472409071,1472335200,73871]'
 
-   It can be used combined with :data:`DATETIME_MODE_SHIFT_TO_UTC` to obtain the
+   It can be used combined with :data:`DM_SHIFT_TO_UTC` to obtain the
    timestamp of the corresponding UTC_ time:
 
-      >>> mode = DATETIME_MODE_UNIX_TIME | DATETIME_MODE_SHIFT_TO_UTC
+      >>> mode = DM_UNIX_TIME | DM_SHIFT_TO_UTC
       >>> dumps(now, datetime_mode=mode)
       '1472409071.084418'
 
-   As above, when you know that your values are in the UTC_ timezone, you can use the
-   :data:`DATETIME_MODE_NAIVE_IS_UTC` flag to get the right result:
+   As above, when you know that your values are in the UTC_ timezone, you can
+   use the :data:`DM_NAIVE_IS_UTC` flag to get the right result:
 
    .. doctest::
 
       >>> a_long_time_ago = datetime(1968, 3, 18, 9, 10, 0, 0)
-      >>> mode = DATETIME_MODE_UNIX_TIME | DATETIME_MODE_NAIVE_IS_UTC
+      >>> mode = DM_UNIX_TIME | DM_NAIVE_IS_UTC
       >>> dumps([a_long_time_ago, a_long_time_ago.date(), a_long_time_ago.time()],
       ...       datetime_mode=mode)
       '[-56472600.0,-56505600.0,33000.0]'
@@ -429,21 +424,19 @@
 
       >>> loads('"2016-01-02T01:02:03+01:00"')
       '2016-01-02T01:02:03+01:00'
-      >>> loads('"2016-01-02T01:02:03+01:00"',
-      ...       datetime_mode=DATETIME_MODE_ISO8601)
+      >>> loads('"2016-01-02T01:02:03+01:00"', datetime_mode=DM_ISO8601)
       datetime.datetime(2016, 1, 2, 1, 2, 3, tzinfo=...delta(0, 3600)))
-      >>> loads('"2016-01-02"', datetime_mode=DATETIME_MODE_ISO8601)
+      >>> loads('"2016-01-02"', datetime_mode=DM_ISO8601)
       datetime.date(2016, 1, 2)
-      >>> loads('"01:02:03+01:00"',
-      ...       datetime_mode=DATETIME_MODE_ISO8601)
+      >>> loads('"01:02:03+01:00"', datetime_mode=DM_ISO8601)
       datetime.time(1, 2, 3, tzinfo=...delta(0, 3600)))
 
-   It can be combined with :data:`DATETIME_MODE_SHIFT_TO_UTC` to *always*
-   obtain values in the UTC_ timezone:
+   It can be combined with :data:`DM_SHIFT_TO_UTC` to *always* obtain values
+   in the UTC_ timezone:
 
    .. doctest::
 
-      >>> mode = DATETIME_MODE_ISO8601 | DATETIME_MODE_SHIFT_TO_UTC
+      >>> mode = DM_ISO8601 | DM_SHIFT_TO_UTC
       >>> loads('"2016-01-02T01:02:03+01:00"', datetime_mode=mode)
       datetime.datetime(2016, 1, 2, 0, 2, 3, tzinfo=...utc)
 
@@ -455,7 +448,7 @@
 
       .. doctest::
 
-         >>> mode = DATETIME_MODE_ISO8601 | DATETIME_MODE_SHIFT_TO_UTC
+         >>> mode = DM_ISO8601 | DM_SHIFT_TO_UTC
          >>> loads('"00:01:02+00:00"', datetime_mode=mode)
          datetime.time(0, 1, 2, tzinfo=...utc)
          >>> loads('"00:01:02+01:00"', datetime_mode=mode)
@@ -463,12 +456,12 @@
            ...
          ValueError: ... Time literal cannot be shifted to UTC: 00:01:02+01:00
 
-   If you combine it with :data:`DATETIME_MODE_NAIVE_IS_UTC` then all values
-   without a timezone will be assumed to be relative to UTC_:
+   If you combine it with :data:`DM_NAIVE_IS_UTC` then all values without a
+   timezone will be assumed to be relative to UTC_:
 
    .. doctest::
 
-      >>> mode = DATETIME_MODE_ISO8601 | DATETIME_MODE_NAIVE_IS_UTC
+      >>> mode = DM_ISO8601 | DM_NAIVE_IS_UTC
       >>> loads('"2016-01-02T01:02:03"', datetime_mode=mode)
       datetime.datetime(2016, 1, 2, 1, 2, 3, tzinfo=...utc)
       >>> loads('"2016-01-02T01:02:03+01:00"', datetime_mode=mode)
@@ -476,12 +469,12 @@
       >>> loads('"01:02:03"', datetime_mode=mode)
       datetime.time(1, 2, 3, tzinfo=...utc)
 
-   Yet another combination is with :data:`DATETIME_MODE_IGNORE_TZ` to ignore
-   the timezone and obtain naïve values:
+   Yet another combination is with :data:`DM_IGNORE_TZ` to ignore the timezone
+   and obtain naïve values:
 
    .. doctest::
 
-      >>> mode = DATETIME_MODE_ISO8601 | DATETIME_MODE_IGNORE_TZ
+      >>> mode = DM_ISO8601 | DM_IGNORE_TZ
       >>> loads('"2016-01-02T01:02:03+01:00"', datetime_mode=mode)
       datetime.datetime(2016, 1, 2, 1, 2, 3)
       >>> loads('"01:02:03+01:00"', datetime_mode=mode)
@@ -489,13 +482,12 @@
 
    .. _no-unix-time-loads:
 
-   The :data:`DATETIME_MODE_UNIX_TIME` cannot be used here, because there
-   isn't a reasonable heuristic to disambiguate between plain numbers and
-   timestamps:
+   The :data:`DM_UNIX_TIME` cannot be used here, because there isn't a
+   reasonable heuristic to disambiguate between plain numbers and timestamps:
 
    .. doctest::
 
-      >>> loads('[1,2,3]', datetime_mode=DATETIME_MODE_UNIX_TIME)
+      >>> loads('[1,2,3]', datetime_mode=DM_UNIX_TIME)
       Traceback (most recent call last):
         File "<stdin>", line 1, in <module>
       ValueError: Invalid datetime_mode, can deserialize only from ISO8601

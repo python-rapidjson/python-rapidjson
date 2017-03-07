@@ -166,74 +166,59 @@ def test_datetime_mode_dumps():
         rj.dumps(d)
 
     with pytest.raises(TypeError):
-        rj.dumps(d, datetime_mode=rj.DATETIME_MODE_NONE)
+        rj.dumps(d, datetime_mode=rj.DM_NONE)
 
-    assert rj.dumps(d, datetime_mode=rj.DATETIME_MODE_ISO8601) == '"%s"' % dstr
-    assert rj.dumps(
-        d, datetime_mode=(rj.DATETIME_MODE_ISO8601 | rj.DATETIME_MODE_IGNORE_TZ)
-    ) == '"%s"' % dstr
+    assert rj.dumps(d, datetime_mode=rj.DM_ISO8601) == '"%s"' % dstr
+    assert rj.dumps(d, datetime_mode=(rj.DM_ISO8601 | rj.DM_IGNORE_TZ)) == '"%s"' % dstr
 
     d = utcd = d.replace(tzinfo=pytz.utc)
     dstr = utcstr = d.isoformat()
 
-    assert rj.dumps(d, datetime_mode=rj.DATETIME_MODE_ISO8601) == '"%s"' % dstr
-    assert rj.dumps(
-        d, datetime_mode=(rj.DATETIME_MODE_ISO8601 | rj.DATETIME_MODE_IGNORE_TZ)
-    ) == '"%s"' % dstr[:-6]
+    assert rj.dumps(d, datetime_mode=rj.DM_ISO8601) == '"%s"' % dstr
+    assert rj.dumps(d, datetime_mode=(rj.DM_ISO8601 | rj.DM_IGNORE_TZ)) == '"%s"' % dstr[:-6]
 
     d = d.astimezone(pytz.timezone('Pacific/Chatham'))
     dstr = d.isoformat()
 
-    assert rj.dumps(d, datetime_mode=rj.DATETIME_MODE_ISO8601) == '"%s"' % dstr
-    assert rj.dumps(
-        d, datetime_mode=(rj.DATETIME_MODE_ISO8601 | rj.DATETIME_MODE_IGNORE_TZ)
-    ) == '"%s"' % dstr[:-6]
+    assert rj.dumps(d, datetime_mode=rj.DM_ISO8601) == '"%s"' % dstr
+    assert rj.dumps(d, datetime_mode=(rj.DM_ISO8601 | rj.DM_IGNORE_TZ)) == '"%s"' % dstr[:-6]
 
     d = d.astimezone(pytz.timezone('Asia/Kathmandu'))
     dstr = d.isoformat()
 
-    assert rj.dumps(d, datetime_mode=rj.DATETIME_MODE_ISO8601) == '"%s"' % dstr
-    assert rj.dumps(
-        d, datetime_mode=(rj.DATETIME_MODE_ISO8601 | rj.DATETIME_MODE_IGNORE_TZ)
-    ) == '"%s"' % dstr[:-6]
+    assert rj.dumps(d, datetime_mode=rj.DM_ISO8601) == '"%s"' % dstr
+    assert rj.dumps(d, datetime_mode=(rj.DM_ISO8601 | rj.DM_IGNORE_TZ)) == '"%s"' % dstr[:-6]
 
     d = d.astimezone(pytz.timezone('America/New_York'))
     dstr = d.isoformat()
 
-    assert rj.dumps(d, datetime_mode=rj.DATETIME_MODE_ISO8601) == '"%s"' % dstr
-    assert rj.dumps(
-        d, datetime_mode=(rj.DATETIME_MODE_ISO8601 | rj.DATETIME_MODE_IGNORE_TZ)
-    ) == '"%s"' % dstr[:-6]
-    assert rj.dumps(
-        d, datetime_mode=(rj.DATETIME_MODE_ISO8601 | rj.DATETIME_MODE_SHIFT_TO_UTC)
-    ) == '"%s"' % utcstr
+    assert rj.dumps(d, datetime_mode=rj.DM_ISO8601) == '"%s"' % dstr
+    assert rj.dumps(d, datetime_mode=(rj.DM_ISO8601 | rj.DM_IGNORE_TZ)) == '"%s"' % dstr[:-6]
+    assert rj.dumps(d, datetime_mode=(rj.DM_ISO8601 | rj.DM_SHIFT_TO_UTC)) == '"%s"' % utcstr
+
+    assert rj.dumps(d, datetime_mode=rj.DM_UNIX_TIME) == str(d.timestamp())
 
     assert rj.dumps(
-        d, datetime_mode=rj.DATETIME_MODE_UNIX_TIME
-    ) == str(d.timestamp())
+        d, datetime_mode=rj.DM_UNIX_TIME | rj.DM_SHIFT_TO_UTC) == str(utcd.timestamp())
 
     assert rj.dumps(
-        d, datetime_mode=rj.DATETIME_MODE_UNIX_TIME | rj.DATETIME_MODE_SHIFT_TO_UTC
-    ) == str(utcd.timestamp())
-
-    assert rj.dumps(
-        d, datetime_mode= rj.DATETIME_MODE_UNIX_TIME | rj.DATETIME_MODE_ONLY_SECONDS
+        d, datetime_mode= rj.DM_UNIX_TIME | rj.DM_ONLY_SECONDS
     ) == str(d.timestamp()).split('.')[0]
 
     d = datetime.now()
 
     assert rj.dumps(
-        d, datetime_mode=rj.DATETIME_MODE_ISO8601 | rj.DATETIME_MODE_NAIVE_IS_UTC
+        d, datetime_mode=rj.DM_ISO8601 | rj.DM_NAIVE_IS_UTC
     ) == '"%s+00:00"' % d.isoformat()
 
     assert rj.dumps(
-        d, datetime_mode=rj.DATETIME_MODE_UNIX_TIME | rj.DATETIME_MODE_NAIVE_IS_UTC
+        d, datetime_mode=rj.DM_UNIX_TIME | rj.DM_NAIVE_IS_UTC
     ) == ('%d.%06d' % (timegm(d.timetuple()), d.microsecond)).rstrip('0')
 
     assert rj.dumps(
-        d, datetime_mode=(rj.DATETIME_MODE_UNIX_TIME
-                          | rj.DATETIME_MODE_NAIVE_IS_UTC
-                          | rj.DATETIME_MODE_ONLY_SECONDS)
+        d, datetime_mode=(rj.DM_UNIX_TIME
+                          | rj.DM_NAIVE_IS_UTC
+                          | rj.DM_ONLY_SECONDS)
     ) == str(timegm(d.timetuple()))
 
 
@@ -244,28 +229,26 @@ def test_datetime_mode_loads():
     utc = datetime.now(pytz.utc)
     utcstr = utc.isoformat()
 
-    jsond = rj.dumps(utc, datetime_mode=rj.DATETIME_MODE_ISO8601)
+    jsond = rj.dumps(utc, datetime_mode=rj.DM_ISO8601)
 
     assert jsond == '"%s"' % utcstr
-    assert rj.loads(jsond, datetime_mode=rj.DATETIME_MODE_ISO8601) == utc
+    assert rj.loads(jsond, datetime_mode=rj.DM_ISO8601) == utc
 
     local = utc.astimezone(pytz.timezone('Europe/Rome'))
     locstr = local.isoformat()
 
-    jsond = rj.dumps(local, datetime_mode=rj.DATETIME_MODE_ISO8601)
+    jsond = rj.dumps(local, datetime_mode=rj.DM_ISO8601)
 
     assert jsond == '"%s"' % locstr
     assert rj.loads(jsond) == locstr
-    assert rj.loads(jsond, datetime_mode=rj.DATETIME_MODE_ISO8601) == local
+    assert rj.loads(jsond, datetime_mode=rj.DM_ISO8601) == local
 
-    load_as_utc = rj.loads(jsond, datetime_mode=(rj.DATETIME_MODE_ISO8601
-                                                 | rj.DATETIME_MODE_SHIFT_TO_UTC))
+    load_as_utc = rj.loads(jsond, datetime_mode=(rj.DM_ISO8601 | rj.DM_SHIFT_TO_UTC))
 
     assert load_as_utc == utc
     assert not load_as_utc.utcoffset()
 
-    load_as_naive = rj.loads(jsond, datetime_mode=(rj.DATETIME_MODE_ISO8601
-                                                   | rj.DATETIME_MODE_IGNORE_TZ))
+    load_as_naive = rj.loads(jsond, datetime_mode=(rj.DM_ISO8601 | rj.DM_IGNORE_TZ))
 
     assert load_as_naive == local.replace(tzinfo=None)
 
@@ -277,8 +260,8 @@ def test_datetime_values(value):
     with pytest.raises(TypeError):
         rj.dumps(value)
 
-    dumped = rj.dumps(value, datetime_mode=rj.DATETIME_MODE_ISO8601)
-    loaded = rj.loads(dumped, datetime_mode=rj.DATETIME_MODE_ISO8601)
+    dumped = rj.dumps(value, datetime_mode=rj.DM_ISO8601)
+    loaded = rj.loads(dumped, datetime_mode=rj.DM_ISO8601)
     assert loaded == value
 
 
@@ -315,10 +298,10 @@ def test_uuid_mode():
 def test_uuid_and_datetime_mode_together():
     value = [date.today(), uuid.uuid1()]
     dumped = rj.dumps(value,
-                      datetime_mode=rj.DATETIME_MODE_ISO8601,
+                      datetime_mode=rj.DM_ISO8601,
                       uuid_mode=rj.UUID_MODE_CANONICAL)
     loaded = rj.loads(dumped,
-                      datetime_mode=rj.DATETIME_MODE_ISO8601,
+                      datetime_mode=rj.DM_ISO8601,
                       uuid_mode=rj.UUID_MODE_CANONICAL)
     assert loaded == value
 
@@ -368,7 +351,7 @@ def test_uuid_and_datetime_mode_together():
         ('1999-02-03T10:20:30.123456-05:00', datetime),
     ])
 def test_datetime_iso8601(value, cls):
-    result = rj.loads('"%s"' % value, datetime_mode=rj.DATETIME_MODE_ISO8601)
+    result = rj.loads('"%s"' % value, datetime_mode=rj.DM_ISO8601)
     assert isinstance(result, cls)
 
 
@@ -435,9 +418,9 @@ def test_object_hook():
         ( ('[]',), { 'datetime_mode': 'no' } ),
         ( ('[]',), { 'datetime_mode': 1.0 } ),
         ( ('[]',), { 'datetime_mode': -100 } ),
-        ( ('[]',), { 'datetime_mode': rj.DATETIME_MODE_UNIX_TIME + 1 } ),
-        ( ('[]',), { 'datetime_mode': rj.DATETIME_MODE_UNIX_TIME } ),
-        ( ('[]',), { 'datetime_mode': rj.DATETIME_MODE_SHIFT_TO_UTC } ),
+        ( ('[]',), { 'datetime_mode': rj.DM_UNIX_TIME + 1 } ),
+        ( ('[]',), { 'datetime_mode': rj.DM_UNIX_TIME } ),
+        ( ('[]',), { 'datetime_mode': rj.DM_SHIFT_TO_UTC } ),
         ( ('[]',), { 'uuid_mode': 'no' } ),
         ( ('[]',), { 'uuid_mode': 1.0 } ),
         ( ('[]',), { 'uuid_mode': -100 } ),
@@ -462,8 +445,8 @@ def test_invalid_loads_params(posargs, kwargs):
         ( ([],), { 'datetime_mode': 'no' } ),
         ( ([],), { 'datetime_mode': 1.0 } ),
         ( ([],), { 'datetime_mode': -100 } ),
-        ( ([],), { 'datetime_mode': rj.DATETIME_MODE_UNIX_TIME + 1 } ),
-        ( ([],), { 'datetime_mode': rj.DATETIME_MODE_SHIFT_TO_UTC } ),
+        ( ([],), { 'datetime_mode': rj.DM_UNIX_TIME + 1 } ),
+        ( ([],), { 'datetime_mode': rj.DM_SHIFT_TO_UTC } ),
         ( ([],), { 'uuid_mode': 'no' } ),
         ( ([],), { 'uuid_mode': 1.0 } ),
         ( ([],), { 'uuid_mode': -100 } ),

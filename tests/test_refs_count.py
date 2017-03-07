@@ -42,7 +42,7 @@ foo = Foo('foo')
 
 
 NO_OPTION = {}
-DATETIMES = {'datetime_mode': rj.DATETIME_MODE_ISO8601}
+DATETIMES = {'datetime_mode': rj.DM_ISO8601}
 UUIDS = {'uuid_mode': rj.UUID_MODE_CANONICAL}
 FOOS_DUMP = {'default': default}
 FOOS_LOAD = {'object_hook': hook}
