@@ -5,3 +5,16 @@ python:
   - "3.6"
 install: "pip install -r requirements-test.txt"
 script: "py.test ./tests"
+
+deploy:
+  # test pypi
+  - provider: pypi
+    server: https://testpypi.python.org/pypi
+    user: "lelit"
+    password:
+      secure: "qbxFqpCW/3ygk+cEbX5vbB0Cin/8XFOTF5Z9LgC8UPYbJHPvLZwhPxHpW1IW/gPk6ukCDi5ZPBvBLjTGPjtWQAL4leH1A0Ei/Z5z3S00ZZsTjfSDTuA/jk0fTcnTmS7L2P0DtfkBshJrf+k+lr37bVYFbiPtV6uBDBSlCbQeZ5BE43CShOCguNXtV82Z/s9Rk9uynjBivOJRRiI9v8SBz3xYLJKTNSyoKf1lRYtW6cxKWN5zJDm8hXTtDFC7uTCKeCWS6CDILxqSsGlE85j3AUmg2NySxpespTbqsAu0B4N+9A38wq7Rxpd8VoYtuxf96Xj66Ze/JzjBMRJQSpgti5QVKWWN+8LAxzpLxZXgjVjsHASUITPow3aVqyK4lQxVzkUINEo16JlMptcV/XbdiLw07C8Q3Om0ZmWPc+0T2M27T0N395lXtQXSMhZ4pmHpIEG/rQc52FczFR9O3Mkp00NRk1DyCxPOVQl/VkrXn8FTuK4onAjLttojfa32rM6BTUE8Nk5/XaKtBGx26Do9ipIdNt3y77VqeM7hmviSWmXs8w1u+2xc9XlPG/ZLh4LpZa1iCLhymwFhxbnwVVzCpS2DPrRSFYvJIH5VY0pd1OX6d75hOb2DNjt3WTrPGdjczKwFbt4jRv5YDRU8pNQx4XSm9pP+Ax0+YefdMNHgeCU="
+    distributions: "sdist bdist_wheel"
+    on:
+      repo: python-rapidjson/python-rapidjson
+      branch: pypi
+      tags: false
