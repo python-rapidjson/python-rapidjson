@@ -1,6 +1,14 @@
 Changes
 -------
 
+* next (unreleased)
+~~~~~~~~~~~~~~~~~~~
+
+* Compilable with somewhat old g++ (`issue #69__`)
+
+  __ https://github.com/python-rapidjson/python-rapidjson/issues/69
+
+
 0.0.11 (2017-03-05)
 ~~~~~~~~~~~~~~~~~~~
 
