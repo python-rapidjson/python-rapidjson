@@ -1,9 +1,9 @@
-matrix:
-  include:
-    - sudo: required
-      services:
-        - docker
-    - os: osx
+sudo: required
+services:
+  - docker
+os:
+  - linux
+  - osx
 
 env:
   global:
