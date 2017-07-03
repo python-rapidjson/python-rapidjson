@@ -1598,7 +1598,6 @@ dumps(PyObject* self, PyObject* args, PyObject* kwargs)
 }
 
 
-
 static PyMethodDef
 functions[] = {
     {"loads", (PyCFunction) loads, METH_VARARGS | METH_KEYWORDS,
