@@ -15,8 +15,7 @@ env:
       # Note: TWINE_PASSWORD is set in Travis settings
 
 language: python
-python:
-  - "3.6"
+python: "3.5"
 
 script:
   - pip install https://github.com/tgarc/cibuildwheel/archive/master.zip
