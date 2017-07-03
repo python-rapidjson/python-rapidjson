@@ -1,6 +1,30 @@
 Changes
 -------
 
+next (unreleased)
+~~~~~~~~~~~~~~~~~
+
+* Compilable with somewhat old g++ (`issue #69`__)
+
+  __ https://github.com/python-rapidjson/python-rapidjson/issues/69
+
+* **Backward incompatibilities**:
+
+  - all ``DATETIME_MODE_XXX`` constants have been shortened to ``DM_XXX``
+  - ``DATETIME_MODE_ISO8601_UTC`` has been renamed to ``DM_SHIFT_TO_UTC``
+
+* New option ``DM_UNIX_TIME`` to serialize date, datetime and time values as
+  `UNIX timestamps`__ targeting `issue #61`__
+
+  __ https://en.wikipedia.org/wiki/Unix_time
+  __ https://github.com/python-rapidjson/python-rapidjson/issues/61
+
+* New option ``DM_NAIVE_IS_UTC`` to treat naïve datetime and time values as if
+  they were in the UTC timezone (also for issue #61)
+
+* New keyword argument ``native_numbers`` to use underlying C library numbers
+
+
 0.0.11 (2017-03-05)
 ~~~~~~~~~~~~~~~~~~~
 

@@ -66,7 +66,7 @@ types:
 .. doctest::
 
     >>> import datetime, decimal, uuid
-    >>> from rapidjson import DATETIME_MODE_ISO8601, UUID_MODE_CANONICAL
+    >>> from rapidjson import DM_ISO8601, UUID_MODE_CANONICAL
     >>> some_day = datetime.date(2016, 8, 28)
     >>> some_timestamp = datetime.datetime(2016, 8, 28, 13, 14, 15)
     >>> dumps({'a date': some_day, 'a timestamp': some_timestamp})
@@ -74,13 +74,13 @@ types:
       File "<stdin>", line 1, in <module>
     TypeError: datetime.datetime(…) is not JSON serializable
     >>> dumps({'a date': some_day, 'a timestamp': some_timestamp},
-    ...       datetime_mode=DATETIME_MODE_ISO8601,
+    ...       datetime_mode=DM_ISO8601,
     ...       sort_keys=True) # for doctests
     '{"a date":"2016-08-28","a timestamp":"2016-08-28T13:14:15"}'
     >>> as_json = _
     >>> pprint(loads(as_json))
     {'a date': '2016-08-28', 'a timestamp': '2016-08-28T13:14:15'}
-    >>> pprint(loads(as_json, datetime_mode=DATETIME_MODE_ISO8601))
+    >>> pprint(loads(as_json, datetime_mode=DM_ISO8601))
     {'a date': datetime.date(2016, 8, 28),
      'a timestamp': datetime.datetime(2016, 8, 28, 13, 14, 15)}
     >>> some_uuid = uuid.uuid5(uuid.NAMESPACE_DNS, 'python.org')

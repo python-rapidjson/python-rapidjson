@@ -64,8 +64,10 @@ if cc and 'gcc' in cc:
         cflags = cflags.replace('-Wstrict-prototypes', '')
         sysconfig.get_config_vars()['CFLAGS'] = cflags
 
-    # Add -pedantic, so we get a warning when using non-standard features
-    extension_options['extra_compile_args'] = ['-pedantic']
+    # Add -pedantic, so we get a warning when using non-standard features, and
+    # -Wno-long-long to pacify old gcc (or Apple's hybrids) that treat "long
+    # long" as an error under C++ (see issue #69)
+    extension_options['extra_compile_args'] = ['-pedantic', '-Wno-long-long']
 
 rapidjson = Extension('rapidjson', **extension_options)
 

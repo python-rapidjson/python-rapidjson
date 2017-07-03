@@ -2,7 +2,10 @@ pytest >= 3
 pytest-benchmark
 pytz
 readme-renderer
-simplejson
-ujson
-yajl
+
+# Keep in sync with benchmark-tables.py versions
+simplejson==3.11.1
+ujson==1.35
+yajl==0.3.5
+
 -e .
