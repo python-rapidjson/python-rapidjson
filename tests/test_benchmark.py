@@ -96,6 +96,6 @@ def test_loads(contender, data, benchmark):
 @pytest.mark.benchmark(group='deserialize')
 @pytest.mark.parametrize('data', [datetimes], ids=['256x3 datetimes'])
 def test_loads_datetimes(datetimes_loads_contender, data, benchmark):
-    from rapidjson import dumps, DATETIME_MODE_ISO8601
-    data = dumps(data, datetime_mode=DATETIME_MODE_ISO8601)
+    from rapidjson import dumps, DM_ISO8601
+    data = dumps(data, datetime_mode=DM_ISO8601)
     benchmark(datetimes_loads_contender, data)
