@@ -13,19 +13,14 @@ env:
     - TWINE_USERNAME=lelit
       # Note: TWINE_PASSWORD is set in Travis settings
 
-# language: python
-# python:
-#   - "3.4"
-#   - "3.5"
-#   - "3.6"
-# install: "pip install -r requirements-test.txt"
-#script: "py.test ./tests"
+language: python
+python: "3.6"
 
 script:
   - pip install cibuildwheel==0.3.0
   - cibuildwheel --output-dir wheelhouse
-  - pip install twine
-  - twine upload wheelhouse/*.whl
+  # - pip install twine
+  # - twine upload wheelhouse/*.whl
   # - |
   #   if [[ $TRAVIS_TAG ]]; then
   #     python -m pip install twine
