@@ -18,7 +18,7 @@ assert len(CONTENDERS) == len(S_HEADERS) == len(D_HEADERS)
 
 FOOTNOTES = ['rapidjson with ``native_numbers=True``',
              '`ujson 1.35 <https://pypi.python.org/pypi/ujson/1.35>`__',
-             '`simplejson 3.10.0 <https://pypi.python.org/pypi/simplejson/3.10.0>`__',
+             '`simplejson 3.11.1 <https://pypi.python.org/pypi/simplejson/3.11.1>`__',
              'Python 3.6 standard library',
              '`yajl 0.3.5 <https://pypi.python.org/pypi/yajl/0.3.5>`__']
 
