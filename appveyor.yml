@@ -6,6 +6,8 @@ environment:
     TWINE_REPOSITORY_URL: https://test.pypi.org/legacy
     TWINE_USERNAME: lelit
     # Note: TWINE_PASSWORD is set in Travis settings
+  matrix:
+    - PYTHON: "C:\\Python35-x64"
 
 build_script:
   - pip install https://github.com/tgarc/cibuildwheel/archive/master.zip
