@@ -1,0 +1,21 @@
+environment:
+  global:
+    CIBW_TEST_REQUIRES: "pytest pytest-benchmark pytz"
+    CIBW_TEST_COMMAND: "py.test {project}/tests"
+    CIBW_SKIP: "cp2* cp33*"
+    TWINE_REPOSITORY_URL: https://test.pypi.org/legacy
+    TWINE_USERNAME: lelit
+    # Note: TWINE_PASSWORD is set in Travis settings
+
+build_script:
+  - pip install https://github.com/tgarc/cibuildwheel/archive/master.zip
+  - cibuildwheel --output-dir wheelhouse
+  - ps: >-
+      if ($env:APPVEYOR_REPO_TAG -eq "true") {
+        pip install twine
+        twine upload (resolve-path wheelhouse\*.whl)
+      }
+
+artifacts:
+  - path: "wheelhouse\\*.whl"
+    name: Wheels
