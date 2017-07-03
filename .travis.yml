@@ -17,7 +17,7 @@ language: python
 python: "3.6"
 
 script:
-  - pip install cibuildwheel==0.3.0
+  - pip install https://github.com/tgarc/cibuildwheel/archive/master.zip
   - cibuildwheel --output-dir wheelhouse
   # - pip install twine
   # - twine upload wheelhouse/*.whl
