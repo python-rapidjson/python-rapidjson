@@ -8,7 +8,7 @@ os:
 env:
   global:
     - CIBW_TEST_REQUIRES="pytest pytz"
-    - CIBW_TEST_COMMAND="py.test ./tests"
+    - CIBW_TEST_COMMAND="py.test {project}/tests"
     - CIBW_SKIP="cp27* cp33*"
     - TWINE_REPOSITORY_URL=https://test.pypi.org/legacy
     - TWINE_USERNAME=lelit
