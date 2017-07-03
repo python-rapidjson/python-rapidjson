@@ -8,6 +8,7 @@ os:
 env:
   global:
     - CIBW_TEST_COMMAND="py.test ./tests"
+    - CIBW_SKIP="cp27* cp33*"
     - TWINE_REPOSITORY_URL=https://testpypi.python.org/pypi
     - TWINE_USERNAME=lelit
       # Note: TWINE_PASSWORD is set in Travis settings
