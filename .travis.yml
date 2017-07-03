@@ -3,7 +3,7 @@ services:
   - docker
 os:
   - linux
-  - osx
+#  - osx
 
 env:
   global:
