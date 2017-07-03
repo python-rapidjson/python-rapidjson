@@ -4,6 +4,10 @@ Changes
 next (unreleased)
 ~~~~~~~~~~~~~~~~~
 
+* Compilable with somewhat old g++ (`issue #69`__)
+
+  __ https://github.com/python-rapidjson/python-rapidjson/issues/69
+
 * **Backward incompatibilities**:
 
   - all ``DATETIME_MODE_XXX`` constants have been shortened to ``DM_XXX``
@@ -18,9 +22,7 @@ next (unreleased)
 * New option ``DM_NAIVE_IS_UTC`` to treat naïve datetime and time values as if
   they were in the UTC timezone (also for issue #61)
 
-* Compilable with somewhat old g++ (`issue #69`__)
-
-  __ https://github.com/python-rapidjson/python-rapidjson/issues/69
+* New keyword argument ``native_numbers`` to use underlying C library numbers
 
 
 0.0.11 (2017-03-05)
