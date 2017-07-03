@@ -13,12 +13,12 @@ env:
     - TWINE_USERNAME=lelit
       # Note: TWINE_PASSWORD is set in Travis settings
 
-language: python
-python:
-  - "3.4"
-  - "3.5"
-  - "3.6"
-install: "pip install -r requirements-test.txt"
+# language: python
+# python:
+#   - "3.4"
+#   - "3.5"
+#   - "3.6"
+# install: "pip install -r requirements-test.txt"
 #script: "py.test ./tests"
 
 script:
