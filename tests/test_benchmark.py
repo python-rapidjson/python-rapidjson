@@ -111,6 +111,7 @@ def test_loads_datetimes(datetimes_loads_contender, data, benchmark):
 def test_dumps_numbers(numbers_contender, data, benchmark):
     benchmark(numbers_contender.dumps, data)
 
+
 @pytest.mark.benchmark(group='deserialize')
 @pytest.mark.parametrize('data', [numbers], ids=['512 numbers array'])
 def test_loads_numbers(numbers_contender, data, benchmark):

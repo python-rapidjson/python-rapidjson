@@ -28,6 +28,9 @@ import rapidjson as rj
 contenders.append(Contender('rapidjson',
                             rj.dumps,
                             rj.loads))
+contenders.append(Contender('rapidjson_nativenumbers',
+                            partial(rj.dumps, native_numbers=True),
+                            partial(rj.loads, native_numbers=True)))
 
 numbers_contenders = [
     Contender('Wide numbers', rj.dumps, rj.loads),

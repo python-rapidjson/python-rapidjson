@@ -10,7 +10,17 @@ import json
 from collections import defaultdict, namedtuple
 
 
-CONTENDERS = 'rapidjson,ujson,simplejson,json,yajl'.split(',')
+CONTENDERS = 'rapidjson,rapidjson_nativenumbers,ujson,simplejson,json,yajl'.split(',')
+S_HEADERS = 'rapidjson,native [1]_,ujson [2]_,simplejson [3]_,stdlib [4]_,yajl [5]_'.split(',')
+D_HEADERS = 'rapidjson,native,ujson,simplejson,stdlib,yajl'.split(',')
+
+assert len(CONTENDERS) == len(S_HEADERS) == len(D_HEADERS)
+
+FOOTNOTES = ['rapidjson with ``native_numbers=True``',
+             '`ujson 1.35 <https://pypi.python.org/pypi/ujson/1.35>`__',
+             '`simplejson 3.10.0 <https://pypi.python.org/pypi/simplejson/3.10.0>`__',
+             'Python 3.6 standard library',
+             '`yajl 0.3.5 <https://pypi.python.org/pypi/yajl/0.3.5>`__']
 
 Timings = namedtuple('Timings', 'min, max, mean, rounds, median')
 Benchmark = namedtuple('Benchmark', 'group, name, contender')
@@ -59,11 +69,12 @@ class Comparison:
         return result, SingleValue(*[(getattr(sum, c) / getattr(sum, by))
                                      for c in CONTENDERS])
 
-    def tabulate(self, group, fieldname, normalize_by='rapidjson', omit='rapidjson'):
+    def tabulate(self, group, fieldname, headers, normalize_by='rapidjson', omit='rapidjson'):
         normalized, sum = self.normalize_and_summarize(group, fieldname, normalize_by)
 
         nc = len(CONTENDERS) - 1
-        widths = [max((len(n)+4 for n in normalized))] + [10] * nc
+        widths = [max((len(n)+4 for n in normalized))] + \
+                 [max((len(h) for h in headers))] * nc
 
         cells = ['-' * (width+2) for width in widths]
         seprow = '+' + '+'.join(cells) + '+'
@@ -75,7 +86,8 @@ class Comparison:
         rowfmt = '|' + '|'.join(cells) + '|'
 
         print(seprow)
-        print(rowfmt.format(*([group] + [c for c in CONTENDERS if c != omit])))
+        print(rowfmt.format(*([group] + [headers[i] for i, c in enumerate(CONTENDERS)
+                                         if c != omit])))
         print(headseprow)
 
         def printrow(name, row):
@@ -103,8 +115,14 @@ def main():
         fname = 'comparison.json'
 
     comparison = Comparison(fname)
-    comparison.tabulate('serialize', 'mean')
-    comparison.tabulate('deserialize', 'mean')
+    comparison.tabulate('serialize', 'mean', S_HEADERS)
+    comparison.tabulate('deserialize', 'mean', D_HEADERS)
+
+    idx = 1
+    print()
+    for fn in FOOTNOTES:
+        print('.. [%d] %s' % (idx, fn))
+        idx += 1
 
 
 if __name__ == '__main__':
