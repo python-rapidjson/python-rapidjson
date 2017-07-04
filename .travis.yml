@@ -15,10 +15,9 @@ env:
       # Note: TWINE_PASSWORD is set in Travis settings
 
 language: python
-python: "3.5"
 
 script:
-  - pip install https://github.com/tgarc/cibuildwheel/archive/master.zip
+  - pip install cibuildwheel==0.3.0
   - cibuildwheel --output-dir wheelhouse
   - |
     if [[ $TRAVIS_TAG ]]; then

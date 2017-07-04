@@ -6,16 +6,14 @@ environment:
     TWINE_REPOSITORY_URL: https://test.pypi.org/legacy
     TWINE_USERNAME: lelit
     # Note: TWINE_PASSWORD is set in Travis settings
-  matrix:
-    - PYTHON: "C:\\Python35-x64\\python.exe"
 
 build_script:
-  - "%PYTHON% -m pip install https://github.com/tgarc/cibuildwheel/archive/master.zip"
-  - cibuildwheel --output-dir wheelhouse
+  - "python -m pip install cibuildwheel==0.3.0
+  - "python -m cibuildwheel --output-dir wheelhouse"
   - ps: >-
       if ($env:APPVEYOR_REPO_TAG -eq "true") {
-        %PYTHON% -m pip install twine
-        %PYTHON% -m twine upload (resolve-path wheelhouse\*.whl)
+        python -m pip install twine
+        python -m twine upload (resolve-path wheelhouse\*.whl)
       }
 
 artifacts:
