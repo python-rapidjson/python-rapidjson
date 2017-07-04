@@ -10,12 +10,12 @@ environment:
     - PYTHON: "C:\\Python35-x64"
 
 build_script:
-  - pip install https://github.com/tgarc/cibuildwheel/archive/master.zip
+  - "%PYTHON% -m pip install https://github.com/tgarc/cibuildwheel/archive/master.zip"
   - cibuildwheel --output-dir wheelhouse
   - ps: >-
       if ($env:APPVEYOR_REPO_TAG -eq "true") {
-        pip install twine
-        twine upload (resolve-path wheelhouse\*.whl)
+        %PYTHON% -m pip install twine
+        %PYTHON% -m twine upload (resolve-path wheelhouse\*.whl)
       }
 
 artifacts:
