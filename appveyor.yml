@@ -9,6 +9,8 @@ environment:
   matrix:
     - PYTHON: "C:\\Python35-x64\\python.exe"
 
+install: "git submodule update --init --recursive"
+
 build_script:
   - "%PYTHON% -m pip install https://github.com/tgarc/cibuildwheel/archive/master.zip"
   - "%PYTHON% -m cibuildwheel --output-dir wheelhouse"
