@@ -3,7 +3,10 @@ matrix:
     - sudo: required
       services:
         - docker
-#    - os: osx
+    - os: osx
+      language: generic
+      env:
+        - PY_VERSION=3
 
 env:
   global:
