@@ -277,9 +277,9 @@ def test_datetime_values(value):
 
 @pytest.mark.unit
 def test_uuid_mode():
-    assert rj.UUID_MODE_NONE == 0
-    assert rj.UUID_MODE_CANONICAL == 1
-    assert rj.UUID_MODE_HEX == 2
+    assert rj.UM_NONE == 0
+    assert rj.UM_CANONICAL == 1
+    assert rj.UM_HEX == 2
 
     value = uuid.uuid1()
     with pytest.raises(TypeError):
@@ -291,16 +291,16 @@ def test_uuid_mode():
     with pytest.raises(ValueError):
         rj.loads('""', uuid_mode=42)
 
-    dumped = rj.dumps(value, uuid_mode=rj.UUID_MODE_CANONICAL)
-    loaded = rj.loads(dumped, uuid_mode=rj.UUID_MODE_CANONICAL)
+    dumped = rj.dumps(value, uuid_mode=rj.UM_CANONICAL)
+    loaded = rj.loads(dumped, uuid_mode=rj.UM_CANONICAL)
     assert loaded == value
 
     # When loading, hex mode implies canonical format
-    loaded = rj.loads(dumped, uuid_mode=rj.UUID_MODE_HEX)
+    loaded = rj.loads(dumped, uuid_mode=rj.UM_HEX)
     assert loaded == value
 
-    dumped = rj.dumps(value, uuid_mode=rj.UUID_MODE_HEX)
-    loaded = rj.loads(dumped, uuid_mode=rj.UUID_MODE_HEX)
+    dumped = rj.dumps(value, uuid_mode=rj.UM_HEX)
+    loaded = rj.loads(dumped, uuid_mode=rj.UM_HEX)
     assert loaded == value
 
 
@@ -309,10 +309,10 @@ def test_uuid_and_datetime_mode_together():
     value = [date.today(), uuid.uuid1()]
     dumped = rj.dumps(value,
                       datetime_mode=rj.DM_ISO8601,
-                      uuid_mode=rj.UUID_MODE_CANONICAL)
+                      uuid_mode=rj.UM_CANONICAL)
     loaded = rj.loads(dumped,
                       datetime_mode=rj.DM_ISO8601,
-                      uuid_mode=rj.UUID_MODE_CANONICAL)
+                      uuid_mode=rj.UM_CANONICAL)
     assert loaded == value
 
 
@@ -375,7 +375,7 @@ def test_datetime_iso8601(value, cls):
         ('7a683da4-9aa0-11e5-972e-3085a99ccac7', uuid.UUID),
     ])
 def test_uuid_canonical(value, cls):
-    result = rj.loads('"%s"' % value, uuid_mode=rj.UUID_MODE_CANONICAL)
+    result = rj.loads('"%s"' % value, uuid_mode=rj.UM_CANONICAL)
     assert isinstance(result, cls), type(result)
 
 
@@ -388,7 +388,7 @@ def test_uuid_canonical(value, cls):
         ('7a683da4-9aa0-11e5-972e-3085a99ccac7', uuid.UUID),
     ])
 def test_uuid_hex(value, cls):
-    result = rj.loads('"%s"' % value, uuid_mode=rj.UUID_MODE_HEX)
+    result = rj.loads('"%s"' % value, uuid_mode=rj.UM_HEX)
     assert isinstance(result, cls), type(result)
 
 

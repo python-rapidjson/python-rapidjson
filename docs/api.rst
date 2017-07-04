@@ -61,19 +61,19 @@
    This can be used combined with :data:`DM_ISO8601` or :data:`DM_UNIX_TIME`,
    to always *shift* values the UTC_ timezone.
 
-.. data:: UUID_MODE_NONE
+.. data:: UM_NONE
 
    This is the default ``uuid_mode``: :class:`UUID` instances are *not*
    recognized by :func:`dumps` and :func:`loads`.
 
-.. data:: UUID_MODE_CANONICAL
+.. data:: UM_CANONICAL
 
    In this ``uuid_mode``, :func:`loads` recognizes string values containing
    the ``xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx`` canonical representation as
    :class:`UUID` instances; :func:`dumps` emits same kind of representation
    for :class:`UUID` instances as a string value.
 
-.. data:: UUID_MODE_HEX
+.. data:: UM_HEX
 
    In this ``uuid_mode`` :func:`loads` recognizes string values containing
    exactly 32 hex digits *or* the ``xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx``
@@ -84,7 +84,7 @@
 
    from rapidjson import (dumps, loads, DM_NONE, DM_ISO8601, DM_UNIX_TIME,
                           DM_ONLY_SECONDS, DM_IGNORE_TZ, DM_NAIVE_IS_UTC, DM_SHIFT_TO_UTC,
-                          UUID_MODE_NONE, UUID_MODE_CANONICAL, UUID_MODE_HEX)
+                          UM_NONE, UM_CANONICAL, UM_HEX)
 
 .. function:: dumps(obj, skipkeys=False, ensure_ascii=True, allow_nan=True, indent=None, \
                     default=None, sort_keys=False, use_decimal=False, \
@@ -365,9 +365,9 @@
       Traceback (most recent call last):
         File "<stdin>", line 1, in <module>
       TypeError: UUID(…) is not JSON serializable
-      >>> dumps(random_uuid, uuid_mode=UUID_MODE_CANONICAL) # doctest: +SKIP
+      >>> dumps(random_uuid, uuid_mode=UM_CANONICAL) # doctest: +SKIP
       '"be576345-65b5-4fc2-92c5-94e2f82e38fd"'
-      >>> dumps(random_uuid, uuid_mode=UUID_MODE_HEX) # doctest: +SKIP
+      >>> dumps(random_uuid, uuid_mode=UM_HEX) # doctest: +SKIP
       '"be57634565b54fc292c594e2f82e38fd"'
 
 .. function:: loads(s, object_hook=None, use_decimal=False, allow_nan=True, \
@@ -530,16 +530,16 @@
       >>> loads('"aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"')
       'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa'
       >>> loads('"aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"',
-      ...       uuid_mode=UUID_MODE_CANONICAL)
+      ...       uuid_mode=UM_CANONICAL)
       UUID('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa')
       >>> loads('"aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"',
-      ...       uuid_mode=UUID_MODE_HEX)
+      ...       uuid_mode=UM_HEX)
       UUID('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa')
       >>> loads('"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"',
-      ...       uuid_mode=UUID_MODE_CANONICAL)
+      ...       uuid_mode=UM_CANONICAL)
       'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa'
       >>> loads('"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"',
-      ...       uuid_mode=UUID_MODE_HEX)
+      ...       uuid_mode=UM_HEX)
       UUID('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa')
 
 

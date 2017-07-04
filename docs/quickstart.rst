@@ -66,7 +66,7 @@ types:
 .. doctest::
 
     >>> import datetime, decimal, uuid
-    >>> from rapidjson import DM_ISO8601, UUID_MODE_CANONICAL
+    >>> from rapidjson import DM_ISO8601, UM_CANONICAL
     >>> some_day = datetime.date(2016, 8, 28)
     >>> some_timestamp = datetime.datetime(2016, 8, 28, 13, 14, 15)
     >>> dumps({'a date': some_day, 'a timestamp': some_timestamp})
@@ -88,12 +88,12 @@ types:
     Traceback (most recent call last):
       File "<stdin>", line 1, in <module>
     TypeError: UUID(…) is not JSON serializable
-    >>> dumps(some_uuid, uuid_mode=UUID_MODE_CANONICAL)
+    >>> dumps(some_uuid, uuid_mode=UM_CANONICAL)
     '"886313e1-3b8a-5372-9b90-0c9aee199e5d"'
     >>> as_json = _
     >>> loads(as_json)
     '886313e1-3b8a-5372-9b90-0c9aee199e5d'
-    >>> loads(as_json, uuid_mode=UUID_MODE_CANONICAL)
+    >>> loads(as_json, uuid_mode=UM_CANONICAL)
     UUID('886313e1-3b8a-5372-9b90-0c9aee199e5d')
     >>> pi = decimal.Decimal('3.1415926535897932384626433832795028841971')
     >>> dumps(pi)

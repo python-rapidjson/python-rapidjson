@@ -98,9 +98,9 @@ days_per_month(int year, int month) {
 
 
 enum UuidMode {
-    UUID_MODE_NONE = 0,
-    UUID_MODE_CANONICAL = 1, // only 4-dashed 32 hex chars: xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
-    UUID_MODE_HEX = 2        // canonical OR 32 hex chars
+    UM_NONE = 0,
+    UM_CANONICAL = 1, // only 4-dashed 32 hex chars: xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
+    UM_HEX = 2        // canonical OR 32 hex chars
 };
 
 
@@ -711,7 +711,7 @@ struct PyHandler {
 #undef digit
 
     bool IsUuid(const char* str, SizeType length) {
-        if (uuidMode == UUID_MODE_HEX && length == 32) {
+        if (uuidMode == UM_HEX && length == 32) {
             for (int i = length - 1; i >= 0; --i)
                 if (!isxdigit(str[i]))
                     return false;
@@ -748,7 +748,7 @@ struct PyHandler {
         if (datetimeMode != DM_NONE && IsIso8601(str, length))
             return HandleIso8601(str, length);
 
-        if (uuidMode != UUID_MODE_NONE && IsUuid(str, length))
+        if (uuidMode != UM_NONE && IsUuid(str, length))
             return HandleUuid(str, length);
 
         value = PyUnicode_FromStringAndSize(str, length);
@@ -770,7 +770,7 @@ loads(PyObject* self, PyObject* args, PyObject* kwargs)
     PyObject* datetimeModeObj = NULL;
     DatetimeMode datetimeMode = DM_NONE;
     PyObject* uuidModeObj = NULL;
-    UuidMode uuidMode = UUID_MODE_NONE;
+    UuidMode uuidMode = UM_NONE;
 
     static char const * kwlist[] = {
         "s",
@@ -842,10 +842,10 @@ loads(PyObject* self, PyObject* args, PyObject* kwargs)
 
     if (uuidModeObj) {
         if (uuidModeObj == Py_None)
-            uuidMode = UUID_MODE_NONE;
+            uuidMode = UM_NONE;
         else if (PyLong_Check(uuidModeObj)) {
             uuidMode = (UuidMode) PyLong_AsLong(uuidModeObj);
-            if (uuidMode < UUID_MODE_NONE || uuidMode > UUID_MODE_HEX) {
+            if (uuidMode < UM_NONE || uuidMode > UM_HEX) {
                 PyErr_SetString(PyExc_ValueError, "Invalid uuid_mode");
                 return NULL;
             }
@@ -1410,10 +1410,10 @@ dumps_internal(
                     writer->Double(timestamp);
             }
         }
-        else if (uuidMode != UUID_MODE_NONE
+        else if (uuidMode != UM_NONE
                  && PyObject_TypeCheck(object, (PyTypeObject *) uuid_type)) {
             PyObject* retval;
-            if (uuidMode == UUID_MODE_CANONICAL)
+            if (uuidMode == UM_CANONICAL)
                 retval = PyObject_Str(object);
             else
                 retval = PyObject_GetAttr(object, hex_name);
@@ -1483,7 +1483,7 @@ dumps(PyObject* self, PyObject* args, PyObject* kwargs)
     PyObject* datetimeModeObj = NULL;
     DatetimeMode datetimeMode = DM_NONE;
     PyObject* uuidModeObj = NULL;
-    UuidMode uuidMode = UUID_MODE_NONE;
+    UuidMode uuidMode = UM_NONE;
 
     bool prettyPrint = false;
     const char indentChar = ' ';
@@ -1557,10 +1557,10 @@ dumps(PyObject* self, PyObject* args, PyObject* kwargs)
 
     if (uuidModeObj) {
         if (uuidModeObj == Py_None)
-            uuidMode = UUID_MODE_NONE;
+            uuidMode = UM_NONE;
         else if (PyLong_Check(uuidModeObj)) {
             uuidMode = (UuidMode) PyLong_AsLong(uuidModeObj);
-            if (uuidMode < UUID_MODE_NONE || uuidMode > UUID_MODE_HEX) {
+            if (uuidMode < UM_NONE || uuidMode > UM_HEX) {
                 PyErr_SetString(PyExc_ValueError, "Invalid uuid_mode");
                 return NULL;
             }
@@ -1804,9 +1804,9 @@ PyInit_rapidjson()
     PyModule_AddIntConstant(m, "DM_NAIVE_IS_UTC", DM_NAIVE_IS_UTC);
     PyModule_AddIntConstant(m, "DM_SHIFT_TO_UTC", DM_SHIFT_TO_UTC);
 
-    PyModule_AddIntConstant(m, "UUID_MODE_NONE", UUID_MODE_NONE);
-    PyModule_AddIntConstant(m, "UUID_MODE_HEX", UUID_MODE_HEX);
-    PyModule_AddIntConstant(m, "UUID_MODE_CANONICAL", UUID_MODE_CANONICAL);
+    PyModule_AddIntConstant(m, "UM_NONE", UM_NONE);
+    PyModule_AddIntConstant(m, "UM_HEX", UM_HEX);
+    PyModule_AddIntConstant(m, "UM_CANONICAL", UM_CANONICAL);
 
     PyModule_AddStringConstant(m, "__version__",
                                PYTHON_RAPIDJSON_VERSION);

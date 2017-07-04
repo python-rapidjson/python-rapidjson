@@ -11,7 +11,9 @@ next (unreleased)
 * **Backward incompatibilities**:
 
   - all ``DATETIME_MODE_XXX`` constants have been shortened to ``DM_XXX``
-  - ``DATETIME_MODE_ISO8601_UTC`` has been renamed to ``DM_SHIFT_TO_UTC``
+    ``DATETIME_MODE_ISO8601_UTC`` has been renamed to ``DM_SHIFT_TO_UTC``
+
+  - all ``UUID_MODE_XXX`` constants have been shortened to ``UM_XXX``
 
 * New option ``DM_UNIX_TIME`` to serialize date, datetime and time values as
   `UNIX timestamps`__ targeting `issue #61`__
