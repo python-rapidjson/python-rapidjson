@@ -7,7 +7,7 @@ environment:
     TWINE_USERNAME: lelit
     # Note: TWINE_PASSWORD is set in Travis settings
   matrix:
-    - PYTHON: "C:\\Python35-x64"
+    - PYTHON: "C:\\Python35-x64\\python.exe"
 
 build_script:
   - "%PYTHON% -m pip install https://github.com/tgarc/cibuildwheel/archive/master.zip"
