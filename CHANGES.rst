@@ -1,8 +1,8 @@
 Changes
 -------
 
-next (unreleased)
-~~~~~~~~~~~~~~~~~
+0.1.0b1 (2017-08-12)
+~~~~~~~~~~~~~~~~~~~~
 
 * Compilable with somewhat old g++ (`issue #69`__)
 
@@ -25,6 +25,9 @@ next (unreleased)
   they were in the UTC timezone (also for issue #61)
 
 * New keyword argument ``number_mode`` to use underlying C library numbers
+
+* Binary wheels for GNU/Linux and Windows on PyPI (one would hope: this is the
+  reason for the beta1 release)
 
 
 0.0.11 (2017-03-05)
