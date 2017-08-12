@@ -16,7 +16,6 @@ env:
     - CIBW_TEST_REQUIRES="pytest pytest-benchmark pytz"
     - CIBW_TEST_COMMAND="py.test {project}/tests"
     - CIBW_SKIP="cp2* cp33*"
-    - TWINE_REPOSITORY_URL=https://test.pypi.org/legacy
     - TWINE_USERNAME=lelit
       # Note: TWINE_PASSWORD is set in Travis settings
 
