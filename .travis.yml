@@ -1,3 +1,6 @@
+language: python
+python: "3.6"
+
 matrix:
   include:
     - sudo: required
@@ -17,14 +20,13 @@ env:
     - TWINE_USERNAME=lelit
       # Note: TWINE_PASSWORD is set in Travis settings
 
-language: python
-python: "3.5"
-
 script:
-  - python3 -m pip install https://github.com/tgarc/cibuildwheel/archive/master.zip
-  - python3 -m cibuildwheel --output-dir wheelhouse
-  - |
-    if [[ $TRAVIS_TAG ]]; then
-      python3 -m pip install twine
-      python3 -m twine upload wheelhouse/*.whl
-    fi
+  - pip install cibuildwheel==0.4.0
+  - cibuildwheel --output-dir wheelhouse
+  # - |
+  #   if [[ $TRAVIS_TAG ]]; then
+  #     pip install twine
+  #     twine upload wheelhouse/*.whl
+  #   fi
+  - pip install twine
+  - twine upload wheelhouse/*.whl
