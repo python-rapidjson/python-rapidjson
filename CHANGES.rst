@@ -1,6 +1,12 @@
 Changes
 -------
 
+0.1.0b3 (2017-08-12)
+~~~~~~~~~~~~~~~~~~~~
+
+* Exclude CI configurations from the source distribution
+
+
 0.1.0b2 (2017-08-12)
 ~~~~~~~~~~~~~~~~~~~~
 
