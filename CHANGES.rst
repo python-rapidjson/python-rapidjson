@@ -1,6 +1,12 @@
 Changes
 -------
 
+0.1.0b2 (2017-08-12)
+~~~~~~~~~~~~~~~~~~~~
+
+* Fix Powershell wheel upload script in appveyor configuration
+
+
 0.1.0b1 (2017-08-12)
 ~~~~~~~~~~~~~~~~~~~~
 
