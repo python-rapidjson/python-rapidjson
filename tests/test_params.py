@@ -34,41 +34,50 @@ def test_allow_nan():
     f = [1.1, float("inf"), 2.2, float("nan"), 3.3, float("-inf"), 4.4]
     expected = '[1.1,Infinity,2.2,NaN,3.3,-Infinity,4.4]'
     assert rj.dumps(f) == expected
+    assert rj.dumps(f, number_mode=rj.NM_NAN) == expected
     assert rj.dumps(f, allow_nan=True) == expected
-
+    with pytest.raises(ValueError):
+        rj.dumps(f, number_mode=None)
     with pytest.raises(ValueError):
         rj.dumps(f, allow_nan=False)
 
     s = "NaN"
     assert math.isnan(rj.loads(s))
+    assert math.isnan(rj.loads(s, number_mode=rj.NM_NAN))
     assert math.isnan(rj.loads(s, allow_nan=True))
-
+    with pytest.raises(ValueError):
+        rj.loads(s, number_mode=rj.NM_NONE)
     with pytest.raises(ValueError):
         rj.loads(s, allow_nan=False)
 
     s = "Infinity"
     assert rj.loads(s) == float("inf")
+    assert rj.loads(s, number_mode=rj.NM_NAN) == float("inf")
     assert rj.loads(s, allow_nan=True) == float("inf")
-
+    with pytest.raises(ValueError):
+        rj.loads(s, number_mode=rj.NM_NONE)
     with pytest.raises(ValueError):
         rj.loads(s, allow_nan=False)
 
     s = "-Infinity"
     assert rj.loads(s) == float("-inf")
+    assert rj.loads(s, number_mode=rj.NM_NAN) == float("-inf")
     assert rj.loads(s, allow_nan=True) == float("-inf")
-
+    with pytest.raises(ValueError):
+        rj.loads(s, number_mode=rj.NM_NONE)
     with pytest.raises(ValueError):
         rj.loads(s, allow_nan=False)
 
 
 @pytest.mark.unit
-def test_native_numbers():
+def test_native():
     f = [-1, 1, 1.1, -2.2]
     expected = '[-1,1,1.1,-2.2]'
-    assert rj.dumps(f, native_numbers=True) == expected
-    assert rj.dumps(f, native_numbers=False) == expected
-    assert rj.loads(expected, native_numbers=True) == f
-    assert rj.loads(expected, native_numbers=False) == f
+    assert rj.dumps(f, number_mode=rj.NM_NATIVE) == expected
+    assert rj.dumps(f) == expected
+    assert rj.loads(expected) == f
+    assert rj.loads(expected, number_mode=rj.NM_NATIVE) == f
+    assert rj.loads(expected) == f
 
 
 @pytest.mark.unit
@@ -136,7 +145,7 @@ def test_default():
 
 
 @pytest.mark.unit
-def test_use_decimal():
+def test_decimal():
     import math
     from decimal import Decimal
 
@@ -147,12 +156,12 @@ def test_use_decimal():
         rj.dumps(d)
 
     assert rj.dumps(float(dstr)) == str(math.e)
-    assert rj.dumps(d, use_decimal=True) == dstr
-    assert rj.dumps({"foo": d}, use_decimal=True) == '{"foo":%s}' % dstr
+    assert rj.dumps(d, number_mode=rj.NM_DECIMAL) == dstr
+    assert rj.dumps({"foo": d}, number_mode=rj.NM_DECIMAL) == '{"foo":%s}' % dstr
 
-    assert rj.loads(rj.dumps(d, use_decimal=True), use_decimal=True) == d
+    assert rj.loads(rj.dumps(d, number_mode=rj.NM_DECIMAL), number_mode=rj.NM_DECIMAL) == d
 
-    assert rj.loads(rj.dumps(d, use_decimal=True)) == float(dstr)
+    assert rj.loads(rj.dumps(d, number_mode=rj.NM_DECIMAL)) == float(dstr)
 
 
 @pytest.mark.unit

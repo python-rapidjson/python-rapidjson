@@ -37,6 +37,8 @@ static PyObject* hex_name = NULL;
 static PyObject* timestamp_name = NULL;
 static PyObject* total_seconds_name = NULL;
 static PyObject* utcoffset_name = NULL;
+static PyObject* is_infinite_name = NULL;
+static PyObject* is_nan_name = NULL;
 
 static PyObject* minus_inf_string_value = NULL;
 static PyObject* nan_string_value = NULL;
@@ -104,18 +106,24 @@ enum UuidMode {
 };
 
 
+enum NumberMode {
+    NM_NONE = 0,
+    NM_NAN = 1,       // allow "not-a-number" values
+    NM_DECIMAL = 2,   // serialize Decimal instances, deserialize floats as Decimal
+    NM_NATIVE = 4     // use faster native C library number handling
+};
+
+
 struct PyHandler {
-    int useDecimal;
-    int allowNan;
     PyObject* root;
     PyObject* objectHook;
     DatetimeMode datetimeMode;
     UuidMode uuidMode;
+    NumberMode numberMode;
     std::vector<HandlerContext> stack;
 
-    PyHandler(int ud, PyObject* hook, int an, DatetimeMode dm, UuidMode um)
-    : useDecimal(ud), allowNan(an), root(NULL), objectHook(hook), datetimeMode(dm),
-      uuidMode(um)
+    PyHandler(PyObject* hook, DatetimeMode dm, UuidMode um, NumberMode nm)
+    : root(NULL), objectHook(hook), datetimeMode(dm), uuidMode(um), numberMode(nm)
     {
         stack.reserve(128);
     }
@@ -265,18 +273,18 @@ struct PyHandler {
     }
 
     bool NaN() {
-        if (!allowNan) {
+        if (!(numberMode & NM_NAN)) {
             PyErr_SetString(PyExc_ValueError,
                             "Out of range float values are not JSON compliant");
             return false;
         }
 
         PyObject* value;
-        if (!useDecimal)
+        if (numberMode & NM_DECIMAL) {
+            value = PyObject_CallFunctionObjArgs(decimal_type, nan_string_value, NULL);
+        } else {
             value = PyFloat_FromString(nan_string_value);
-        else
-            value = PyObject_CallFunctionObjArgs(decimal_type,
-                                                 nan_string_value, NULL);
+        }
 
         if (value == NULL)
             return false;
@@ -285,22 +293,23 @@ struct PyHandler {
     }
 
     bool Infinity(bool minus) {
-        if (!allowNan) {
+        if (!(numberMode & NM_NAN)) {
             PyErr_SetString(PyExc_ValueError,
                             "Out of range float values are not JSON compliant");
             return false;
         }
 
         PyObject* value;
-        if (!useDecimal)
-            value = PyFloat_FromString(minus
-                                       ? minus_inf_string_value
-                                       : plus_inf_string_value);
-        else
+        if (numberMode & NM_DECIMAL) {
             value = PyObject_CallFunctionObjArgs(decimal_type,
                                                  minus
                                                  ? minus_inf_string_value
                                                  : plus_inf_string_value, NULL);
+        } else {
+            value = PyFloat_FromString(minus
+                                       ? minus_inf_string_value
+                                       : plus_inf_string_value);
+        }
 
         if (value == NULL)
             return false;
@@ -367,11 +376,10 @@ struct PyHandler {
                 return false;
             }
 
-            if (!useDecimal) {
-                value = PyFloat_FromString(pystr);
+            if (numberMode & NM_DECIMAL) {
+                value = PyObject_CallFunctionObjArgs(decimal_type, pystr, NULL);
             } else {
-                value = PyObject_CallFunctionObjArgs(decimal_type,
-                                                     pystr, NULL);
+                value = PyFloat_FromString(pystr);
             }
 
             Py_DECREF(pystr);
@@ -764,34 +772,36 @@ loads(PyObject* self, PyObject* args, PyObject* kwargs)
 
     PyObject* jsonObject;
     PyObject* objectHook = NULL;
-    int useDecimal = 0;
-    int allowNan = 1;
-    int nativeNumbers = 0;
     PyObject* datetimeModeObj = NULL;
     DatetimeMode datetimeMode = DM_NONE;
     PyObject* uuidModeObj = NULL;
     UuidMode uuidMode = UM_NONE;
+    PyObject* numberModeObj = NULL;
+    NumberMode numberMode = NM_NAN;
+
+    int allowNan = -1;
 
     static char const * kwlist[] = {
         "s",
         "object_hook",
-        "use_decimal",
-        "allow_nan",
-        "native_numbers",
+        "number_mode",
         "datetime_mode",
         "uuid_mode",
+
+        /* compatibility with stdlib json */
+        "allow_nan",
+
         NULL
     };
 
-    if (!PyArg_ParseTupleAndKeywords(args, kwargs, "O|OpppOO:rapidjson.loads",
+    if (!PyArg_ParseTupleAndKeywords(args, kwargs, "O|OOOOp:rapidjson.loads",
                                      (char **) kwlist,
                                      &jsonObject,
                                      &objectHook,
-                                     &useDecimal,
-                                     &allowNan,
-                                     &nativeNumbers,
+                                     &numberModeObj,
                                      &datetimeModeObj,
-                                     &uuidModeObj))
+                                     &uuidModeObj,
+                                     &allowNan))
         return NULL;
 
     if (objectHook && !PyCallable_Check(objectHook)) {
@@ -815,6 +825,30 @@ loads(PyObject* self, PyObject* args, PyObject* kwargs)
     else {
         PyErr_SetString(PyExc_TypeError, "Expected string or utf-8 encoded bytes");
         return NULL;
+    }
+
+    if (numberModeObj) {
+        if (numberModeObj == Py_None)
+            numberMode = NM_NONE;
+        else if (PyLong_Check(numberModeObj)) {
+            int mode = PyLong_AsLong(numberModeObj);
+            if (mode < 0 || mode >= 1<<3) {
+                PyErr_SetString(PyExc_ValueError, "Invalid number_mode");
+                return NULL;
+            }
+            numberMode = (NumberMode) mode;
+            if (numberMode & NM_DECIMAL && numberMode & NM_NATIVE) {
+                PyErr_SetString(PyExc_ValueError,
+                                "Combining NM_NATIVE with NM_DECIMAL is not supported");
+                return NULL;
+            }
+        }
+    }
+    if (allowNan != -1) {
+        if (allowNan)
+            numberMode = (NumberMode) (numberMode | NM_NAN);
+        else
+            numberMode = (NumberMode) (numberMode & ~NM_NAN);
     }
 
     if (datetimeModeObj) {
@@ -860,12 +894,12 @@ loads(PyObject* self, PyObject* args, PyObject* kwargs)
     char* jsonStrCopy = (char*) malloc(sizeof(char) * (jsonStrLen+1));
     memcpy(jsonStrCopy, jsonStr, jsonStrLen+1);
 
-    PyHandler handler(useDecimal, objectHook, allowNan, datetimeMode, uuidMode);
+    PyHandler handler(objectHook, datetimeMode, uuidMode, numberMode);
     Reader reader;
     InsituStringStream ss(jsonStrCopy);
 
-    if (allowNan)
-        if (nativeNumbers)
+    if (numberMode & NM_NAN)
+        if (numberMode & NM_NATIVE)
             reader.Parse<kParseInsituFlag |
                          kParseNanAndInfFlag>(ss, handler);
         else
@@ -873,7 +907,7 @@ loads(PyObject* self, PyObject* args, PyObject* kwargs)
                          kParseNumbersAsStringsFlag |
                          kParseNanAndInfFlag>(ss, handler);
     else
-        if (nativeNumbers)
+        if (numberMode & NM_NATIVE)
             reader.Parse<kParseInsituFlag>(ss, handler);
         else
             reader.Parse<kParseInsituFlag | kParseNumbersAsStringsFlag>(ss, handler);
@@ -962,12 +996,10 @@ dumps_internal(
     BufferT* buf,
     PyObject* value,
     int skipKeys,
-    int allowNan,
-    int nativeNumbers,
     PyObject* defaultFn,
     int sortKeys,
-    int useDecimal,
     unsigned maxRecursionDepth,
+    NumberMode numberMode,
     DatetimeMode datetimeMode,
     UuidMode uuidMode)
 {
@@ -1010,10 +1042,37 @@ dumps_internal(
         else if (PyBool_Check(object)) {
             writer->Bool(object == Py_True);
         }
-        else if (useDecimal
+        else if (numberMode & NM_DECIMAL
                  && (isDec = PyObject_IsInstance(object, decimal_type))) {
             if (isDec == -1)
                 return NULL;
+
+            if (!(numberMode & NM_NAN)) {
+                bool is_inf_or_nan;
+                PyObject* is_inf = PyObject_CallMethodObjArgs(object, is_infinite_name, NULL);
+
+                if (is_inf == NULL) {
+                    return NULL;
+                }
+                is_inf_or_nan = is_inf == Py_True;
+                Py_DECREF(is_inf);
+
+                if (!is_inf_or_nan) {
+                    PyObject* is_nan = PyObject_CallMethodObjArgs(object, is_nan_name, NULL);
+
+                    if (is_nan == NULL) {
+                        return NULL;
+                    }
+                    is_inf_or_nan = is_nan == Py_True;
+                    Py_DECREF(is_nan);
+                }
+
+                if (is_inf_or_nan) {
+                    PyErr_SetString(PyExc_ValueError,
+                                    "Out of range decimal values are not JSON compliant");
+                    return NULL;
+                }
+            }
 
             PyObject* decStrObj = PyObject_Str(object);
             if (decStrObj == NULL)
@@ -1030,7 +1089,7 @@ dumps_internal(
             Py_DECREF(decStrObj);
         }
         else if (PyLong_Check(object)) {
-            if (nativeNumbers) {
+            if (numberMode & NM_NATIVE) {
                 int overflow;
                 long long i = PyLong_AsLongLongAndOverflow(object, &overflow);
                 if (i == -1 && PyErr_Occurred())
@@ -1067,7 +1126,7 @@ dumps_internal(
                 return NULL;
 
             if (Py_IS_NAN(d)) {
-                if (allowNan)
+                if (numberMode & NM_NAN)
                     writer->RawValue("NaN", 3, kNumberType);
                 else {
                     PyErr_SetString(PyExc_ValueError,
@@ -1075,7 +1134,7 @@ dumps_internal(
                     return NULL;
                 }
             } else if (Py_IS_INFINITY(d)) {
-                if (!allowNan) {
+                if (!(numberMode & NM_NAN)) {
                     PyErr_SetString(PyExc_ValueError,
                                     "Out of range float values are not JSON compliant");
                     return NULL;
@@ -1455,12 +1514,10 @@ error:
         &buf, \
         value, \
         skipKeys, \
-        allowNan, \
-        nativeNumbers, \
         defaultFn, \
         sortKeys, \
-        useDecimal, \
         maxRecursionDepth, \
+        numberMode, \
         datetimeMode, \
         uuidMode)
 
@@ -1473,13 +1530,12 @@ dumps(PyObject* self, PyObject* args, PyObject* kwargs)
     PyObject* value;
     int skipKeys = 0;
     int ensureAscii = 1;
-    int allowNan = 1;
-    int nativeNumbers = 0;
     PyObject* indent = NULL;
     PyObject* defaultFn = NULL;
     int sortKeys = 0;
-    int useDecimal = 0;
     unsigned maxRecursionDepth = MAX_RECURSION_DEPTH;
+    PyObject* numberModeObj = NULL;
+    NumberMode numberMode = NM_NAN;
     PyObject* datetimeModeObj = NULL;
     DatetimeMode datetimeMode = DM_NONE;
     PyObject* uuidModeObj = NULL;
@@ -1489,35 +1545,38 @@ dumps(PyObject* self, PyObject* args, PyObject* kwargs)
     const char indentChar = ' ';
     unsigned indentCharCount = 4;
 
+    int allowNan = -1;
+
     static char const * kwlist[] = {
         "obj",
         "skipkeys",
         "ensure_ascii",
-        "allow_nan",
-        "native_numbers",
         "indent",
         "default",
         "sort_keys",
-        "use_decimal",
         "max_recursion_depth",
+        "number_mode",
         "datetime_mode",
         "uuid_mode",
+
+        /* compatibility with stdlib json */
+        "allow_nan",
+
         NULL
     };
-    if (!PyArg_ParseTupleAndKeywords(args, kwargs, "O|ppppOOppIOO:rapidjson.dumps",
+    if (!PyArg_ParseTupleAndKeywords(args, kwargs, "O|ppOOpIOOOp:rapidjson.dumps",
                                      (char **) kwlist,
                                      &value,
                                      &skipKeys,
                                      &ensureAscii,
-                                     &allowNan,
-                                     &nativeNumbers,
                                      &indent,
                                      &defaultFn,
                                      &sortKeys,
-                                     &useDecimal,
                                      &maxRecursionDepth,
+                                     &numberModeObj,
                                      &datetimeModeObj,
-                                     &uuidModeObj))
+                                     &uuidModeObj,
+                                     &allowNan))
         return NULL;
 
     if (defaultFn && !PyCallable_Check(defaultFn)) {
@@ -1535,6 +1594,25 @@ dumps(PyObject* self, PyObject* args, PyObject* kwargs)
             PyErr_SetString(PyExc_TypeError, "indent must be a non-negative int");
             return NULL;
         }
+    }
+
+    if (numberModeObj) {
+        if (numberModeObj == Py_None)
+            numberMode = NM_NONE;
+        else if (PyLong_Check(numberModeObj)) {
+            int mode = PyLong_AsLong(numberModeObj);
+            if (mode < 0 || mode >= 1<<3) {
+                PyErr_SetString(PyExc_ValueError, "Invalid number_mode");
+                return NULL;
+            }
+            numberMode = (NumberMode) mode;
+        }
+    }
+    if (allowNan != -1) {
+        if (allowNan)
+            numberMode = (NumberMode) (numberMode | NM_NAN);
+        else
+            numberMode = (NumberMode) (numberMode & ~NM_NAN);
     }
 
    if (datetimeModeObj) {
@@ -1654,6 +1732,27 @@ PyInit_rapidjson()
         return NULL;
     }
 
+    is_infinite_name = PyUnicode_InternFromString("is_infinite");
+    if (is_infinite_name == NULL) {
+        Py_DECREF(astimezone_name);
+        Py_DECREF(hex_name);
+        Py_DECREF(timestamp_name);
+        Py_DECREF(total_seconds_name);
+        Py_DECREF(utcoffset_name);
+        return NULL;
+    }
+
+    is_nan_name = PyUnicode_InternFromString("is_nan");
+    if (is_infinite_name == NULL) {
+        Py_DECREF(astimezone_name);
+        Py_DECREF(hex_name);
+        Py_DECREF(timestamp_name);
+        Py_DECREF(total_seconds_name);
+        Py_DECREF(utcoffset_name);
+        Py_DECREF(is_infinite_name);
+        return NULL;
+    }
+
     minus_inf_string_value = PyUnicode_InternFromString("-Infinity");
     if (minus_inf_string_value == NULL) {
         Py_DECREF(astimezone_name);
@@ -1661,6 +1760,8 @@ PyInit_rapidjson()
         Py_DECREF(timestamp_name);
         Py_DECREF(total_seconds_name);
         Py_DECREF(utcoffset_name);
+        Py_DECREF(is_infinite_name);
+        Py_DECREF(is_nan_name);
         return NULL;
     }
 
@@ -1671,6 +1772,8 @@ PyInit_rapidjson()
         Py_DECREF(timestamp_name);
         Py_DECREF(total_seconds_name);
         Py_DECREF(utcoffset_name);
+        Py_DECREF(is_infinite_name);
+        Py_DECREF(is_nan_name);
         Py_DECREF(minus_inf_string_value);
         return NULL;
     }
@@ -1682,6 +1785,8 @@ PyInit_rapidjson()
         Py_DECREF(timestamp_name);
         Py_DECREF(total_seconds_name);
         Py_DECREF(utcoffset_name);
+        Py_DECREF(is_infinite_name);
+        Py_DECREF(is_nan_name);
         Py_DECREF(minus_inf_string_value);
         Py_DECREF(nan_string_value);
         return NULL;
@@ -1696,6 +1801,8 @@ PyInit_rapidjson()
         Py_DECREF(timestamp_name);
         Py_DECREF(total_seconds_name);
         Py_DECREF(utcoffset_name);
+        Py_DECREF(is_infinite_name);
+        Py_DECREF(is_nan_name);
         Py_DECREF(minus_inf_string_value);
         Py_DECREF(nan_string_value);
         Py_DECREF(plus_inf_string_value);
@@ -1716,6 +1823,8 @@ PyInit_rapidjson()
         Py_DECREF(timestamp_name);
         Py_DECREF(total_seconds_name);
         Py_DECREF(utcoffset_name);
+        Py_DECREF(is_infinite_name);
+        Py_DECREF(is_nan_name);
         Py_DECREF(minus_inf_string_value);
         Py_DECREF(nan_string_value);
         Py_DECREF(plus_inf_string_value);
@@ -1732,6 +1841,8 @@ PyInit_rapidjson()
         Py_DECREF(timestamp_name);
         Py_DECREF(total_seconds_name);
         Py_DECREF(utcoffset_name);
+        Py_DECREF(is_infinite_name);
+        Py_DECREF(is_nan_name);
         Py_DECREF(minus_inf_string_value);
         Py_DECREF(nan_string_value);
         Py_DECREF(plus_inf_string_value);
@@ -1746,6 +1857,8 @@ PyInit_rapidjson()
         Py_DECREF(timestamp_name);
         Py_DECREF(total_seconds_name);
         Py_DECREF(utcoffset_name);
+        Py_DECREF(is_infinite_name);
+        Py_DECREF(is_nan_name);
         Py_DECREF(minus_inf_string_value);
         Py_DECREF(nan_string_value);
         Py_DECREF(plus_inf_string_value);
@@ -1761,6 +1874,8 @@ PyInit_rapidjson()
         Py_DECREF(timestamp_name);
         Py_DECREF(total_seconds_name);
         Py_DECREF(utcoffset_name);
+        Py_DECREF(is_infinite_name);
+        Py_DECREF(is_nan_name);
         Py_DECREF(minus_inf_string_value);
         Py_DECREF(nan_string_value);
         Py_DECREF(plus_inf_string_value);
@@ -1779,6 +1894,8 @@ PyInit_rapidjson()
         Py_DECREF(timestamp_name);
         Py_DECREF(total_seconds_name);
         Py_DECREF(utcoffset_name);
+        Py_DECREF(is_infinite_name);
+        Py_DECREF(is_nan_name);
         Py_DECREF(minus_inf_string_value);
         Py_DECREF(nan_string_value);
         Py_DECREF(plus_inf_string_value);
@@ -1807,6 +1924,11 @@ PyInit_rapidjson()
     PyModule_AddIntConstant(m, "UM_NONE", UM_NONE);
     PyModule_AddIntConstant(m, "UM_HEX", UM_HEX);
     PyModule_AddIntConstant(m, "UM_CANONICAL", UM_CANONICAL);
+
+    PyModule_AddIntConstant(m, "NM_NONE", NM_NONE);
+    PyModule_AddIntConstant(m, "NM_NAN", NM_NAN);
+    PyModule_AddIntConstant(m, "NM_DECIMAL", NM_DECIMAL);
+    PyModule_AddIntConstant(m, "NM_NATIVE", NM_NATIVE);
 
     PyModule_AddStringConstant(m, "__version__",
                                PYTHON_RAPIDJSON_VERSION);

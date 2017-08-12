@@ -66,7 +66,7 @@ types:
 .. doctest::
 
     >>> import datetime, decimal, uuid
-    >>> from rapidjson import DM_ISO8601, UM_CANONICAL
+    >>> from rapidjson import DM_ISO8601, UM_CANONICAL, NM_DECIMAL
     >>> some_day = datetime.date(2016, 8, 28)
     >>> some_timestamp = datetime.datetime(2016, 8, 28, 13, 14, 15)
     >>> dumps({'a date': some_day, 'a timestamp': some_timestamp})
@@ -100,14 +100,14 @@ types:
     Traceback (most recent call last):
       File "<stdin>", line 1, in <module>
     TypeError: Decimal(…) is not JSON serializable
-    >>> dumps(pi, use_decimal=True)
+    >>> dumps(pi, number_mode=NM_DECIMAL)
     '3.1415926535897932384626433832795028841971'
     >>> as_json = _
     >>> loads(as_json)
     3.141592653589793
     >>> type(loads(as_json))
     <class 'float'>
-    >>> loads(as_json, use_decimal=True)
+    >>> loads(as_json, number_mode=NM_DECIMAL)
     Decimal('3.1415926535897932384626433832795028841971')
 
 

@@ -24,7 +24,7 @@ next (unreleased)
 * New option ``DM_NAIVE_IS_UTC`` to treat naïve datetime and time values as if
   they were in the UTC timezone (also for issue #61)
 
-* New keyword argument ``native_numbers`` to use underlying C library numbers
+* New keyword argument ``number_mode`` to use underlying C library numbers
 
 
 0.0.11 (2017-03-05)

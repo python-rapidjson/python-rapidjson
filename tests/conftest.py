@@ -10,8 +10,8 @@ Contender = namedtuple('Contender', 'name,dumps,loads')
 def pytest_benchmark_group_stats(config, benchmarks, group_by):
     result = {}
     for bench in benchmarks:
-        engine, data_kind = bench.param.split('-')
-        group = result.setdefault("%s: %s" % (data_kind, bench.group), [])
+        engine, data_kind = bench['param'].split('-')
+        group = result.setdefault("%s: %s" % (data_kind, bench['group']), [])
         group.append(bench)
     return sorted(result.items())
 
@@ -29,14 +29,14 @@ contenders.append(Contender('rapidjson',
                             rj.dumps,
                             rj.loads))
 contenders.append(Contender('rapidjson_nativenumbers',
-                            partial(rj.dumps, native_numbers=True),
-                            partial(rj.loads, native_numbers=True)))
+                            partial(rj.dumps, number_mode=rj.NM_NATIVE),
+                            partial(rj.loads, number_mode=rj.NM_NATIVE)))
 
 numbers_contenders = [
     Contender('Wide numbers', rj.dumps, rj.loads),
     Contender('Native numbers',
-              partial(rj.dumps, native_numbers=True),
-              partial(rj.loads, native_numbers=True))
+              partial(rj.dumps, number_mode=rj.NM_NATIVE),
+              partial(rj.loads, number_mode=rj.NM_NATIVE))
 ]
 
 try:

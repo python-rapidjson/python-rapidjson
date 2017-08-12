@@ -106,7 +106,7 @@ Serialization
 |        overall        |    **0.67**     |      1.30       |      6.27       |      2.88       |      1.74       |
 +-----------------------+-----------------+-----------------+-----------------+-----------------+-----------------+
 
-.. [1] rapidjson with ``native_numbers=True``
+.. [1] rapidjson with ``number_mode=NM_NATIVE``
 .. [2] `ujson 1.35 <https://pypi.python.org/pypi/ujson/1.35>`__
 .. [3] `simplejson 3.11.1 <https://pypi.python.org/pypi/simplejson/3.11.1>`__
 .. [4] Python 3.6 standard library

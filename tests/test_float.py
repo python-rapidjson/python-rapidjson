@@ -9,14 +9,31 @@ import rapidjson as rj
 @pytest.mark.unit
 def test_infinity():
     inf = float("inf")
+
     dumped = rj.dumps(inf)
     loaded = rj.loads(dumped)
     assert loaded == inf
 
-    d = Decimal(inf)
-    dumped = rj.dumps(d, use_decimal=True)
-    loaded = rj.loads(dumped, use_decimal=True)
+    dumped = rj.dumps(inf, allow_nan=True)
+    loaded = rj.loads(dumped, allow_nan=True)
     assert loaded == inf
+
+    with pytest.raises(ValueError):
+        rj.dumps(inf, number_mode=None)
+
+    with pytest.raises(ValueError):
+        rj.dumps(inf, allow_nan=False)
+
+    d = Decimal(inf)
+    assert d.is_infinite()
+
+    with pytest.raises(ValueError):
+        rj.dumps(d, number_mode=rj.NM_DECIMAL)
+
+    dumped = rj.dumps(d, number_mode=rj.NM_DECIMAL, allow_nan=True)
+    loaded = rj.loads(dumped, number_mode=rj.NM_DECIMAL|rj.NM_NAN)
+    assert loaded == inf
+    assert loaded.is_infinite()
 
 
 @pytest.mark.unit
@@ -26,10 +43,26 @@ def test_negative_infinity():
     loaded = rj.loads(dumped)
     assert loaded == inf
 
-    d = Decimal(inf)
-    dumped = rj.dumps(d, use_decimal=True)
-    loaded = rj.loads(dumped, use_decimal=True)
+    dumped = rj.dumps(inf, allow_nan=True)
+    loaded = rj.loads(dumped, allow_nan=True)
     assert loaded == inf
+
+    with pytest.raises(ValueError):
+        rj.dumps(inf, number_mode=None)
+
+    with pytest.raises(ValueError):
+        rj.dumps(inf, allow_nan=False)
+
+    d = Decimal(inf)
+    assert d.is_infinite()
+
+    with pytest.raises(ValueError):
+        rj.dumps(d, number_mode=rj.NM_DECIMAL)
+
+    dumped = rj.dumps(d, number_mode=rj.NM_DECIMAL|rj.NM_NAN)
+    loaded = rj.loads(dumped, number_mode=rj.NM_DECIMAL, allow_nan=True)
+    assert loaded == inf
+    assert loaded.is_infinite()
 
 
 @pytest.mark.unit
@@ -41,9 +74,18 @@ def test_nan():
     assert math.isnan(nan)
     assert math.isnan(loaded)
 
-    d = Decimal(nan)
-    dumped = rj.dumps(d, use_decimal=True)
-    loaded = rj.loads(dumped, use_decimal=True)
+    with pytest.raises(ValueError):
+        rj.dumps(nan, number_mode=None)
 
-    assert math.isnan(d)
-    assert math.isnan(loaded)
+    with pytest.raises(ValueError):
+        rj.dumps(nan, allow_nan=False)
+
+    d = Decimal(nan)
+    assert d.is_nan()
+
+    with pytest.raises(ValueError):
+        rj.dumps(d, number_mode=rj.NM_DECIMAL)
+
+    dumped = rj.dumps(d, number_mode=rj.NM_DECIMAL|rj.NM_NAN)
+    loaded = rj.loads(dumped, number_mode=rj.NM_DECIMAL|rj.NM_NAN)
+    assert loaded.is_nan()
