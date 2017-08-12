@@ -61,48 +61,65 @@
    This can be used combined with :data:`DM_ISO8601` or :data:`DM_UNIX_TIME`,
    to always *shift* values the UTC_ timezone.
 
-.. data:: UUID_MODE_NONE
+.. data:: UM_NONE
 
    This is the default ``uuid_mode``: :class:`UUID` instances are *not*
    recognized by :func:`dumps` and :func:`loads`.
 
-.. data:: UUID_MODE_CANONICAL
+.. data:: UM_CANONICAL
 
    In this ``uuid_mode``, :func:`loads` recognizes string values containing
    the ``xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx`` canonical representation as
    :class:`UUID` instances; :func:`dumps` emits same kind of representation
    for :class:`UUID` instances as a string value.
 
-.. data:: UUID_MODE_HEX
+.. data:: UM_HEX
 
    In this ``uuid_mode`` :func:`loads` recognizes string values containing
    exactly 32 hex digits *or* the ``xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx``
    canonical representation as :class:`UUID` instances; :func:`dumps` emits
    the 32 hex digits of :class:`UUID` instances as a string value.
 
+.. data:: NM_NONE
+
+   This is the default ``number_mode``: numeric values can be as wide as the
+   memory allows.
+
+.. data:: NM_DECIMAL
+
+   In this ``number_mode`` :func:`loads` will return floating point values as
+   :class:`Decimal` instances instead of :class:`float`; :func:`dumps` will
+   serialize :class:`Decimal` instances like any other :class:`float` number.
+
+.. data:: NM_NAN
+
+   This enables *non-numbers* handling in both directions.
+
+.. data:: NM_NATIVE
+
+   In this alternative ``number_mode`` numeric values must fit into the
+   underlying C library limits, with a considerable speed benefit.
+
 .. testsetup::
 
    from rapidjson import (dumps, loads, DM_NONE, DM_ISO8601, DM_UNIX_TIME,
                           DM_ONLY_SECONDS, DM_IGNORE_TZ, DM_NAIVE_IS_UTC, DM_SHIFT_TO_UTC,
-                          UUID_MODE_NONE, UUID_MODE_CANONICAL, UUID_MODE_HEX)
+                          UM_NONE, UM_CANONICAL, UM_HEX, NM_NATIVE, NM_DECIMAL, NM_NAN)
 
-.. function:: dumps(obj, skipkeys=False, ensure_ascii=True, allow_nan=True, indent=None, \
-                    default=None, sort_keys=False, use_decimal=False, \
-                    max_recursion_depth=2048, native_numbers=False, datetime_mode=None, \
-                    uuid_mode=None)
+.. function:: dumps(obj, skipkeys=False, ensure_ascii=True, indent=None, \
+                    default=None, sort_keys=False, max_recursion_depth=2048, \
+                    number_mode=None, datetime_mode=None, uuid_mode=None)
 
    :param bool skipkeys: whether skip invalid :class:`dict` keys
    :param bool ensure_ascii: whether the output should contain only ASCII
                              characters
-   :param bool allow_nan: whether ``NaN`` values are handled or not
    :param int indent: indentation width to produce pretty printed JSON
    :param callable default: a function that gets called for objects that can't
                             otherwise be serialized
    :param bool sort_keys: whether dictionary keys should be sorted
                           alphabetically
-   :param bool use_decimal: whether :class:`Decimal` should be handled
    :param int max_recursion_depth: maximum depth for nested structures
-   :param bool native_numbers: whether use arch's native numbers or not
+   :param int number_mode: enable particular behaviors in handling numbers
    :param int datetime_mode: how should :class:`datetime`, :class:`time` and
                              :class:`date` instances be handled
    :param int uuid_mode: how should :class:`UUID` instances be handled
@@ -134,23 +151,6 @@
       >>> dumps('The symbol for the Euro currency is €',
       ...       ensure_ascii=False)
       '"The symbol for the Euro currency is €"'
-
-   If `allow_nan` is false (default: ``True``), then it will be a
-   :exc:`ValueError` to serialize out of range :class:`float` values (``nan``,
-   ``inf``, ``-inf``) in strict compliance of the JSON specification.  If
-   `allow_nan` is true, their JavaScript equivalents (``NaN``, ``Infinity``,
-   ``-Infinity``) will be used:
-
-   .. doctest::
-
-      >>> nan = float('nan')
-      >>> inf = float('inf')
-      >>> dumps([nan, inf])
-      '[NaN,Infinity]'
-      >>> dumps([nan, inf], allow_nan=False)
-      Traceback (most recent call last):
-        File "<stdin>", line 1, in <module>
-      ValueError: Out of range float values are not JSON compliant
 
    When `indent` is ``None`` (the default), ``python-rapidjson`` produces the
    most compact JSON representation. By setting `indent` to 0 each array item
@@ -214,21 +214,6 @@
       >>> dumps(point, default=point_jsonifier, sort_keys=True)
       '{"x":1,"y":2}'
 
-   If `use_decimal` is true (default: ``False``), :class:`Decimal` instances
-   will be serialized as their textual representation like any other float
-   value, instead of raising an error:
-
-   .. doctest::
-
-      >>> from decimal import Decimal
-      >>> pi = Decimal('3.1415926535897932384626433832795028841971')
-      >>> dumps(pi)
-      Traceback (most recent call last):
-        File "<stdin>", line 1, in <module>
-      TypeError: Decimal(…) is not JSON serializable
-      >>> dumps(pi, use_decimal=True)
-      '3.1415926535897932384626433832795028841971'
-
    With `max_recursion_depth` you can control the maximum depth that will be
    reached when serializing nested structures:
 
@@ -245,23 +230,88 @@
         File "<stdin>", line 1, in <module>
       OverflowError: Max recursion depth reached
 
-   If `native_numbers` is true (default: ``False``), then the numeric values
-   (i.e. *floats* and *integers*) will be handled using architecture *native*
-   arithmetic: while this is somewhat faster, it is subject to the underlying
-   C library ``long long`` and ``double`` limits:
+   The `number_mode` argument selects different behaviors in handling numeric
+   values.
+
+   By default *non-numbers* (``nan``, ``inf``, ``-inf``) will be serialized as
+   their JavaScript equivalents (``NaN``, ``Infinity``, ``-Infinity``),
+   because ``NM_NAN`` is *on* by default (**NB**: this is *not* compliant with
+   the ``JSON`` standard):
+
+   .. doctest::
+
+      >>> nan = float('nan')
+      >>> inf = float('inf')
+      >>> dumps([nan, inf])
+      '[NaN,Infinity]'
+      >>> dumps([nan, inf], number_mode=NM_NAN)
+      '[NaN,Infinity]'
+
+   Explicitly setting `number_mode` or using the compatibility option
+   `allow_nan` you can avoid that and obtain a ``ValueError`` exception
+   instead:
+
+   .. doctest::
+
+      >>> dumps([nan, inf], number_mode=NM_NATIVE)
+      Traceback (most recent call last):
+        File "<stdin>", line 1, in <module>
+      ValueError: Out of range float values are not JSON compliant
+      >>> dumps([nan, inf], allow_nan=False)
+      Traceback (most recent call last):
+        File "<stdin>", line 1, in <module>
+      ValueError: Out of range float values are not JSON compliant
+
+   Likewise :class:`Decimal` instances cause a ``TypeError`` exception:
+
+   .. doctest::
+
+      >>> from decimal import Decimal
+      >>> pi = Decimal('3.1415926535897932384626433832795028841971')
+      >>> dumps(pi)
+      Traceback (most recent call last):
+        File "<stdin>", line 1, in <module>
+      TypeError: Decimal(…) is not JSON serializable
+
+   while using :data:`NM_DECIMAL` they will be serialized as their textual
+   representation like any other float value:
+
+   .. doctest::
+
+      >>> dumps(pi, number_mode=NM_DECIMAL)
+      '3.1415926535897932384626433832795028841971'
+
+   Yet another possible flag affects how numeric values are passed to the
+   underlying RapidJSON_ library: by default they are serialized to their
+   string representation by the module itself, so they are virtually of
+   unlimited precision:
 
    .. doctest::
 
       >>> dumps(123456789012345678901234567890)
       '123456789012345678901234567890'
-      >>> dumps(123456789012345678901234567890, native_numbers=True)
+
+   With :data:`NM_NATIVE` their binary values will be passed directly instead:
+   this is somewhat faster, it is subject to the underlying C library ``long
+   long`` and ``double`` limits:
+
+   .. doctest::
+
+      >>> dumps(123456789012345678901234567890, number_mode=NM_NATIVE)
       Traceback (most recent call last):
         File "<stdin>", line 1, in <module>
       OverflowError: int too big to convert
 
+   These flags can be combined together:
+
+   .. doctest::
+
+      >>> fast_and_precise = NM_NATIVE | NM_DECIMAL | NM_NAN
+      >>> dumps([-1, nan, pi], number_mode=fast_and_precise)
+      '[-1,NaN,3.1415926535897932384626433832795028841971]'
+
    By default :class:`date`, :class:`datetime` and :class:`time` instances are
-   not serializable. When `datetime_mode` is set to :data:`DM_ISO8601` those
-   values are serialized using the common `ISO 8601`_ format:
+   not serializable:
 
    .. doctest::
 
@@ -273,6 +323,12 @@
       Traceback (most recent call last):
         File "<stdin>", line 1, in <module>
       TypeError: datetime(…) is not JSON serializable
+
+   When `datetime_mode` is set to :data:`DM_ISO8601` those values are
+   serialized using the common `ISO 8601`_ format:
+
+   .. doctest::
+
       >>> dumps(['date', date, 'time', time, 'timestamp', right_now],
       ...       datetime_mode=DM_ISO8601)
       '["date","2016-08-28","time","13:14:52.277256","timestamp","2016-08-28T13:14:52.277256"]'
@@ -365,23 +421,19 @@
       Traceback (most recent call last):
         File "<stdin>", line 1, in <module>
       TypeError: UUID(…) is not JSON serializable
-      >>> dumps(random_uuid, uuid_mode=UUID_MODE_CANONICAL) # doctest: +SKIP
+      >>> dumps(random_uuid, uuid_mode=UM_CANONICAL) # doctest: +SKIP
       '"be576345-65b5-4fc2-92c5-94e2f82e38fd"'
-      >>> dumps(random_uuid, uuid_mode=UUID_MODE_HEX) # doctest: +SKIP
+      >>> dumps(random_uuid, uuid_mode=UM_HEX) # doctest: +SKIP
       '"be57634565b54fc292c594e2f82e38fd"'
 
-.. function:: loads(s, object_hook=None, use_decimal=False, allow_nan=True, \
-                    native_numbers=False, datetime_mode=None, uuid_mode=None)
+.. function:: loads(s, object_hook=None, number_mode=None, datetime_mode=None, uuid_mode=None)
 
    :param str s: The JSON string to parse
    :param callable object_hook: an optional function that will be called with
                                 the result of any object literal decoded (a
                                 :class:`dict`) and should return the value to
                                 use instead of the :class:`dict`
-   :param bool use_decimal: whether :class:`Decimal` should be used for float
-                            values
-   :param bool allow_nan: whether ``NaN`` values are recognized
-   :param bool native_numbers: whether use arch's native numbers or not
+   :param int number_mode: enable particular behaviors in handling numbers
    :param int datetime_mode: how should :class:`datetime` and :class:`date`
                              instances be handled
    :param int uuid_mode: how should :class:`UUID` instances be handled
@@ -412,39 +464,82 @@
       >>> loads('{"x":1,"y":2}', object_hook=point_dejsonifier)
       Point(1, 2)
 
-   If `use_decimal` is true (default: ``False``) then all floating point
-   literals present in the JSON structure will be returned as :class:`Decimal`
-   instances instead of plain :class:`float`:
+   The `number_mode` argument selects different behaviors in handling numeric
+   values.
 
-   .. doctest::
-
-      >>> loads('1.2345', use_decimal=True)
-      Decimal('1.2345')
-
-   If `allow_nan` is false (default: ``True``), then the values ``NaN`` and
-   ``Infinity`` won't be recognized:
+   By default *non-numbers* (``nan``, ``inf``, ``-inf``) are recognized,
+   because ``NM_NAN`` is *on* by default:
 
    .. doctest::
 
       >>> loads('[NaN, Infinity]')
       [nan, inf]
+      >>> loads('[NaN, Infinity]', number_mode=NM_NAN)
+      [nan, inf]
+
+   Explicitly setting `number_mode` or using the compatibility option
+   `allow_nan` you can avoid that and obtain a ``ValueError`` exception
+   instead:
+
+   .. doctest::
+
+      >>> loads('[NaN, Infinity]', number_mode=NM_NATIVE)
+      Traceback (most recent call last):
+        File "<stdin>", line 1, in <module>
+      ValueError: … Out of range float values are not JSON compliant
       >>> loads('[NaN, Infinity]', allow_nan=False)
       Traceback (most recent call last):
         File "<stdin>", line 1, in <module>
       ValueError: … Out of range float values are not JSON compliant
 
-   If `native_numbers` is true (default: ``False``), then the numeric values
-   (i.e. *floats* and *integers*) will be handled using architecture *native*
-   arithmetic: while this is quite faster, integers that do not fit into the
-   underlying C library ``long long`` limits will be converted (*truncated*)
-   to ``double`` numbers:
+   Normally all floating point literals present in the JSON structure will be
+   loaded as Python :class:`float` instances, with :data:`NM_DECIMAL` they
+   will be returned as :class:`Decimal` instances instead:
+
+   .. doctest::
+
+      >>> loads('1.2345')
+      1.2345
+      >>> loads('1.2345', number_mode=NM_DECIMAL)
+      Decimal('1.2345')
+
+   When you can be sure that all the numeric values are constrained within the
+   architecture's hardware limits you can get a sensible speed gain with the
+   :data:`NM_NATIVE` flag. While this is quite faster, integer literals that
+   do not fit into the underlying C library ``long long`` limits will be
+   converted (*truncated*) to ``double`` numbers:
 
    .. doctest::
 
       >>> loads('123456789012345678901234567890')
       123456789012345678901234567890
-      >>> loads('123456789012345678901234567890', native_numbers=True)
+      >>> loads('123456789012345678901234567890', number_mode=NM_NATIVE)
       1.2345678901234566e+29
+
+   These flags can be combined together:
+
+   .. doctest::
+
+      >>> loads('[-1, NaN, 3.1415926535897932384626433832795028841971]',
+      ...       number_mode=NM_DECIMAL | NM_NAN)
+      [-1, Decimal('NaN'), Decimal('3.1415926535897932384626433832795028841971')]
+
+   with the exception of :data:`NM_NATIVE` and :data:`NM_DECIMAL`, that does
+   not make sense since there's little point in creating :class:`Decimal`
+   instances out of possibly truncated float literals:
+
+   .. doctest:
+
+      >>> loads('3.1415926535897932384626433832795028841971')
+      3.141592653589793
+      >>> loads('3.1415926535897932384626433832795028841971',
+      ...       number_mode=NM_NATIVE)
+      3.141592653589793
+      >>> loads('3.1415926535897932384626433832795028841971',
+      ...       number_mode=NM_NATIVE | NM_DECIMAL)
+      Traceback (most recent call last):
+        ...
+      ValueError: ... Combining NM_NATIVE with NM_DECIMAL is not supported
 
    With `datetime_mode` you can enable recognition of string literals
    containing an `ISO 8601`_ representation as either :class:`date`,
@@ -530,16 +625,16 @@
       >>> loads('"aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"')
       'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa'
       >>> loads('"aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"',
-      ...       uuid_mode=UUID_MODE_CANONICAL)
+      ...       uuid_mode=UM_CANONICAL)
       UUID('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa')
       >>> loads('"aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"',
-      ...       uuid_mode=UUID_MODE_HEX)
+      ...       uuid_mode=UM_HEX)
       UUID('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa')
       >>> loads('"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"',
-      ...       uuid_mode=UUID_MODE_CANONICAL)
+      ...       uuid_mode=UM_CANONICAL)
       'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa'
       >>> loads('"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"',
-      ...       uuid_mode=UUID_MODE_HEX)
+      ...       uuid_mode=UM_HEX)
       UUID('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa')
 
 

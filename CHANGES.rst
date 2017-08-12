@@ -11,7 +11,9 @@ next (unreleased)
 * **Backward incompatibilities**:
 
   - all ``DATETIME_MODE_XXX`` constants have been shortened to ``DM_XXX``
-  - ``DATETIME_MODE_ISO8601_UTC`` has been renamed to ``DM_SHIFT_TO_UTC``
+    ``DATETIME_MODE_ISO8601_UTC`` has been renamed to ``DM_SHIFT_TO_UTC``
+
+  - all ``UUID_MODE_XXX`` constants have been shortened to ``UM_XXX``
 
 * New option ``DM_UNIX_TIME`` to serialize date, datetime and time values as
   `UNIX timestamps`__ targeting `issue #61`__
@@ -22,7 +24,7 @@ next (unreleased)
 * New option ``DM_NAIVE_IS_UTC`` to treat naïve datetime and time values as if
   they were in the UTC timezone (also for issue #61)
 
-* New keyword argument ``native_numbers`` to use underlying C library numbers
+* New keyword argument ``number_mode`` to use underlying C library numbers
 
 
 0.0.11 (2017-03-05)

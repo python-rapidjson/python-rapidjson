@@ -16,7 +16,7 @@ D_HEADERS = 'rapidjson,native,ujson,simplejson,stdlib,yajl'.split(',')
 
 assert len(CONTENDERS) == len(S_HEADERS) == len(D_HEADERS)
 
-FOOTNOTES = ['rapidjson with ``native_numbers=True``',
+FOOTNOTES = ['rapidjson with ``number_mode=NM_NATIVE``',
              '`ujson 1.35 <https://pypi.python.org/pypi/ujson/1.35>`__',
              '`simplejson 3.11.1 <https://pypi.python.org/pypi/simplejson/3.11.1>`__',
              'Python 3.6 standard library',
