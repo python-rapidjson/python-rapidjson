@@ -1,10 +1,9 @@
 environment:
-  global:
-    CIBW_TEST_REQUIRES: "pytest pytest-benchmark pytz"
-    CIBW_TEST_COMMAND: "py.test {project}/tests"
-    CIBW_SKIP: "cp2* cp33*"
-    TWINE_USERNAME: lelit
-    # Note: TWINE_PASSWORD is set in Appveyor settings
+  CIBW_TEST_REQUIRES: "pytest pytest-benchmark pytz"
+  CIBW_TEST_COMMAND: "py.test {project}\\tests"
+  CIBW_SKIP: "cp2* cp33*"
+  TWINE_USERNAME: lelit
+  # Note: TWINE_PASSWORD is set in Appveyor settings
   matrix:
     - PYTHON: "C:\\Python35-x64\\python.exe"
 
@@ -15,8 +14,8 @@ build_script:
   - "%PYTHON% -m cibuildwheel --output-dir wheelhouse"
   - ps: >-
       if ($env:APPVEYOR_REPO_TAG -eq "true") {
-        %PYTHON% -m pip install twine
-        %PYTHON% -m twine upload (resolve-path wheelhouse\*.whl)
+        pip install twine
+        twine upload (resolve-path wheelhouse\*.whl)
       }
 
 artifacts:
