@@ -156,14 +156,6 @@ struct PyHandler {
         return true;
     }
 
-    bool HandleSimpleType(PyObject* value) {
-        if (!Handle(value)) {
-            return false;
-        }
-
-        return true;
-    }
-
     bool Key(const char* str, SizeType length, bool copy) {
         HandlerContext& current = stack.back();
         current.key = str;
@@ -286,7 +278,7 @@ struct PyHandler {
         if (value == NULL)
             return false;
 
-        return HandleSimpleType(value);
+        return Handle(value);
     }
 
     bool Infinity(bool minus) {
@@ -311,46 +303,46 @@ struct PyHandler {
         if (value == NULL)
             return false;
 
-        return HandleSimpleType(value);
+        return Handle(value);
     }
 
     bool Null() {
         PyObject* value = Py_None;
         Py_INCREF(value);
 
-        return HandleSimpleType(value);
+        return Handle(value);
     }
 
     bool Bool(bool b) {
         PyObject* value = b ? Py_True : Py_False;
         Py_INCREF(value);
 
-        return HandleSimpleType(value);
+        return Handle(value);
     }
 
     bool Int(int i) {
         PyObject* value = PyLong_FromLong(i);
-        return HandleSimpleType(value);
+        return Handle(value);
     }
 
     bool Uint(unsigned i) {
         PyObject* value = PyLong_FromUnsignedLong(i);
-        return HandleSimpleType(value);
+        return Handle(value);
     }
 
     bool Int64(int64_t i) {
         PyObject* value = PyLong_FromLongLong(i);
-        return HandleSimpleType(value);
+        return Handle(value);
     }
 
     bool Uint64(uint64_t i) {
         PyObject* value = PyLong_FromUnsignedLongLong(i);
-        return HandleSimpleType(value);
+        return Handle(value);
     }
 
     bool Double(double d) {
         PyObject* value = PyFloat_FromDouble(d);
-        return HandleSimpleType(value);
+        return Handle(value);
     }
 
     bool RawNumber(const char* str, SizeType length, bool copy) {
@@ -393,7 +385,7 @@ struct PyHandler {
                             : "Invalid integer value");
             return false;
         } else {
-            return HandleSimpleType(value);
+            return Handle(value);
         }
     }
 
@@ -710,7 +702,7 @@ struct PyHandler {
         if (value == NULL)
             return false;
         else
-            return HandleSimpleType(value);
+            return Handle(value);
     }
 
 #undef digit
@@ -744,7 +736,7 @@ struct PyHandler {
         if (value == NULL)
             return false;
         else
-            return HandleSimpleType(value);
+            return Handle(value);
     }
 
     bool String(const char* str, SizeType length, bool copy) {
@@ -757,7 +749,7 @@ struct PyHandler {
             return HandleUuid(str, length);
 
         value = PyUnicode_FromStringAndSize(str, length);
-        return HandleSimpleType(value);
+        return Handle(value);
     }
 };
 
