@@ -79,6 +79,58 @@ def test_native():
     assert rj.loads(expected, number_mode=rj.NM_NATIVE) == f
     assert rj.loads(expected) == f
 
+    trailing_comma = '[-1,1,1.1,-2.2,]'
+    pytest.raises(ValueError, rj.loads, trailing_comma, number_mode=rj.NM_NATIVE)
+    expected = [-1,1,1.1,-2.2]
+    assert rj.loads(trailing_comma, number_mode=rj.NM_NATIVE,
+                    parse_mode=rj.PM_TRAILING_COMMAS) == expected
+
+    comments = '[-1,1,/*1.1,*/-2.2,]'
+    pytest.raises(ValueError, rj.loads, comments, number_mode=rj.NM_NATIVE)
+    pytest.raises(ValueError, rj.loads, comments,
+                  number_mode=rj.NM_NATIVE, parse_mode=rj.PM_TRAILING_COMMAS)
+    expected = [-1,1,-2.2]
+    assert rj.loads(comments, number_mode=rj.NM_NATIVE,
+                    parse_mode=rj.PM_COMMENTS | rj.PM_TRAILING_COMMAS) == expected
+
+
+@pytest.mark.unit
+def test_parse_mode():
+    trailing_comma = '[-1,1,1.1,-2.2,]'
+    expected = [-1,1,1.1,-2.2]
+    pytest.raises(ValueError, rj.loads, trailing_comma)
+    pytest.raises(ValueError, rj.loads, trailing_comma, parse_mode=rj.PM_COMMENTS)
+    assert rj.loads(trailing_comma, parse_mode=rj.PM_TRAILING_COMMAS) == expected
+
+    comments = ('[true,  // boolean\n'
+                ' false, // idem\n'
+                ' // 1.0, // ignored\n'
+                ' /*\n'
+                '  * ignored\n'
+                ' 1,     // integer\n'
+                '  */'
+                ' "this is the end"]')
+    expected = [True, False, "this is the end"]
+    pytest.raises(ValueError, rj.loads, comments)
+    pytest.raises(ValueError, rj.loads, comments, parse_mode=rj.PM_TRAILING_COMMAS)
+    assert rj.loads(comments, parse_mode=rj.PM_COMMENTS) == expected
+
+    c_and_tc = ('[true,  // boolean\n'
+                ' false, // idem\n'
+                ' // 1.0, // ignored\n'
+                ' /*\n'
+                '  * ignored\n'
+                ' 1,     // integer\n'
+                '  */'
+                ' {"one": 1 /*, "two": 2 */, "three": 3,},\n'
+                ' "this is the end",]'
+    )
+    expected = [True, False, {"one": 1, "three": 3}, "this is the end"]
+    pytest.raises(ValueError, rj.loads, c_and_tc)
+    pytest.raises(ValueError, rj.loads, c_and_tc, parse_mode=rj.PM_TRAILING_COMMAS)
+    pytest.raises(ValueError, rj.loads, c_and_tc, parse_mode=rj.PM_COMMENTS)
+    assert rj.loads(c_and_tc, parse_mode=rj.PM_COMMENTS | rj.PM_TRAILING_COMMAS) == expected
+
 
 @pytest.mark.unit
 def test_indent():
@@ -444,6 +496,9 @@ def test_object_hook():
         ( ('[]',), { 'uuid_mode': 1.0 } ),
         ( ('[]',), { 'uuid_mode': -100 } ),
         ( ('[]',), { 'uuid_mode': 100 } ),
+        ( ('[]',), { 'parse_mode': 'no' } ),
+        ( ('[]',), { 'parse_mode': 1.0 } ),
+        ( ('[]',), { 'uuid_mode': -100 } ),
     ))
 def test_invalid_loads_params(posargs, kwargs):
     try:

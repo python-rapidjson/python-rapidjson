@@ -100,11 +100,27 @@
    In this alternative ``number_mode`` numeric values must fit into the
    underlying C library limits, with a considerable speed benefit.
 
+.. data:: PM_NONE
+
+   This is the default `parse_mode`: with the exception of the *NaN and Infinite*
+   recognition active by default, the parser is in *strict mode*.
+
+.. data:: PM_COMMENTS
+
+   In this `parse_mode`, the parser allows and ignores one-line ``// ...`` and
+   multi-line ``/* ... */`` comments
+
+.. data:: PM_TRAILING_COMMAS
+
+   In this `parse_mode`, the parser allows and ignores trailing commas at the
+   end of *arrays* and *objects*.
+
 .. testsetup::
 
    from rapidjson import (dumps, loads, DM_NONE, DM_ISO8601, DM_UNIX_TIME,
                           DM_ONLY_SECONDS, DM_IGNORE_TZ, DM_NAIVE_IS_UTC, DM_SHIFT_TO_UTC,
-                          UM_NONE, UM_CANONICAL, UM_HEX, NM_NATIVE, NM_DECIMAL, NM_NAN)
+                          UM_NONE, UM_CANONICAL, UM_HEX, NM_NATIVE, NM_DECIMAL, NM_NAN,
+                          PM_NONE, PM_COMMENTS, PM_TRAILING_COMMAS)
 
 .. function:: dumps(obj, skipkeys=False, ensure_ascii=True, indent=None, \
                     default=None, sort_keys=False, max_recursion_depth=2048, \
@@ -429,7 +445,7 @@
       '"be57634565b54fc292c594e2f82e38fd"'
 
 .. function:: loads(s, object_hook=None, number_mode=None, datetime_mode=None, \
-                    uuid_mode=None, allow_nan=True)
+                    uuid_mode=None, parse_mode=None, allow_nan=True)
 
    :param str s: The JSON string to parse
    :param callable object_hook: an optional function that will be called with
@@ -440,6 +456,7 @@
    :param int datetime_mode: how should :class:`datetime` and :class:`date`
                              instances be handled
    :param int uuid_mode: how should :class:`UUID` instances be handled
+   :param int parse_mode: whether the parser should allow non-standard JSON extensions
    :param bool allow_nan: *compatibility* flag equivalent to ``number_mode=NM_NAN``
    :returns: An equivalent Python object.
 
@@ -641,6 +658,47 @@
       ...       uuid_mode=UM_HEX)
       UUID('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa')
 
+   With `parse_mode` you can tell the parser to be *relaxed*, allowing either
+   ``C++``/``JavaScript`` like comments (:data:`PM_COMMENTS`):
+
+   .. doctest::
+
+      >>> loads('"foo" // one line of explanation')
+      Traceback (most recent call last):
+        File "<stdin>", line 1, in <module>
+      ValueError: Parse error at offset 6: The document root must not be followed by other values.
+      >>> loads('"bar" /* detailed explanation */')
+      Traceback (most recent call last):
+        File "<stdin>", line 1, in <module>
+      ValueError: Parse error at offset 6: The document root must not be followed by other values.
+      >>> loads('"foo" // one line of explanation', parse_mode=PM_COMMENTS)
+      'foo'
+      >>> loads('"bar" /* detailed explanation */', parse_mode=PM_COMMENTS)
+      'bar'
+
+   or *trailing commas* at the end of arrays and objects (:data:`PM_TRAILING_COMMAS`):
+
+   .. doctest::
+
+      >>> loads('[1,]')
+      Traceback (most recent call last):
+        File "<stdin>", line 1, in <module>
+      ValueError: Parse error at offset 3: Invalid value.
+      >>> loads('[1,]', parse_mode=PM_TRAILING_COMMAS)
+      [1]
+      >>> loads('{"one": 1,}', parse_mode=PM_TRAILING_COMMAS)
+      {'one': 1}
+
+   or both:
+
+   .. doctest::
+
+      >>> loads('[1, /* 2, */ 3,]')
+      Traceback (most recent call last):
+        ...
+      ValueError: Parse error at offset 4: Invalid value.
+      >>> loads('[1, /* 2, */ 3,]', parse_mode=PM_COMMENTS | PM_TRAILING_COMMAS)
+      [1, 3]
 
 .. _ISO 8601: https://en.wikipedia.org/wiki/ISO_8601
 .. _RapidJSON: https://github.com/miloyip/rapidjson

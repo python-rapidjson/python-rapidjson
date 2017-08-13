@@ -111,6 +111,13 @@ enum NumberMode {
 };
 
 
+enum ParseMode {
+    PM_NONE = 0,
+    PM_COMMENTS = 1,       // Allow one-line // ... and multi-line /* ... */ comments
+    PM_TRAILING_COMMAS = 2 // allow trailing commas at the end of objects and arrays
+};
+
+
 struct PyHandler {
     PyObject* root;
     PyObject* objectHook;
@@ -774,6 +781,8 @@ loads(PyObject* self, PyObject* args, PyObject* kwargs)
     UuidMode uuidMode = UM_NONE;
     PyObject* numberModeObj = NULL;
     NumberMode numberMode = NM_NAN;
+    PyObject* parseModeObj = NULL;
+    ParseMode parseMode = PM_NONE;
 
     int allowNan = -1;
 
@@ -783,6 +792,7 @@ loads(PyObject* self, PyObject* args, PyObject* kwargs)
         "number_mode",
         "datetime_mode",
         "uuid_mode",
+        "parse_mode",
 
         /* compatibility with stdlib json */
         "allow_nan",
@@ -790,13 +800,14 @@ loads(PyObject* self, PyObject* args, PyObject* kwargs)
         NULL
     };
 
-    if (!PyArg_ParseTupleAndKeywords(args, kwargs, "O|OOOOp:rapidjson.loads",
+    if (!PyArg_ParseTupleAndKeywords(args, kwargs, "O|OOOOOp:rapidjson.loads",
                                      (char **) kwlist,
                                      &jsonObject,
                                      &objectHook,
                                      &numberModeObj,
                                      &datetimeModeObj,
                                      &uuidModeObj,
+                                     &parseModeObj,
                                      &allowNan))
         return NULL;
 
@@ -887,6 +898,23 @@ loads(PyObject* self, PyObject* args, PyObject* kwargs)
         }
     }
 
+    if (parseModeObj) {
+        if (parseModeObj == Py_None)
+            parseMode = PM_NONE;
+        else if (PyLong_Check(parseModeObj)) {
+            parseMode = (ParseMode) PyLong_AsLong(parseModeObj);
+            if (parseMode < PM_NONE || parseMode >= 1<<2) {
+                PyErr_SetString(PyExc_ValueError, "Invalid parse_mode");
+                return NULL;
+            }
+        }
+        else {
+            PyErr_SetString(PyExc_TypeError,
+                            "parse_mode must be an integer value or None");
+            return NULL;
+        }
+    }
+
     char* jsonStrCopy = (char*) malloc(sizeof(char) * (jsonStrLen+1));
     memcpy(jsonStrCopy, jsonStr, jsonStrLen+1);
 
@@ -896,15 +924,69 @@ loads(PyObject* self, PyObject* args, PyObject* kwargs)
 
     if (numberMode & NM_NAN)
         if (numberMode & NM_NATIVE)
+            if (parseMode & PM_TRAILING_COMMAS)
+                if (parseMode & PM_COMMENTS)
+                    reader.Parse<kParseInsituFlag |
+                                 kParseNanAndInfFlag |
+                                 kParseCommentsFlag |
+                                 kParseTrailingCommasFlag>(ss, handler);
+                else
+                    reader.Parse<kParseInsituFlag |
+                                 kParseNanAndInfFlag |
+                                 kParseTrailingCommasFlag>(ss, handler);
+            else if (parseMode & PM_COMMENTS)
+                reader.Parse<kParseInsituFlag |
+                             kParseNanAndInfFlag |
+                             kParseCommentsFlag>(ss, handler);
+            else
+                reader.Parse<kParseInsituFlag |
+                             kParseNanAndInfFlag>(ss, handler);
+        else if (parseMode & PM_TRAILING_COMMAS)
+            if (parseMode & PM_COMMENTS)
+                reader.Parse<kParseInsituFlag |
+                             kParseNumbersAsStringsFlag |
+                             kParseNanAndInfFlag |
+                             kParseCommentsFlag |
+                             kParseTrailingCommasFlag>(ss, handler);
+            else
+                reader.Parse<kParseInsituFlag |
+                             kParseNumbersAsStringsFlag |
+                             kParseNanAndInfFlag |
+                             kParseTrailingCommasFlag>(ss, handler);
+        else if (parseMode & PM_COMMENTS)
             reader.Parse<kParseInsituFlag |
-                         kParseNanAndInfFlag>(ss, handler);
+                         kParseNumbersAsStringsFlag |
+                         kParseNanAndInfFlag |
+                         kParseCommentsFlag>(ss, handler);
         else
             reader.Parse<kParseInsituFlag |
                          kParseNumbersAsStringsFlag |
                          kParseNanAndInfFlag>(ss, handler);
     else
         if (numberMode & NM_NATIVE)
-            reader.Parse<kParseInsituFlag>(ss, handler);
+            if (parseMode & PM_TRAILING_COMMAS)
+                if (parseMode & PM_COMMENTS)
+                    reader.Parse<kParseInsituFlag |
+                                 kParseCommentsFlag |
+                                 kParseTrailingCommasFlag>(ss, handler);
+                else
+                    reader.Parse<kParseInsituFlag |
+                                 kParseTrailingCommasFlag>(ss, handler);
+            else if (parseMode & PM_COMMENTS)
+                reader.Parse<kParseInsituFlag |
+                             kParseCommentsFlag>(ss, handler);
+            else
+                reader.Parse<kParseInsituFlag>(ss, handler);
+        else if (parseMode & PM_TRAILING_COMMAS)
+            if (parseMode & PM_COMMENTS)
+                reader.Parse<kParseInsituFlag |
+                             kParseNumbersAsStringsFlag |
+                             kParseCommentsFlag |
+                             kParseNumbersAsStringsFlag>(ss, handler);
+            else
+                reader.Parse<kParseInsituFlag |
+                             kParseNumbersAsStringsFlag |
+                             kParseTrailingCommasFlag>(ss, handler);
         else
             reader.Parse<kParseInsituFlag | kParseNumbersAsStringsFlag>(ss, handler);
 
@@ -1806,6 +1888,10 @@ PyInit_rapidjson()
     PyModule_AddIntConstant(m, "NM_NAN", NM_NAN);
     PyModule_AddIntConstant(m, "NM_DECIMAL", NM_DECIMAL);
     PyModule_AddIntConstant(m, "NM_NATIVE", NM_NATIVE);
+
+    PyModule_AddIntConstant(m, "PM_NONE", PM_NONE);
+    PyModule_AddIntConstant(m, "PM_COMMENTS", PM_COMMENTS);
+    PyModule_AddIntConstant(m, "PM_TRAILING_COMMAS", PM_TRAILING_COMMAS);
 
     PyModule_AddStringConstant(m, "__version__",
                                PYTHON_RAPIDJSON_VERSION);
