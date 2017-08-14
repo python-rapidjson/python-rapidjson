@@ -1,6 +1,12 @@
 Changes
 -------
 
+0.1.0b4 (2017-08-14)
+~~~~~~~~~~~~~~~~~~~~
+
+* Make execution of the test suite on Appveyor actually happen
+
+
 0.1.0b3 (2017-08-12)
 ~~~~~~~~~~~~~~~~~~~~
 
