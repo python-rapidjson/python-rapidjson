@@ -59,7 +59,7 @@ enum DatetimeMode {
     DM_ONLY_SECONDS = 16,  // Truncate values to the whole second, ignoring micro seconds
     DM_IGNORE_TZ = 32,     // Ignore timezones
     DM_NAIVE_IS_UTC = 64,  // Assume naive datetime are in UTC timezone
-    DM_SHIFT_TO_UTC = 128, // Shift to/from UTC
+    DM_SHIFT_TO_UTC = 128  // Shift to/from UTC
 };
 
 
