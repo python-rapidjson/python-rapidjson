@@ -12,8 +12,6 @@
 #include "rapidjson/prettywriter.h"
 #include "rapidjson/error/en.h"
 
-#include "docstrings.h"
-
 
 using namespace rapidjson;
 
@@ -762,6 +760,13 @@ struct PyHandler {
         return HandleSimpleType(value);
     }
 };
+
+
+PyDoc_STRVAR(loads_docstring,
+             "loads(s, object_hook=None, number_mode=None, datetime_mode=None,"
+             " uuid_mode=None, allow_nan=True)\n"
+             "\n"
+             "Decodes a JSON string into a Python object.");
 
 
 static PyObject*
@@ -1521,6 +1526,15 @@ error:
         uuidMode)
 
 
+PyDoc_STRVAR(dumps_docstring,
+             "dumps(obj, skipkeys=False, ensure_ascii=True, indent=None, default=None,"
+             " sort_keys=False, max_recursion_depth=2048,"
+             " number_mode=None, datetime_mode=None, uuid_mode=None,"
+             " allow_nan=True)\n"
+             "\n"
+             "Encodes a Python object into a JSON string.");
+
+
 static PyObject*
 dumps(PyObject* self, PyObject* args, PyObject* kwargs)
 {
@@ -1688,7 +1702,7 @@ functions[] = {
 static PyModuleDef module = {
     PyModuleDef_HEAD_INIT,
     "rapidjson",
-    module_docstring,
+    PyDoc_STR("Fast, simple JSON encoder and decoder. Based on RapidJSON C++ library."),
     -1,
     functions
 };
