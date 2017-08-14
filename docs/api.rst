@@ -108,7 +108,8 @@
 
 .. function:: dumps(obj, skipkeys=False, ensure_ascii=True, indent=None, \
                     default=None, sort_keys=False, max_recursion_depth=2048, \
-                    number_mode=None, datetime_mode=None, uuid_mode=None)
+                    number_mode=None, datetime_mode=None, uuid_mode=None, \
+                    allow_nan=True)
 
    :param bool skipkeys: whether skip invalid :class:`dict` keys
    :param bool ensure_ascii: whether the output should contain only ASCII
@@ -123,6 +124,7 @@
    :param int datetime_mode: how should :class:`datetime`, :class:`time` and
                              :class:`date` instances be handled
    :param int uuid_mode: how should :class:`UUID` instances be handled
+   :param bool allow_nan: *compatibility* flag equivalent to ``number_mode=NM_NAN``
    :returns: A Python :class:`str` instance.
 
    Encode given Python `obj` instance into a JSON string.
@@ -426,7 +428,8 @@
       >>> dumps(random_uuid, uuid_mode=UM_HEX) # doctest: +SKIP
       '"be57634565b54fc292c594e2f82e38fd"'
 
-.. function:: loads(s, object_hook=None, number_mode=None, datetime_mode=None, uuid_mode=None)
+.. function:: loads(s, object_hook=None, number_mode=None, datetime_mode=None, \
+                    uuid_mode=None, allow_nan=True)
 
    :param str s: The JSON string to parse
    :param callable object_hook: an optional function that will be called with
@@ -437,6 +440,7 @@
    :param int datetime_mode: how should :class:`datetime` and :class:`date`
                              instances be handled
    :param int uuid_mode: how should :class:`UUID` instances be handled
+   :param bool allow_nan: *compatibility* flag equivalent to ``number_mode=NM_NAN``
    :returns: An equivalent Python object.
 
    Decode the given Python string `s` containing a JSON formatted value into
