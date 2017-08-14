@@ -48,7 +48,7 @@ for idx, arg in enumerate(sys.argv[:]):
         break
 
 extension_options = {
-    'sources': ['./python-rapidjson/rapidjson.cpp'],
+    'sources': ['./rapidjson.cpp'],
     'include_dirs': [rj_include_dir],
     'define_macros': [('PYTHON_RAPIDJSON_VERSION', '"%s"' % VERSION),
                       ('PYTHON_RAPIDJSON_AUTHOR', '"%s"' % AUTHOR),
