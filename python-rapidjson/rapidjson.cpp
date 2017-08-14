@@ -13,7 +13,6 @@
 #include "rapidjson/error/en.h"
 
 #include "docstrings.h"
-#include "version.h"
 
 
 using namespace rapidjson;

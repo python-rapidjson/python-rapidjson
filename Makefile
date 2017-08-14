@@ -1,0 +1,59 @@
+export TOPDIR := $(CURDIR)
+export VENVDIR := $(TOPDIR)/env
+export PYTHON := $(VENVDIR)/bin/python
+export SHELL := /bin/bash
+export SYS_PYTHON := $(shell which python3.6 || which python3)
+
+all: rapidjson/license.txt virtualenv help
+
+rapidjson/license.txt:
+	git submodule update --init
+
+.PHONY: help
+help::
+	@printf "\nBuild targets\n"
+	@printf   "=============\n\n"
+
+help::
+	@printf "build\n\tbuild the module\n"
+
+build: virtualenv
+	$(PYTHON) setup.py build_ext --inplace
+
+help::
+	@printf "clean\n\tremove rebuildable stuff\n"
+
+.PHONY: clean
+clean:
+	$(MAKE) -C docs clean
+	rm -f *.so
+
+help::
+	@printf "distclean\n\tremove anything superfluous\n"
+
+.PHONY: distclean
+distclean:: clean
+	rm -rf build dist
+	rm -rf rapidjson/.* rapidjson/*
+
+help::
+	@printf "doc\n\tbuild Sphinx documentation\n"
+
+SPHINXBUILD := $(VENVDIR)/bin/sphinx-build
+
+.PHONY: doc
+doc:
+	$(MAKE) -C docs SPHINXBUILD=$(SPHINXBUILD) html
+
+help::
+	@printf "check\n\trun the test suite\n"
+
+PYTEST := $(VENVDIR)/bin/pytest
+
+.PHONY: check
+check: build
+	$(PYTEST) tests/
+	$(MAKE) -C docs SPHINXBUILD=$(SPHINXBUILD) doctest
+
+include Makefile.virtualenv
+include Makefile.release

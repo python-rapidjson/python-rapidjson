@@ -1,0 +1,5 @@
+-r requirements-test.txt
+
+metapensiero.tool.bump-version==1.3
+readme-renderer==17.2
+sphinx==1.6.3

@@ -1,5 +1,4 @@
 import os.path
-import re
 import sys
 
 try:
@@ -28,14 +27,11 @@ if not os.path.isdir(os.path.join(ROOT_PATH, 'rapidjson', 'include')):
                        " the README.rst; in all other cases you may want to report the"
                        " issue.")
 
-VERSION_H = os.path.join(ROOT_PATH, 'python-rapidjson', 'version.h')
+AUTHOR = 'Ken Robbins'
+EMAIL = 'ken@kenrobbins.com'
 
-with open(VERSION_H, encoding='utf-8') as f:
-    data = f.read()
-
-    VERSION = re.search(r'PYTHON_RAPIDJSON_VERSION\s+"([^"]+)"', data).group(1)
-    AUTHOR = re.search(r'PYTHON_RAPIDJSON_AUTHOR\s+"([^"]+)"', data).group(1)
-    EMAIL = re.search(r'PYTHON_RAPIDJSON_AUTHOR_EMAIL\s+"([^"]+)"', data).group(1)
+with open('version.txt', encoding='utf-8') as f:
+    VERSION = f.read()
 
 with open('README.rst', encoding='utf-8') as f:
     LONG_DESCRIPTION = f.read()
@@ -54,6 +50,9 @@ for idx, arg in enumerate(sys.argv[:]):
 extension_options = {
     'sources': ['./python-rapidjson/rapidjson.cpp'],
     'include_dirs': [rj_include_dir],
+    'define_macros': [('PYTHON_RAPIDJSON_VERSION', '"%s"' % VERSION),
+                      ('PYTHON_RAPIDJSON_AUTHOR', '"%s"' % AUTHOR),
+                      ('PYTHON_RAPIDJSON_AUTHOR_EMAIL', '"%s"' % EMAIL)],
 }
 
 cc = sysconfig.get_config_var('CC')
@@ -69,8 +68,6 @@ if cc and 'gcc' in cc:
     # long" as an error under C++ (see issue #69)
     extension_options['extra_compile_args'] = ['-pedantic', '-Wno-long-long']
 
-rapidjson = Extension('rapidjson', **extension_options)
-
 setup(
     name='python-rapidjson',
     version=VERSION,
@@ -80,6 +77,8 @@ setup(
     keywords='json rapidjson',
     author=AUTHOR,
     author_email=EMAIL,
+    maintainer='Lele Gaifax',
+    maintainer_email='lele@metapensiero.it',
     url='https://github.com/python-rapidjson/python-rapidjson',
     classifiers=[
         'Development Status :: 3 - Alpha',
@@ -93,6 +92,6 @@ setup(
         'Programming Language :: Python :: 3.6',
         'Programming Language :: Python',
     ],
-    ext_modules=[rapidjson],
+    ext_modules=[Extension('rapidjson', **extension_options)],
     **other_setup_options
 )

@@ -1,0 +1,41 @@
+ACTIVATE_SCRIPT := $(VENVDIR)/bin/activate
+PIP := $(VENVDIR)/bin/pip
+REQUIREMENTS ?= requirements.txt
+REQUIREMENTS_TIMESTAMP := $(VENVDIR)/$(REQUIREMENTS).timestamp
+
+help::
+	@printf "\nPython virtualenv related targets\n"
+	@printf   "=================================\n\n"
+
+help::
+	@printf "virtualenv\n\tsetup the Python virtualenv and install required packages\n"
+
+.PHONY: virtualenv
+virtualenv: $(VENVDIR) requirements
+
+$(VENVDIR):
+	@echo "Bootstrapping Python 3 virtualenv..."
+	@$(SYS_PYTHON) -m venv --prompt $(notdir $(TOPDIR)) $@
+	@$(MAKE) upgrade-pip
+
+help::
+	@printf "upgrade-pip\n\tupgrade pip\n"
+
+.PHONY: upgrade-pip
+upgrade-pip:
+	@echo "Upgrading pip..."
+	@$(PIP) install --no-cache-dir --upgrade pip
+
+help::
+	@printf "requirements\n\tinstall/update required Python packages\n"
+
+.PHONY: requirements
+requirements: $(REQUIREMENTS_TIMESTAMP)
+
+$(REQUIREMENTS_TIMESTAMP): $(REQUIREMENTS)
+	@echo "Installing pre-requirements..."
+	@PATH=$(TOPDIR)/bin:$(PATH) $(PIP) install --no-cache-dir -r $(REQUIREMENTS)
+	@touch $@
+
+distclean::
+	rm -rf $(VENVDIR)

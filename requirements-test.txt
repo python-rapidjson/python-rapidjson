@@ -1,7 +1,6 @@
 pytest >= 3
 pytest-benchmark
 pytz
-readme-renderer
 
 # Keep in sync with benchmark-tables.py versions
 simplejson==3.11.1
