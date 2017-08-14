@@ -15,7 +15,9 @@
 #include "docstrings.h"
 #include "version.h"
 
-
+#if PY_MAJOR_VERSION >= 3
+#define PY3
+#endif
 using namespace rapidjson;
 
 
@@ -37,12 +39,41 @@ static PyObject* hex_name = NULL;
 static PyObject* timestamp_name = NULL;
 static PyObject* total_seconds_name = NULL;
 static PyObject* utcoffset_name = NULL;
-static PyObject* is_infinite_name = NULL;
-static PyObject* is_nan_name = NULL;
 
 static PyObject* minus_inf_string_value = NULL;
 static PyObject* nan_string_value = NULL;
 static PyObject* plus_inf_string_value = NULL;
+
+
+#ifndef PY3
+PyObject* PyFloat_FromString(PyObject *str) {
+    return PyFloat_FromString(str, NULL);
+}
+
+PyObject* PyLong_FromString(const char *str, char **pend, int base) {
+    return PyLong_FromString((char*)str, pend, base);
+}
+
+PyObject* PyInt_FromString(const char *str, char **pend, int base) {
+    return PyInt_FromString((char*)str, pend, base);
+}
+
+char* PyUnicode_AsUTF8AndSize(PyObject *str, Py_ssize_t *size){
+    *size = PyString_Size(str);
+    return PyString_AsString(str);
+}
+
+
+#define ReturnInitNull return
+#define Py2Int_Check PyInt_Check
+#define PyLong_Check PyInt_Check
+#define PyLong_FromLong PyInt_FromLong
+#define PyLong_FromString PyInt_FromString
+#define PyUnicode_AsUTF8 PyString_AsString
+#define PyUnicode_InternFromString PyString_InternFromString
+#else
+#define ReturnInitNull return Null
+#endif
 
 
 struct HandlerContext {
@@ -100,30 +131,24 @@ days_per_month(int year, int month) {
 
 
 enum UuidMode {
-    UM_NONE = 0,
-    UM_CANONICAL = 1, // only 4-dashed 32 hex chars: xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
-    UM_HEX = 2        // canonical OR 32 hex chars
-};
-
-
-enum NumberMode {
-    NM_NONE = 0,
-    NM_NAN = 1,       // allow "not-a-number" values
-    NM_DECIMAL = 2,   // serialize Decimal instances, deserialize floats as Decimal
-    NM_NATIVE = 4     // use faster native C library number handling
+    UUID_MODE_NONE = 0,
+    UUID_MODE_CANONICAL = 1, // only 4-dashed 32 hex chars: xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
+    UUID_MODE_HEX = 2        // canonical OR 32 hex chars
 };
 
 
 struct PyHandler {
+    int useDecimal;
+    int allowNan;
     PyObject* root;
     PyObject* objectHook;
     DatetimeMode datetimeMode;
     UuidMode uuidMode;
-    NumberMode numberMode;
     std::vector<HandlerContext> stack;
 
-    PyHandler(PyObject* hook, DatetimeMode dm, UuidMode um, NumberMode nm)
-    : root(NULL), objectHook(hook), datetimeMode(dm), uuidMode(um), numberMode(nm)
+    PyHandler(int ud, PyObject* hook, int an, DatetimeMode dm, UuidMode um)
+    : useDecimal(ud), allowNan(an), root(NULL), objectHook(hook), datetimeMode(dm),
+      uuidMode(um)
     {
         stack.reserve(128);
     }
@@ -135,6 +160,9 @@ struct PyHandler {
             if (current.isObject) {
                 PyObject* key = PyUnicode_FromStringAndSize(current.key,
                                                             current.keyLength);
+#ifndef PY3
+                key = PyUnicode_AsUTF8String(key);
+#endif
                 if (key == NULL) {
                     Py_DECREF(value);
                     return false;
@@ -188,7 +216,6 @@ struct PyHandler {
         HandlerContext ctx;
         ctx.isObject = true;
         ctx.object = dict;
-
         stack.push_back(ctx);
 
         return true;
@@ -273,18 +300,18 @@ struct PyHandler {
     }
 
     bool NaN() {
-        if (!(numberMode & NM_NAN)) {
+        if (!allowNan) {
             PyErr_SetString(PyExc_ValueError,
                             "Out of range float values are not JSON compliant");
             return false;
         }
 
         PyObject* value;
-        if (numberMode & NM_DECIMAL) {
-            value = PyObject_CallFunctionObjArgs(decimal_type, nan_string_value, NULL);
-        } else {
+        if (!useDecimal)
             value = PyFloat_FromString(nan_string_value);
-        }
+        else
+            value = PyObject_CallFunctionObjArgs(decimal_type,
+                                                 nan_string_value, NULL);
 
         if (value == NULL)
             return false;
@@ -293,23 +320,22 @@ struct PyHandler {
     }
 
     bool Infinity(bool minus) {
-        if (!(numberMode & NM_NAN)) {
+        if (!allowNan) {
             PyErr_SetString(PyExc_ValueError,
                             "Out of range float values are not JSON compliant");
             return false;
         }
 
         PyObject* value;
-        if (numberMode & NM_DECIMAL) {
+        if (!useDecimal)
+            value = PyFloat_FromString(minus
+                                       ? minus_inf_string_value
+                                       : plus_inf_string_value);
+        else
             value = PyObject_CallFunctionObjArgs(decimal_type,
                                                  minus
                                                  ? minus_inf_string_value
                                                  : plus_inf_string_value, NULL);
-        } else {
-            value = PyFloat_FromString(minus
-                                       ? minus_inf_string_value
-                                       : plus_inf_string_value);
-        }
 
         if (value == NULL)
             return false;
@@ -376,10 +402,11 @@ struct PyHandler {
                 return false;
             }
 
-            if (numberMode & NM_DECIMAL) {
-                value = PyObject_CallFunctionObjArgs(decimal_type, pystr, NULL);
-            } else {
+            if (!useDecimal) {
                 value = PyFloat_FromString(pystr);
+            } else {
+                value = PyObject_CallFunctionObjArgs(decimal_type,
+                                                     pystr, NULL);
             }
 
             Py_DECREF(pystr);
@@ -719,7 +746,7 @@ struct PyHandler {
 #undef digit
 
     bool IsUuid(const char* str, SizeType length) {
-        if (uuidMode == UM_HEX && length == 32) {
+        if (uuidMode == UUID_MODE_HEX && length == 32) {
             for (int i = length - 1; i >= 0; --i)
                 if (!isxdigit(str[i]))
                     return false;
@@ -756,10 +783,12 @@ struct PyHandler {
         if (datetimeMode != DM_NONE && IsIso8601(str, length))
             return HandleIso8601(str, length);
 
-        if (uuidMode != UM_NONE && IsUuid(str, length))
+        if (uuidMode != UUID_MODE_NONE && IsUuid(str, length))
             return HandleUuid(str, length);
-
         value = PyUnicode_FromStringAndSize(str, length);
+#ifndef PY3
+        value = PyUnicode_AsUTF8String(value);
+#endif
         return HandleSimpleType(value);
     }
 };
@@ -772,37 +801,48 @@ loads(PyObject* self, PyObject* args, PyObject* kwargs)
 
     PyObject* jsonObject;
     PyObject* objectHook = NULL;
+    int useDecimal = 0;
+    int allowNan = 1;
+    int nativeNumbers = 0;
     PyObject* datetimeModeObj = NULL;
     DatetimeMode datetimeMode = DM_NONE;
     PyObject* uuidModeObj = NULL;
-    UuidMode uuidMode = UM_NONE;
-    PyObject* numberModeObj = NULL;
-    NumberMode numberMode = NM_NAN;
-
-    int allowNan = -1;
+    UuidMode uuidMode = UUID_MODE_NONE;
 
     static char const * kwlist[] = {
         "s",
         "object_hook",
-        "number_mode",
+        "use_decimal",
+        "allow_nan",
+        "native_numbers",
         "datetime_mode",
         "uuid_mode",
-
-        /* compatibility with stdlib json */
-        "allow_nan",
-
         NULL
     };
-
-    if (!PyArg_ParseTupleAndKeywords(args, kwargs, "O|OOOOp:rapidjson.loads",
+#ifdef PY3
+    if (!PyArg_ParseTupleAndKeywords(args, kwargs, "O|OpppOO:rapidjson.loads",
                                      (char **) kwlist,
                                      &jsonObject,
                                      &objectHook,
-                                     &numberModeObj,
+                                     &useDecimal,
+                                     &allowNan,
+                                     &nativeNumbers,
                                      &datetimeModeObj,
-                                     &uuidModeObj,
-                                     &allowNan))
+                                     &uuidModeObj))
         return NULL;
+#else
+    if (!PyArg_ParseTupleAndKeywords(args, kwargs, "O|OiiiOO",
+                                     (char **) kwlist,
+                                     &jsonObject,
+                                     &objectHook,
+                                     &useDecimal,
+                                     &allowNan,
+                                     &nativeNumbers,
+                                     &datetimeModeObj,
+                                     &uuidModeObj))
+        return NULL;
+#endif
+
 
     if (objectHook && !PyCallable_Check(objectHook)) {
         PyErr_SetString(PyExc_TypeError, "object_hook is not callable");
@@ -812,6 +852,7 @@ loads(PyObject* self, PyObject* args, PyObject* kwargs)
     Py_ssize_t jsonStrLen;
     char* jsonStr;
 
+#ifdef PY3
     if (PyBytes_Check(jsonObject)) {
         int rc = PyBytes_AsStringAndSize(jsonObject, &jsonStr, &jsonStrLen);
         if (rc == -1)
@@ -822,33 +863,25 @@ loads(PyObject* self, PyObject* args, PyObject* kwargs)
         if (jsonStr == NULL)
             return NULL;
     }
+#else
+    if (PyString_Check(jsonObject)) {
+        jsonStr = PyString_AsString(jsonObject);
+        jsonStrLen = strlen(jsonStr);
+        if (jsonStr == NULL)
+            return NULL;
+    }
+    else if (PyUnicode_Check(jsonObject)) {
+        PyObject* utf8_item = PyUnicode_AsUTF8String(jsonObject);
+        jsonStr = PyBytes_AsString(utf8_item);
+        jsonStrLen = strlen(jsonStr);
+        Py_XDECREF(utf8_item);
+        if (jsonStr == NULL)
+            return NULL;
+    }
+#endif
     else {
         PyErr_SetString(PyExc_TypeError, "Expected string or utf-8 encoded bytes");
         return NULL;
-    }
-
-    if (numberModeObj) {
-        if (numberModeObj == Py_None)
-            numberMode = NM_NONE;
-        else if (PyLong_Check(numberModeObj)) {
-            int mode = PyLong_AsLong(numberModeObj);
-            if (mode < 0 || mode >= 1<<3) {
-                PyErr_SetString(PyExc_ValueError, "Invalid number_mode");
-                return NULL;
-            }
-            numberMode = (NumberMode) mode;
-            if (numberMode & NM_DECIMAL && numberMode & NM_NATIVE) {
-                PyErr_SetString(PyExc_ValueError,
-                                "Combining NM_NATIVE with NM_DECIMAL is not supported");
-                return NULL;
-            }
-        }
-    }
-    if (allowNan != -1) {
-        if (allowNan)
-            numberMode = (NumberMode) (numberMode | NM_NAN);
-        else
-            numberMode = (NumberMode) (numberMode & ~NM_NAN);
     }
 
     if (datetimeModeObj) {
@@ -876,10 +909,10 @@ loads(PyObject* self, PyObject* args, PyObject* kwargs)
 
     if (uuidModeObj) {
         if (uuidModeObj == Py_None)
-            uuidMode = UM_NONE;
+            uuidMode = UUID_MODE_NONE;
         else if (PyLong_Check(uuidModeObj)) {
             uuidMode = (UuidMode) PyLong_AsLong(uuidModeObj);
-            if (uuidMode < UM_NONE || uuidMode > UM_HEX) {
+            if (uuidMode < UUID_MODE_NONE || uuidMode > UUID_MODE_HEX) {
                 PyErr_SetString(PyExc_ValueError, "Invalid uuid_mode");
                 return NULL;
             }
@@ -890,24 +923,26 @@ loads(PyObject* self, PyObject* args, PyObject* kwargs)
             return NULL;
         }
     }
-
     char* jsonStrCopy = (char*) malloc(sizeof(char) * (jsonStrLen+1));
     memcpy(jsonStrCopy, jsonStr, jsonStrLen+1);
-
-    PyHandler handler(objectHook, datetimeMode, uuidMode, numberMode);
+    PyHandler handler(useDecimal, objectHook, allowNan, datetimeMode, uuidMode);
     Reader reader;
-    InsituStringStream ss(jsonStrCopy);
 
-    if (numberMode & NM_NAN)
-        if (numberMode & NM_NATIVE)
+    // return PyString_FromString("tiqian return\n");
+
+    InsituStringStream ss(jsonStrCopy);
+    if (allowNan)
+        if (nativeNumbers)
             reader.Parse<kParseInsituFlag |
                          kParseNanAndInfFlag>(ss, handler);
         else
+        {
             reader.Parse<kParseInsituFlag |
                          kParseNumbersAsStringsFlag |
                          kParseNanAndInfFlag>(ss, handler);
+        }
     else
-        if (numberMode & NM_NATIVE)
+        if (nativeNumbers)
             reader.Parse<kParseInsituFlag>(ss, handler);
         else
             reader.Parse<kParseInsituFlag | kParseNumbersAsStringsFlag>(ss, handler);
@@ -996,10 +1031,12 @@ dumps_internal(
     BufferT* buf,
     PyObject* value,
     int skipKeys,
+    int allowNan,
+    int nativeNumbers,
     PyObject* defaultFn,
     int sortKeys,
+    int useDecimal,
     unsigned maxRecursionDepth,
-    NumberMode numberMode,
     DatetimeMode datetimeMode,
     UuidMode uuidMode)
 {
@@ -1042,37 +1079,10 @@ dumps_internal(
         else if (PyBool_Check(object)) {
             writer->Bool(object == Py_True);
         }
-        else if (numberMode & NM_DECIMAL
+        else if (useDecimal
                  && (isDec = PyObject_IsInstance(object, decimal_type))) {
             if (isDec == -1)
                 return NULL;
-
-            if (!(numberMode & NM_NAN)) {
-                bool is_inf_or_nan;
-                PyObject* is_inf = PyObject_CallMethodObjArgs(object, is_infinite_name, NULL);
-
-                if (is_inf == NULL) {
-                    return NULL;
-                }
-                is_inf_or_nan = is_inf == Py_True;
-                Py_DECREF(is_inf);
-
-                if (!is_inf_or_nan) {
-                    PyObject* is_nan = PyObject_CallMethodObjArgs(object, is_nan_name, NULL);
-
-                    if (is_nan == NULL) {
-                        return NULL;
-                    }
-                    is_inf_or_nan = is_nan == Py_True;
-                    Py_DECREF(is_nan);
-                }
-
-                if (is_inf_or_nan) {
-                    PyErr_SetString(PyExc_ValueError,
-                                    "Out of range decimal values are not JSON compliant");
-                    return NULL;
-                }
-            }
 
             PyObject* decStrObj = PyObject_Str(object);
             if (decStrObj == NULL)
@@ -1088,8 +1098,8 @@ dumps_internal(
             writer->RawValue(decStr, size, kNumberType);
             Py_DECREF(decStrObj);
         }
-        else if (PyLong_Check(object)) {
-            if (numberMode & NM_NATIVE) {
+        else if (PyLong_Check(object) || Py2Int_Check(object)) {
+            if (nativeNumbers) {
                 int overflow;
                 long long i = PyLong_AsLongLongAndOverflow(object, &overflow);
                 if (i == -1 && PyErr_Occurred())
@@ -1126,7 +1136,7 @@ dumps_internal(
                 return NULL;
 
             if (Py_IS_NAN(d)) {
-                if (numberMode & NM_NAN)
+                if (allowNan)
                     writer->RawValue("NaN", 3, kNumberType);
                 else {
                     PyErr_SetString(PyExc_ValueError,
@@ -1134,7 +1144,7 @@ dumps_internal(
                     return NULL;
                 }
             } else if (Py_IS_INFINITY(d)) {
-                if (!(numberMode & NM_NAN)) {
+                if (!allowNan) {
                     PyErr_SetString(PyExc_ValueError,
                                     "Out of range float values are not JSON compliant");
                     return NULL;
@@ -1156,11 +1166,24 @@ dumps_internal(
 
             writer->String(s, l);
         }
+#ifdef PY3
         else if (PyUnicode_Check(object)) {
             Py_ssize_t l;
             char* s = PyUnicode_AsUTF8AndSize(object, &l);
             writer->String(s, l);
         }
+#else
+        else if (PyString_Check(object)) {
+            char* s = PyString_AsString(object);
+            writer->String(s);
+        }
+        else if (PyUnicode_Check(object)) {
+            PyObject* utf8_item = PyUnicode_AsUTF8String(object);
+            char* s = PyBytes_AsString(utf8_item);
+            writer->String(s);
+            Py_XDECREF(utf8_item);
+        }
+#endif
         else if (PyList_Check(object)) {
             writer->StartArray();
             stack.push_back(WriterContext(NULL, 0, NULL, false, currentLevel));
@@ -1193,12 +1216,29 @@ dumps_internal(
 
             if (!sortKeys) {
                 while (PyDict_Next(object, &pos, &key, &item)) {
+#ifdef PY3
                     if (PyUnicode_Check(key)) {
                         Py_ssize_t l;
                         char* key_str = PyUnicode_AsUTF8AndSize(key, &l);
                         stack.push_back(WriterContext(NULL, 0, item, false, nextLevel));
                         stack.push_back(WriterContext(key_str, l, NULL, false, nextLevel));
+                    } 
+#else
+                    if (PyString_Check(key)) {
+                        char* key_str = PyString_AsString(key);
+                        Py_ssize_t l = strlen(key_str);
+                        stack.push_back(WriterContext(NULL, 0, item, false, nextLevel));
+                        stack.push_back(WriterContext(key_str, l, NULL, false, nextLevel));
+                    } 
+                    else if (PyUnicode_Check(key)) {
+                        PyObject* utf8_item = PyUnicode_AsUTF8String(key);
+                        char* key_str = PyBytes_AsString(utf8_item);
+                        Py_ssize_t l = strlen(key_str);
+                        stack.push_back(WriterContext(NULL, 0, item, false, nextLevel));
+                        stack.push_back(WriterContext(key_str, l, NULL, false, nextLevel));
+                        Py_XDECREF(utf8_item);
                     }
+#endif
                     else if (!skipKeys) {
                         PyErr_SetString(PyExc_TypeError, "keys must be a string");
                         goto error;
@@ -1209,11 +1249,26 @@ dumps_internal(
                 std::vector<DictItem> items;
 
                 while (PyDict_Next(object, &pos, &key, &item)) {
+#ifdef PY3
                     if (PyUnicode_Check(key)) {
                         Py_ssize_t l;
                         char* key_str = PyUnicode_AsUTF8AndSize(key, &l);
                         items.push_back(DictItem(key_str, l, item));
+                    } 
+#else
+                    if (PyString_Check(key)) {
+                        char* key_str = PyString_AsString(key);
+                        Py_ssize_t l = strlen(key_str);
+                        items.push_back(DictItem(key_str, l, item));
+                    } 
+                    else if (PyUnicode_Check(key)) {
+                        PyObject* utf8_item = PyUnicode_AsUTF8String(key);
+                        char* key_str = PyBytes_AsString(utf8_item);
+                        Py_ssize_t l = strlen(key_str);
+                        items.push_back(DictItem(key_str, l, item));
+                        Py_XDECREF(utf8_item);
                     }
+#endif
                     else if (!skipKeys) {
                         PyErr_SetString(PyExc_TypeError, "keys must be a string");
                         goto error;
@@ -1469,10 +1524,10 @@ dumps_internal(
                     writer->Double(timestamp);
             }
         }
-        else if (uuidMode != UM_NONE
+        else if (uuidMode != UUID_MODE_NONE
                  && PyObject_TypeCheck(object, (PyTypeObject *) uuid_type)) {
             PyObject* retval;
-            if (uuidMode == UM_CANONICAL)
+            if (uuidMode == UUID_MODE_CANONICAL)
                 retval = PyObject_Str(object);
             else
                 retval = PyObject_GetAttr(object, hex_name);
@@ -1500,9 +1555,11 @@ dumps_internal(
             goto error;
         }
     }
-
+#ifdef PY3
     return PyUnicode_FromString(buf->GetString());
-
+#else 
+    return PyString_FromString(buf->GetString());
+#endif
 error:
     return NULL;
 }
@@ -1514,10 +1571,12 @@ error:
         &buf, \
         value, \
         skipKeys, \
+        allowNan, \
+        nativeNumbers, \
         defaultFn, \
         sortKeys, \
+        useDecimal, \
         maxRecursionDepth, \
-        numberMode, \
         datetimeMode, \
         uuidMode)
 
@@ -1530,55 +1589,70 @@ dumps(PyObject* self, PyObject* args, PyObject* kwargs)
     PyObject* value;
     int skipKeys = 0;
     int ensureAscii = 1;
+    int allowNan = 1;
+    int nativeNumbers = 0;
     PyObject* indent = NULL;
     PyObject* defaultFn = NULL;
     int sortKeys = 0;
+    int useDecimal = 0;
     unsigned maxRecursionDepth = MAX_RECURSION_DEPTH;
-    PyObject* numberModeObj = NULL;
-    NumberMode numberMode = NM_NAN;
     PyObject* datetimeModeObj = NULL;
     DatetimeMode datetimeMode = DM_NONE;
     PyObject* uuidModeObj = NULL;
-    UuidMode uuidMode = UM_NONE;
+    UuidMode uuidMode = UUID_MODE_NONE;
 
     bool prettyPrint = false;
     const char indentChar = ' ';
     unsigned indentCharCount = 4;
 
-    int allowNan = -1;
-
     static char const * kwlist[] = {
         "obj",
         "skipkeys",
         "ensure_ascii",
+        "allow_nan",
+        "native_numbers",
         "indent",
         "default",
         "sort_keys",
+        "use_decimal",
         "max_recursion_depth",
-        "number_mode",
         "datetime_mode",
         "uuid_mode",
-
-        /* compatibility with stdlib json */
-        "allow_nan",
-
         NULL
     };
-    if (!PyArg_ParseTupleAndKeywords(args, kwargs, "O|ppOOpIOOOp:rapidjson.dumps",
+#ifdef PY3
+    if (!PyArg_ParseTupleAndKeywords(args, kwargs, "O|ppppOOppIOO:rapidjson.dumps",
                                      (char **) kwlist,
                                      &value,
                                      &skipKeys,
                                      &ensureAscii,
+                                     &allowNan,
+                                     &nativeNumbers,
                                      &indent,
                                      &defaultFn,
                                      &sortKeys,
+                                     &useDecimal,
                                      &maxRecursionDepth,
-                                     &numberModeObj,
                                      &datetimeModeObj,
-                                     &uuidModeObj,
-                                     &allowNan))
+                                     &uuidModeObj))
         return NULL;
-
+#else
+    if (!PyArg_ParseTupleAndKeywords(args, kwargs, "O|iiiiOOiiIOO",
+                                     (char **) kwlist,
+                                     &value,
+                                     &skipKeys,
+                                     &ensureAscii,
+                                     &allowNan,
+                                     &nativeNumbers,
+                                     &indent,
+                                     &defaultFn,
+                                     &sortKeys,
+                                     &useDecimal,
+                                     &maxRecursionDepth,
+                                     &datetimeModeObj,
+                                     &uuidModeObj))
+        return NULL;
+#endif
     if (defaultFn && !PyCallable_Check(defaultFn)) {
         PyErr_SetString(PyExc_TypeError, "default must be a callable");
         return NULL;
@@ -1594,25 +1668,6 @@ dumps(PyObject* self, PyObject* args, PyObject* kwargs)
             PyErr_SetString(PyExc_TypeError, "indent must be a non-negative int");
             return NULL;
         }
-    }
-
-    if (numberModeObj) {
-        if (numberModeObj == Py_None)
-            numberMode = NM_NONE;
-        else if (PyLong_Check(numberModeObj)) {
-            int mode = PyLong_AsLong(numberModeObj);
-            if (mode < 0 || mode >= 1<<3) {
-                PyErr_SetString(PyExc_ValueError, "Invalid number_mode");
-                return NULL;
-            }
-            numberMode = (NumberMode) mode;
-        }
-    }
-    if (allowNan != -1) {
-        if (allowNan)
-            numberMode = (NumberMode) (numberMode | NM_NAN);
-        else
-            numberMode = (NumberMode) (numberMode & ~NM_NAN);
     }
 
    if (datetimeModeObj) {
@@ -1635,10 +1690,10 @@ dumps(PyObject* self, PyObject* args, PyObject* kwargs)
 
     if (uuidModeObj) {
         if (uuidModeObj == Py_None)
-            uuidMode = UM_NONE;
+            uuidMode = UUID_MODE_NONE;
         else if (PyLong_Check(uuidModeObj)) {
             uuidMode = (UuidMode) PyLong_AsLong(uuidModeObj);
-            if (uuidMode < UM_NONE || uuidMode > UM_HEX) {
+            if (uuidMode < UUID_MODE_NONE || uuidMode > UUID_MODE_HEX) {
                 PyErr_SetString(PyExc_ValueError, "Invalid uuid_mode");
                 return NULL;
             }
@@ -1658,6 +1713,7 @@ dumps(PyObject* self, PyObject* args, PyObject* kwargs)
         else {
             StringBuffer buf;
             Writer<StringBuffer> writer(buf);
+            PySys_WriteStdout("no ensuer ascii\n");
             return DUMPS_INTERNAL_CALL;
         }
     }
@@ -1676,6 +1732,7 @@ dumps(PyObject* self, PyObject* args, PyObject* kwargs)
 }
 
 
+
 static PyMethodDef
 functions[] = {
     {"loads", (PyCFunction) loads, METH_VARARGS | METH_KEYWORDS,
@@ -1685,7 +1742,7 @@ functions[] = {
     {NULL, NULL, 0, NULL} /* sentinel */
 };
 
-
+#ifdef PY3
 static PyModuleDef module = {
     PyModuleDef_HEAD_INIT,
     "rapidjson",
@@ -1697,22 +1754,27 @@ static PyModuleDef module = {
 
 PyMODINIT_FUNC
 PyInit_rapidjson()
+#else
+
+PyMODINIT_FUNC
+initrapidjson()
+#endif
 {
     astimezone_name = PyUnicode_InternFromString("astimezone");
     if (astimezone_name == NULL)
-        return NULL;
+        ReturnInitNull;
 
     hex_name = PyUnicode_InternFromString("hex");
     if (hex_name == NULL) {
         Py_DECREF(astimezone_name);
-        return NULL;
+        ReturnInitNull;
     }
 
     timestamp_name = PyUnicode_InternFromString("timestamp");
     if (timestamp_name == NULL) {
         Py_DECREF(astimezone_name);
         Py_DECREF(hex_name);
-        return NULL;
+        ReturnInitNull;
     }
 
     total_seconds_name = PyUnicode_InternFromString("total_seconds");
@@ -1720,7 +1782,7 @@ PyInit_rapidjson()
         Py_DECREF(astimezone_name);
         Py_DECREF(hex_name);
         Py_DECREF(timestamp_name);
-        return NULL;
+        ReturnInitNull;
     }
 
     utcoffset_name = PyUnicode_InternFromString("utcoffset");
@@ -1729,28 +1791,7 @@ PyInit_rapidjson()
         Py_DECREF(hex_name);
         Py_DECREF(timestamp_name);
         Py_DECREF(total_seconds_name);
-        return NULL;
-    }
-
-    is_infinite_name = PyUnicode_InternFromString("is_infinite");
-    if (is_infinite_name == NULL) {
-        Py_DECREF(astimezone_name);
-        Py_DECREF(hex_name);
-        Py_DECREF(timestamp_name);
-        Py_DECREF(total_seconds_name);
-        Py_DECREF(utcoffset_name);
-        return NULL;
-    }
-
-    is_nan_name = PyUnicode_InternFromString("is_nan");
-    if (is_infinite_name == NULL) {
-        Py_DECREF(astimezone_name);
-        Py_DECREF(hex_name);
-        Py_DECREF(timestamp_name);
-        Py_DECREF(total_seconds_name);
-        Py_DECREF(utcoffset_name);
-        Py_DECREF(is_infinite_name);
-        return NULL;
+        ReturnInitNull;
     }
 
     minus_inf_string_value = PyUnicode_InternFromString("-Infinity");
@@ -1760,9 +1801,7 @@ PyInit_rapidjson()
         Py_DECREF(timestamp_name);
         Py_DECREF(total_seconds_name);
         Py_DECREF(utcoffset_name);
-        Py_DECREF(is_infinite_name);
-        Py_DECREF(is_nan_name);
-        return NULL;
+        ReturnInitNull;
     }
 
     nan_string_value = PyUnicode_InternFromString("nan");
@@ -1772,10 +1811,8 @@ PyInit_rapidjson()
         Py_DECREF(timestamp_name);
         Py_DECREF(total_seconds_name);
         Py_DECREF(utcoffset_name);
-        Py_DECREF(is_infinite_name);
-        Py_DECREF(is_nan_name);
         Py_DECREF(minus_inf_string_value);
-        return NULL;
+        ReturnInitNull;
     }
 
     plus_inf_string_value = PyUnicode_InternFromString("+Infinity");
@@ -1785,33 +1822,32 @@ PyInit_rapidjson()
         Py_DECREF(timestamp_name);
         Py_DECREF(total_seconds_name);
         Py_DECREF(utcoffset_name);
-        Py_DECREF(is_infinite_name);
-        Py_DECREF(is_nan_name);
         Py_DECREF(minus_inf_string_value);
         Py_DECREF(nan_string_value);
-        return NULL;
+        ReturnInitNull;
     }
 
     PyDateTime_IMPORT;
-
+#ifndef PY3
+    PyObject* datetimeModule = PyImport_ImportModule("pytz");
+#else
     PyObject* datetimeModule = PyImport_ImportModule("datetime");
+#endif
     if (datetimeModule == NULL) {
         Py_DECREF(astimezone_name);
         Py_DECREF(hex_name);
         Py_DECREF(timestamp_name);
         Py_DECREF(total_seconds_name);
         Py_DECREF(utcoffset_name);
-        Py_DECREF(is_infinite_name);
-        Py_DECREF(is_nan_name);
         Py_DECREF(minus_inf_string_value);
         Py_DECREF(nan_string_value);
         Py_DECREF(plus_inf_string_value);
-        return NULL;
+        ReturnInitNull;
     }
 
     PyObject* decimalModule = PyImport_ImportModule("decimal");
     if (decimalModule == NULL) {
-        return NULL;
+        ReturnInitNull;
     }
 
     decimal_type = PyObject_GetAttrString(decimalModule, "Decimal");
@@ -1823,13 +1859,11 @@ PyInit_rapidjson()
         Py_DECREF(timestamp_name);
         Py_DECREF(total_seconds_name);
         Py_DECREF(utcoffset_name);
-        Py_DECREF(is_infinite_name);
-        Py_DECREF(is_nan_name);
         Py_DECREF(minus_inf_string_value);
         Py_DECREF(nan_string_value);
         Py_DECREF(plus_inf_string_value);
         Py_DECREF(datetimeModule);
-        return NULL;
+        ReturnInitNull;
     }
 
     timezone_type = PyObject_GetAttrString(datetimeModule, "timezone");
@@ -1841,30 +1875,35 @@ PyInit_rapidjson()
         Py_DECREF(timestamp_name);
         Py_DECREF(total_seconds_name);
         Py_DECREF(utcoffset_name);
-        Py_DECREF(is_infinite_name);
-        Py_DECREF(is_nan_name);
         Py_DECREF(minus_inf_string_value);
         Py_DECREF(nan_string_value);
         Py_DECREF(plus_inf_string_value);
         Py_DECREF(decimal_type);
-        return NULL;
+        ReturnInitNull;
     }
-
+#ifndef PY3
+    if(!PyCallable_Check(timezone_type))
+        ReturnInitNull;
+    else {
+        // PySys_WriteStdout("callable");
+        PyObject *args = PyTuple_Pack(1, PyString_FromString("utc"));
+        timezone_utc = PyObject_CallObject(timezone_type, /*"utc"*/args);
+    }
+#else
     timezone_utc = PyObject_GetAttrString(timezone_type, "utc");
+#endif
     if (timezone_utc == NULL) {
         Py_DECREF(astimezone_name);
         Py_DECREF(hex_name);
         Py_DECREF(timestamp_name);
         Py_DECREF(total_seconds_name);
         Py_DECREF(utcoffset_name);
-        Py_DECREF(is_infinite_name);
-        Py_DECREF(is_nan_name);
         Py_DECREF(minus_inf_string_value);
         Py_DECREF(nan_string_value);
         Py_DECREF(plus_inf_string_value);
         Py_DECREF(decimal_type);
         Py_DECREF(timezone_type);
-        return NULL;
+        ReturnInitNull;
     }
 
     PyObject* uuidModule = PyImport_ImportModule("uuid");
@@ -1874,15 +1913,13 @@ PyInit_rapidjson()
         Py_DECREF(timestamp_name);
         Py_DECREF(total_seconds_name);
         Py_DECREF(utcoffset_name);
-        Py_DECREF(is_infinite_name);
-        Py_DECREF(is_nan_name);
         Py_DECREF(minus_inf_string_value);
         Py_DECREF(nan_string_value);
         Py_DECREF(plus_inf_string_value);
         Py_DECREF(decimal_type);
         Py_DECREF(timezone_type);
         Py_DECREF(timezone_utc);
-        return NULL;
+        ReturnInitNull;
     }
 
     uuid_type = PyObject_GetAttrString(uuidModule, "UUID");
@@ -1894,8 +1931,6 @@ PyInit_rapidjson()
         Py_DECREF(timestamp_name);
         Py_DECREF(total_seconds_name);
         Py_DECREF(utcoffset_name);
-        Py_DECREF(is_infinite_name);
-        Py_DECREF(is_nan_name);
         Py_DECREF(minus_inf_string_value);
         Py_DECREF(nan_string_value);
         Py_DECREF(plus_inf_string_value);
@@ -1903,14 +1938,21 @@ PyInit_rapidjson()
         Py_DECREF(timezone_type);
         Py_DECREF(timezone_utc);
         Py_DECREF(uuid_type);
-        return NULL;
+        ReturnInitNull;
     }
-
     PyObject* m;
-
+#ifdef PY3
     m = PyModule_Create(&module);
+#else
+    m = Py_InitModule("rapidjson", functions);
+#endif
+
     if (m == NULL) {
+#ifdef PY3
         return NULL;
+#else
+        return;
+#endif
     }
 
     PyModule_AddIntConstant(m, "DM_NONE", DM_NONE);
@@ -1921,14 +1963,9 @@ PyInit_rapidjson()
     PyModule_AddIntConstant(m, "DM_NAIVE_IS_UTC", DM_NAIVE_IS_UTC);
     PyModule_AddIntConstant(m, "DM_SHIFT_TO_UTC", DM_SHIFT_TO_UTC);
 
-    PyModule_AddIntConstant(m, "UM_NONE", UM_NONE);
-    PyModule_AddIntConstant(m, "UM_HEX", UM_HEX);
-    PyModule_AddIntConstant(m, "UM_CANONICAL", UM_CANONICAL);
-
-    PyModule_AddIntConstant(m, "NM_NONE", NM_NONE);
-    PyModule_AddIntConstant(m, "NM_NAN", NM_NAN);
-    PyModule_AddIntConstant(m, "NM_DECIMAL", NM_DECIMAL);
-    PyModule_AddIntConstant(m, "NM_NATIVE", NM_NATIVE);
+    PyModule_AddIntConstant(m, "UUID_MODE_NONE", UUID_MODE_NONE);
+    PyModule_AddIntConstant(m, "UUID_MODE_HEX", UUID_MODE_HEX);
+    PyModule_AddIntConstant(m, "UUID_MODE_CANONICAL", UUID_MODE_CANONICAL);
 
     PyModule_AddStringConstant(m, "__version__",
                                PYTHON_RAPIDJSON_VERSION);
@@ -1939,5 +1976,9 @@ PyInit_rapidjson()
     PyModule_AddStringConstant(m, "__rapidjson_version__",
                                RAPIDJSON_VERSION_STRING);
 
-    return m;
+#ifdef PY3 
+   return m;
+#else
+   return;
+#endif
 }

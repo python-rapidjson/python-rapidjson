@@ -1,6 +1,8 @@
+import codecs
 import os.path
 import re
 import sys
+
 
 try:
     from setuptools import setup, Extension
@@ -9,16 +11,16 @@ try:
         import packaging.specifiers
     except ImportError:
         pass
-    other_setup_options = {'python_requires': '>=3.4'}
 except ImportError:
     from distutils.core import setup, Extension
     other_setup_options = {}
 
 from distutils import sysconfig
 
+major_version = sys.version_info[0]
 
-if sys.version_info < (3,):
-    raise NotImplementedError("Only Python 3+ is supported.")
+# if sys.version_info < (3,):
+#     raise NotImplementedError("Only Python 3+ is supported.")
 
 ROOT_PATH = os.path.abspath(os.path.dirname(__file__))
 
@@ -30,17 +32,17 @@ if not os.path.isdir(os.path.join(ROOT_PATH, 'rapidjson', 'include')):
 
 VERSION_H = os.path.join(ROOT_PATH, 'python-rapidjson', 'version.h')
 
-with open(VERSION_H, encoding='utf-8') as f:
+with codecs.open(VERSION_H, 'r', 'utf-8') as f:
     data = f.read()
 
     VERSION = re.search(r'PYTHON_RAPIDJSON_VERSION\s+"([^"]+)"', data).group(1)
     AUTHOR = re.search(r'PYTHON_RAPIDJSON_AUTHOR\s+"([^"]+)"', data).group(1)
     EMAIL = re.search(r'PYTHON_RAPIDJSON_AUTHOR_EMAIL\s+"([^"]+)"', data).group(1)
 
-with open('README.rst', encoding='utf-8') as f:
+with codecs.open('README.rst', 'r', 'utf-8') as f:
     LONG_DESCRIPTION = f.read()
 
-with open('CHANGES.rst', encoding='utf-8') as f:
+with codecs.open('CHANGES.rst', 'r', 'utf-8') as f:
     CHANGES = f.read()
 
 rj_include_dir = './rapidjson/include'
@@ -86,13 +88,9 @@ setup(
         'Intended Audience :: Developers',
         'License :: OSI Approved :: MIT License',
         'Programming Language :: C++',
-        'Programming Language :: Python :: 3 :: Only',
+        'Programming Language :: Python :: 2'
         'Programming Language :: Python :: 3',
-        'Programming Language :: Python :: 3.4',
-        'Programming Language :: Python :: 3.5',
-        'Programming Language :: Python :: 3.6',
         'Programming Language :: Python',
     ],
     ext_modules=[rapidjson],
-    **other_setup_options
 )
