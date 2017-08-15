@@ -541,7 +541,7 @@ struct PyHandler {
     }
 
     bool HandleIso8601(const char* str, SizeType length) {
-        PyObject *value;
+        PyObject* value;
         int hours, mins, secs, usecs;
         int year, month, day;
 
@@ -1548,7 +1548,7 @@ dumps_internal(
             }
         }
         else if (uuidMode != UM_NONE
-                 && PyObject_TypeCheck(object, (PyTypeObject *) uuid_type)) {
+                 && PyObject_TypeCheck(object, (PyTypeObject*) uuid_type)) {
             PyObject* retval;
             if (uuidMode == UM_CANONICAL)
                 retval = PyObject_Str(object);
@@ -1627,13 +1627,10 @@ dumps(PyObject* self, PyObject* args, PyObject* kwargs)
     DatetimeMode datetimeMode = DM_NONE;
     PyObject* uuidModeObj = NULL;
     UuidMode uuidMode = UM_NONE;
-
     bool prettyPrint = false;
     const char indentChar = ' ';
     unsigned indentCharCount = 4;
-
     int allowNan = -1;
-
     static char const * kwlist[] = {
         "obj",
         "skipkeys",
@@ -1651,6 +1648,7 @@ dumps(PyObject* self, PyObject* args, PyObject* kwargs)
 
         NULL
     };
+
     if (!PyArg_ParseTupleAndKeywords(args, kwargs, "O|ppOOpIOOOp:rapidjson.dumps",
                                      (char **) kwlist,
                                      &value,
@@ -1898,7 +1896,6 @@ PyInit_rapidjson()
     PyModule_AddStringConstant(m, "__author__",
                                PYTHON_RAPIDJSON_AUTHOR
                                " <" PYTHON_RAPIDJSON_AUTHOR_EMAIL ">");
-
     PyModule_AddStringConstant(m, "__rapidjson_version__",
                                RAPIDJSON_VERSION_STRING);
 
