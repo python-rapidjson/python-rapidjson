@@ -1310,7 +1310,7 @@ dumps_internal(
         }
         else if (datetimeMode != DM_NONE
                  && (PyTime_Check(object) || PyDateTime_Check(object))) {
-            int year, month, day, hour, min, sec, microsec;
+            unsigned int year, month, day, hour, min, sec, microsec;
             PyObject* dtObject = object;
             PyObject* asUTC = NULL;
 
@@ -1318,7 +1318,7 @@ dumps_internal(
             char isoformat[ISOFORMAT_LEN];
             memset(isoformat, 0, ISOFORMAT_LEN);
 
-            const int TIMEZONE_LEN = 10;
+            const int TIMEZONE_LEN = 16;
             char timeZone[TIMEZONE_LEN] = { 0 };
 
             if (!(datetimeMode & DM_IGNORE_TZ)
@@ -1408,10 +1408,10 @@ dumps_internal(
                             seconds_from_utc = -seconds_from_utc;
                         }
 
-                        int tz_hour = seconds_from_utc / 3600;
-                        int tz_min = (seconds_from_utc % 3600) / 60;
+                        unsigned int tz_hour = seconds_from_utc / 3600;
+                        unsigned int tz_min = (seconds_from_utc % 3600) / 60;
 
-                        snprintf(timeZone, TIMEZONE_LEN-1, "%c%02d:%02d",
+                        snprintf(timeZone, TIMEZONE_LEN-1, "%c%02u:%02u",
                                  sign, tz_hour, tz_min);
                     }
                 }
@@ -1431,14 +1431,14 @@ dumps_internal(
                     if (microsec > 0) {
                         snprintf(isoformat,
                                  ISOFORMAT_LEN-1,
-                                 "%04d-%02d-%02dT%02d:%02d:%02d.%06d%s",
+                                 "%04u-%02u-%02uT%02u:%02u:%02u.%06u%s",
                                  year, month, day,
                                  hour, min, sec, microsec,
                                  timeZone);
                     } else {
                         snprintf(isoformat,
                                  ISOFORMAT_LEN-1,
-                                 "%04d-%02d-%02dT%02d:%02d:%02d%s",
+                                 "%04u-%02u-%02uT%02u:%02u:%02u%s",
                                  year, month, day,
                                  hour, min, sec,
                                  timeZone);
@@ -1452,13 +1452,13 @@ dumps_internal(
                     if (microsec > 0) {
                         snprintf(isoformat,
                                  ISOFORMAT_LEN-1,
-                                 "%02d:%02d:%02d.%06d%s",
+                                 "%02u:%02u:%02u.%06u%s",
                                  hour, min, sec, microsec,
                                  timeZone);
                     } else {
                         snprintf(isoformat,
                                  ISOFORMAT_LEN-1,
-                                 "%02d:%02d:%02d%s",
+                                 "%02u:%02u:%02u%s",
                                  hour, min, sec,
                                  timeZone);
                     }
@@ -1500,16 +1500,16 @@ dumps_internal(
             Py_XDECREF(asUTC);
         }
         else if (datetimeMode != DM_NONE && PyDate_Check(object)) {
-            int year = PyDateTime_GET_YEAR(object);
-            int month = PyDateTime_GET_MONTH(object);
-            int day = PyDateTime_GET_DAY(object);
+            unsigned int year = PyDateTime_GET_YEAR(object);
+            unsigned int month = PyDateTime_GET_MONTH(object);
+            unsigned int day = PyDateTime_GET_DAY(object);
 
             if (datetime_mode_format(datetimeMode) == DM_ISO8601) {
-                const int ISOFORMAT_LEN = 12;
+                const int ISOFORMAT_LEN = 16;
                 char isoformat[ISOFORMAT_LEN];
                 memset(isoformat, 0, ISOFORMAT_LEN);
 
-                snprintf(isoformat, ISOFORMAT_LEN-1, "%04d-%02d-%02d", year, month, day);
+                snprintf(isoformat, ISOFORMAT_LEN-1, "%04u-%02u-%02u", year, month, day);
                 writer->String(isoformat);
             } else /* datetime_mode_format(datetimeMode) == DM_UNIX_TIME */ {
                 // A date object, take its midnight timestamp
