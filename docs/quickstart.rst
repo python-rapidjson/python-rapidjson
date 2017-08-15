@@ -114,8 +114,8 @@ types:
 Incompatibilities
 -----------------
 
-Here are things in the standard ``json`` library supports that we have decided
-not to support:
+Here are things in the standard ``json`` library that we have decided not to
+support:
 
 * ``separators`` argument. This is mostly used for pretty printing and not
   supported by RapidJSON_ so it isn't a high priority. We do support
