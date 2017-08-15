@@ -1278,7 +1278,7 @@ dumps_internal(
                         stack.push_back(WriterContext(key_str, l, NULL, false, nextLevel));
                     }
                     else if (!skipKeys) {
-                        PyErr_SetString(PyExc_TypeError, "keys must be a string");
+                        PyErr_SetString(PyExc_TypeError, "keys must be strings");
                         goto error;
                     }
                 }
@@ -1293,7 +1293,7 @@ dumps_internal(
                         items.push_back(DictItem(key_str, l, item));
                     }
                     else if (!skipKeys) {
-                        PyErr_SetString(PyExc_TypeError, "keys must be a string");
+                        PyErr_SetString(PyExc_TypeError, "keys must be strings");
                         goto error;
                     }
                 }
