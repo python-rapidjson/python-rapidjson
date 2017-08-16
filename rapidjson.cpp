@@ -2534,8 +2534,7 @@ PyInit_rapidjson()
     PyModule_AddStringConstant(m, "__version__",
                                PYTHON_RAPIDJSON_VERSION);
     PyModule_AddStringConstant(m, "__author__",
-                               PYTHON_RAPIDJSON_AUTHOR
-                               " <" PYTHON_RAPIDJSON_AUTHOR_EMAIL ">");
+                               "Ken Robbins <ken@kenrobbins.com>");
     PyModule_AddStringConstant(m, "__rapidjson_version__",
                                RAPIDJSON_VERSION_STRING);
 

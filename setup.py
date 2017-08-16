@@ -27,9 +27,6 @@ if not os.path.isdir(os.path.join(ROOT_PATH, 'rapidjson', 'include')):
                        " the README.rst; in all other cases you may want to report the"
                        " issue.")
 
-AUTHOR = 'Ken Robbins'
-EMAIL = 'ken@kenrobbins.com'
-
 with open('version.txt', encoding='utf-8') as f:
     VERSION = f.read()
 
@@ -50,9 +47,7 @@ for idx, arg in enumerate(sys.argv[:]):
 extension_options = {
     'sources': ['./rapidjson.cpp'],
     'include_dirs': [rj_include_dir],
-    'define_macros': [('PYTHON_RAPIDJSON_VERSION', '"%s"' % VERSION),
-                      ('PYTHON_RAPIDJSON_AUTHOR', '"%s"' % AUTHOR),
-                      ('PYTHON_RAPIDJSON_AUTHOR_EMAIL', '"%s"' % EMAIL)],
+    'define_macros': [('PYTHON_RAPIDJSON_VERSION', '"%s"' % VERSION)],
 }
 
 cc = sysconfig.get_config_var('CC')
@@ -75,8 +70,8 @@ setup(
     long_description=LONG_DESCRIPTION + '\n\n' + CHANGES,
     license='MIT License',
     keywords='json rapidjson',
-    author=AUTHOR,
-    author_email=EMAIL,
+    author='Ken Robbins',
+    author_email='ken@kenrobbins.com',
     maintainer='Lele Gaifax',
     maintainer_email='lele@metapensiero.it',
     url='https://github.com/python-rapidjson/python-rapidjson',
