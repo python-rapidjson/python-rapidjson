@@ -2120,8 +2120,9 @@ dumps(PyObject* self, PyObject* args, PyObject* kwargs)
         }
     }
 
-    return do_encode(value, skipKeys, defaultFn, sortKeys, maxRecursionDepth, ensureAscii,
-                     prettyPrint, indentCharCount, numberMode, datetimeMode, uuidMode);
+    return do_encode(value, (bool) skipKeys, defaultFn, (bool) sortKeys, maxRecursionDepth,
+                     (bool) ensureAscii, (bool) prettyPrint, indentCharCount, numberMode,
+                     datetimeMode, uuidMode);
 }
 
 
