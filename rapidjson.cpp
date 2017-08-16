@@ -2120,9 +2120,9 @@ dumps(PyObject* self, PyObject* args, PyObject* kwargs)
         }
     }
 
-    return do_encode(value, (bool) skipKeys, defaultFn, (bool) sortKeys, maxRecursionDepth,
-                     (bool) ensureAscii, (bool) prettyPrint, indentCharCount, numberMode,
-                     datetimeMode, uuidMode);
+    return do_encode(value, skipKeys ? true : false, defaultFn, sortKeys ? true : false,
+                     maxRecursionDepth, ensureAscii ? true : false, prettyPrint ? true : false,
+                     indentCharCount, numberMode, datetimeMode, uuidMode);
 }
 
 
@@ -2361,11 +2361,11 @@ encoder_new(PyTypeObject* type, PyObject* args, PyObject* kwargs)
     if (e == NULL)
         return NULL;
 
-    e->skipInvalidKeys = skipInvalidKeys;
-    e->ensureAscii = ensureAscii;
+    e->skipInvalidKeys = skipInvalidKeys ? true : false;
+    e->ensureAscii = ensureAscii ? true : false;
     e->prettyPrint = prettyPrint;
     e->indent = indentCharCount;
-    e->sortKeys = sortKeys;
+    e->sortKeys = sortKeys ? true : false;
     e->maxRecursionDepth = maxRecursionDepth;
     e->datetimeMode = datetimeMode;
     e->uuidMode = uuidMode;
