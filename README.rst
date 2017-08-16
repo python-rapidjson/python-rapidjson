@@ -190,13 +190,14 @@ Incompatibility
 Here are things in the standard ``json`` library supports that we have decided
 not to support:
 
-* ``separators`` argument. This is mostly used for pretty printing and not
-  supported by ``RapidJSON`` so it isn't a high priority. We do support
-  ``indent`` kwarg that would get you nice looking JSON anyways.
+``separators`` argument
+  This is mostly used for pretty printing and not supported by ``RapidJSON``
+  so it isn't a high priority. We do support ``indent`` kwarg that would get
+  you nice looking JSON anyways.
 
-* Coercing keys when dumping. ``json`` will turn ``True`` into ``'True'`` if
-  you dump it out but when you load it back in it'll still be a string. We
-  want the dump and load to return the exact same objects so we have decided
-  not to do this coercing.
+Coercing keys when dumping
+  ``json`` will turn ``True`` into ``'True'`` if you dump it out but when you
+  load it back in it'll still be a string. We want the dump and load to return
+  the exact same objects so we have decided not to do this coercion.
 
 .. _RapidJSON: https://github.com/miloyip/rapidjson
