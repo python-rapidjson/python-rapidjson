@@ -44,6 +44,10 @@ it should be a drop in replacement. Basic usage looks like this:
     >>> rapidjson.loads('{"bar":"baz","foo":100}')
     {'bar': 'baz', 'foo': 100}
 
+
+Development
+-----------
+
 If you want to install the development version (maybe to contribute fixes or
 enhancements) you may clone the repository:
 
@@ -62,6 +66,9 @@ enhancements) you may clone the repository:
           .. code-block:: shell
 
              $ python3 setup.py build --rj-include-dir=/usr/include/rapidjson
+
+A set of makefiles implement most common operations, such as *build*, *check*
+and *release*; see ``make help`` output for a list of available targets.
 
 
 Performance
