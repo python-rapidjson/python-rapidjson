@@ -47,7 +47,7 @@ for idx, arg in enumerate(sys.argv[:]):
 extension_options = {
     'sources': ['./rapidjson.cpp'],
     'include_dirs': [rj_include_dir],
-    'define_macros': [('PYTHON_RAPIDJSON_VERSION', '"%s"' % VERSION)],
+    'define_macros': [('PYTHON_RAPIDJSON_VERSION', VERSION)],
 }
 
 cc = sysconfig.get_config_var('CC')

@@ -2532,12 +2532,12 @@ PyInit_rapidjson()
     PyModule_AddIntConstant(m, "PM_COMMENTS", PM_COMMENTS);
     PyModule_AddIntConstant(m, "PM_TRAILING_COMMAS", PM_TRAILING_COMMAS);
 
-    PyModule_AddStringConstant(m, "__version__",
-                               PYTHON_RAPIDJSON_VERSION);
-    PyModule_AddStringConstant(m, "__author__",
-                               "Ken Robbins <ken@kenrobbins.com>");
-    PyModule_AddStringConstant(m, "__rapidjson_version__",
-                               RAPIDJSON_VERSION_STRING);
+#define STRINGIFY(x) XSTRINGIFY(x)
+#define XSTRINGIFY(x) #x
+
+    PyModule_AddStringConstant(m, "__version__", STRINGIFY(PYTHON_RAPIDJSON_VERSION));
+    PyModule_AddStringConstant(m, "__author__", "Ken Robbins <ken@kenrobbins.com>");
+    PyModule_AddStringConstant(m, "__rapidjson_version__", RAPIDJSON_VERSION_STRING);
 
     Py_INCREF(&Decoder_Type);
     PyModule_AddObject(m, "Decoder", (PyObject*) &Decoder_Type);
