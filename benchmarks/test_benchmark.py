@@ -5,6 +5,9 @@ import sys
 import pytest
 
 
+benchmark = pytest.importorskip('pytest_benchmark')
+
+
 composite_object = {
     'words': """
         Lorem ipsum dolor sit amet, consectetur adipiscing

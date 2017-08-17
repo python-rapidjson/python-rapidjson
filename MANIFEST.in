@@ -1,7 +1,7 @@
 include .dir-locals.el
 include LICENSE MANIFEST.in *.cfg *.ini *.py *.rst *.txt
 include python-rapidjson/*.cpp python-rapidjson/*.h
-include tests/*.py
+include benchmarks/*.py tests/*.py
 
 exclude .gitmodules .travis.yml appveyor.yml
 

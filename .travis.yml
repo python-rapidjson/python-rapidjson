@@ -19,6 +19,8 @@ env:
     - TWINE_USERNAME=lelit
       # Note: TWINE_PASSWORD is set in Travis settings
 
+install: pip install -r requirements-test.txt
+
 script:
   - pip install cibuildwheel==0.4.0
   - cibuildwheel --output-dir wheelhouse

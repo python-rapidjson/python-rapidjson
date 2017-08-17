@@ -48,12 +48,34 @@ doc:
 help::
 	@printf "check\n\trun the test suite\n"
 
-PYTEST := $(VENVDIR)/bin/pytest
+PYTEST = $(VENVDIR)/bin/pytest $(PYTEST_OPTIONS)
 
 .PHONY: check
 check: build
 	$(PYTEST) tests/
 	$(MAKE) -C docs SPHINXBUILD=$(SPHINXBUILD) doctest
+
+help::
+	@printf "benchmarks\n\trun the benchmarks\n"
+
+.PHONY: benchmarks
+benchmarks: build
+	$(PYTEST) benchmarks/
+
+help::
+	@printf "benchmarks-other\n\trun the benchmarks against other engines\n"
+
+.PHONY: benchmarks-others
+benchmarks-others: PYTEST_OPTIONS = --compare-other-engines
+benchmarks-others: benchmarks
+
+help::
+	@printf "benchmarks-table\n\tproduce a reST table out of benchmarks-other results\n"
+
+.PHONY: benchmarks-tables
+benchmarks-tables: PYTEST_OPTIONS = --compare-other-engines --benchmark-json=comparison.json
+benchmarks-tables: benchmarks
+	$(PYTHON) benchmarks/tablize.py
 
 include Makefile.virtualenv
 include Makefile.release

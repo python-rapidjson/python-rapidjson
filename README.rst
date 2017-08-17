@@ -152,17 +152,22 @@ To run these tests yourself, clone the repo and run:
 
 .. code-block:: bash
 
-   $ tox -e py36 -- -m benchmark --compare-other-engines
+   $ make benchmarks
 
-Without the option ``--compare-other-engines`` it will focus only on
-``RapidJSON``.  This is particularly handy coupled with the `compare past
-runs`__ functionality of ``pytest-benchmark``:
+or
 
 .. code-block:: bash
 
-   $ tox -e py36 -- -m benchmark --benchmark-autosave
+   $ make benchmarks-other
+
+The former will focus only on ``RapidJSON`` and is particularly handy coupled
+with the `compare past runs`__ functionality of ``pytest-benchmark``:
+
+.. code-block:: bash
+
+   $ make benchmarks PYTEST_OPTIONS=--benchmark-autosave
    # hack, hack, hack!
-   $ tox -e py36 -- -m benchmark --benchmark-compare=0001
+   $ make benchmarks PYTEST_OPTIONS=--benchmark-compare=0001
 
    ----------------------- benchmark 'deserialize': 18 tests ------------------------
    Name (time in us)                                                            Min…
@@ -171,15 +176,7 @@ runs`__ functionality of ``pytest-benchmark``:
    test_loads[rapidjson-256 Trues array] (0001)                        5.4180 (1.04)…
    …
 
-To reproduce the tables above, use the option ``--benchmark-json`` so that the
-the results are written in the specified filename the run the
-``benchmark-tables.py`` script giving that filename as the only argument:
-
-.. code-block:: bash
-
-   $ tox -e py36 -- -m benchmark --compare-other-engines --benchmark-json=comparison.json
-   $ python3 benchmark-tables.py comparison.json
-
+To reproduce the tables above run ``make benchmarks-tables``
 
 __ http://pytest-benchmark.readthedocs.org/en/latest/comparing.html
 
