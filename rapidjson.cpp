@@ -313,8 +313,10 @@ struct PyHandler {
                 }
             }
             else {
-                Py_ssize_t listLen = PySequence_Size(current.object);
-                int rc = PySequence_SetItem(current.object, listLen - 1, replacement);
+                // Change these to PySequence_Size() and PySequence_SetItem(),
+                // should we implement Decoder.start_array()
+                Py_ssize_t listLen = PyList_GET_SIZE(current.object);
+                int rc = PyList_SetItem(current.object, listLen - 1, replacement);
 
                 if (rc == -1) {
                     Py_DECREF(replacement);
@@ -386,8 +388,10 @@ struct PyHandler {
                 }
             }
             else {
-                Py_ssize_t listLen = PySequence_Size(current.object);
-                int rc = PySequence_SetItem(current.object, listLen - 1, replacement);
+                // Change these to PySequence_Size() and PySequence_SetItem(),
+                // should we implement Decoder.start_array()
+                Py_ssize_t listLen = PyList_GET_SIZE(current.object);
+                int rc = PyList_SetItem(current.object, listLen - 1, replacement);
 
                 if (rc == -1) {
                     Py_DECREF(replacement);
