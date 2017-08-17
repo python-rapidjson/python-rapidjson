@@ -1,26 +1,36 @@
 # Assume we did::
 #
-#  tox -e py36 -- -m benchmark --benchmark-json=comparison.json --compare-other-engines
+#  pytest --benchmark-json=comparison.json --compare-other-engines benchmarks/
 #
 # Read back that JSON outcome and produce two reST tables summarizing the
 # comparison.
 #
 
-import json
 from collections import defaultdict, namedtuple
+import sys
+
+import rapidjson
 
 
-CONTENDERS = 'rapidjson,rapidjson_nativenumbers,ujson,simplejson,json,yajl'.split(',')
-S_HEADERS = 'rapidjson,native [1]_,ujson [2]_,simplejson [3]_,stdlib [4]_,yajl [5]_'.split(',')
-D_HEADERS = 'rapidjson,native,ujson,simplejson,stdlib,yajl'.split(',')
+CONTENDERS = 'rapidjson_f,rapidjson_c,rapidjson_nn_f,rapidjson_nn_c,ujson,simplejson,json,yajl'.split(',')
+S_HEADERS = r'``dumps()``\ [1]_,``Encoder()``\ [2]_,``dumps(n)``\ [3]_,``Encoder(n)``\ [4]_,ujson\ [5]_,simplejson\ [6]_,stdlib\ [7]_,yajl\ [8]_'.split(',')
+D_HEADERS = r'``loads()``\ [9]_,``Decoder()``\ [10]_,``loads(n)``\ [11]_,``Decoder(n)``\ [12]_,ujson,simplejson,stdlib,yajl'.split(',')
 
 assert len(CONTENDERS) == len(S_HEADERS) == len(D_HEADERS)
 
-FOOTNOTES = ['rapidjson with ``number_mode=NM_NATIVE``',
-             '`ujson 1.35 <https://pypi.python.org/pypi/ujson/1.35>`__',
-             '`simplejson 3.11.1 <https://pypi.python.org/pypi/simplejson/3.11.1>`__',
-             'Python 3.6 standard library',
-             '`yajl 0.3.5 <https://pypi.python.org/pypi/yajl/0.3.5>`__']
+FOOTNOTES = [
+    '``rapidjson.dumps()``',
+    '``rapidjson.Encoder()``',
+    '``rapidjson.dumps(number_mode=NM_NATIVE)``',
+    '``rapidjson.Encoder(number_mode=NM_NATIVE)``',
+    '`ujson 1.35 <https://pypi.python.org/pypi/ujson/1.35>`__',
+    '`simplejson 3.11.1 <https://pypi.python.org/pypi/simplejson/3.11.1>`__',
+    'Python %d.%d.%d standard library ``json``' % sys.version_info[:3],
+    '`yajl 0.3.5 <https://pypi.python.org/pypi/yajl/0.3.5>`__',
+    '``rapidjson.loads()``',
+    '``rapidjson.Decoder()``',
+    '``rapidjson.loads(number_mode=NM_NATIVE)``',
+    '``rapidjson.Decoder(number_mode=NM_NATIVE)``']
 
 Timings = namedtuple('Timings', 'min, max, mean, rounds, median')
 Benchmark = namedtuple('Benchmark', 'group, name, contender')
@@ -33,7 +43,7 @@ class Comparison:
         self.timings = timings = {}
 
         with open(fname) as f:
-            benchmark_data = json.load(f)
+            benchmark_data = rapidjson.loads(f.read())
 
         for bm in benchmark_data['benchmarks']:
             group = bm['group']
@@ -55,7 +65,7 @@ class Comparison:
                 values[bmark.name][bmark.contender] = getattr(timing, fieldname)
         return {n: SingleValue(**values[n]) for n in values}
 
-    def normalize_and_summarize(self, group, fieldname, by='rapidjson'):
+    def normalize_and_summarize(self, group, fieldname, by='rapidjson_f'):
         result = {}
         values = self.focalize(group, fieldname)
         sums = defaultdict(float)
@@ -69,10 +79,10 @@ class Comparison:
         return result, SingleValue(*[(getattr(sum, c) / getattr(sum, by))
                                      for c in CONTENDERS])
 
-    def tabulate(self, group, fieldname, headers, normalize_by='rapidjson', omit='rapidjson'):
+    def tabulate(self, group, fieldname, headers, normalize_by='rapidjson_f'):
         normalized, sum = self.normalize_and_summarize(group, fieldname, normalize_by)
 
-        nc = len(CONTENDERS) - 1
+        nc = len(CONTENDERS)
         widths = [max((len(n)+4 for n in normalized))] + \
                  [max((len(h) for h in headers))] * nc
 
@@ -86,16 +96,12 @@ class Comparison:
         rowfmt = '|' + '|'.join(cells) + '|'
 
         print(seprow)
-        print(rowfmt.format(*([group] + [headers[i] for i, c in enumerate(CONTENDERS)
-                                         if c != omit])))
+        print(rowfmt.format(*([group] + [headers[i] for i, c in enumerate(CONTENDERS)])))
         print(headseprow)
 
         def printrow(name, row):
-            values = [getattr(row, c) for c in CONTENDERS if c != omit]
+            values = [getattr(row, c) for c in CONTENDERS]
             best = min(values)
-            if best > getattr(row, omit):
-                name = '**' + name + '**'
-                best = 0
             fvalues = [('**%.2f**' if v==best else '%.2f') % v for v in values]
             print(rowfmt.format(*([name] + fvalues)))
             print(seprow)
@@ -116,13 +122,12 @@ def main():
 
     comparison = Comparison(fname)
     comparison.tabulate('serialize', 'mean', S_HEADERS)
+    print()
     comparison.tabulate('deserialize', 'mean', D_HEADERS)
 
-    idx = 1
     print()
-    for fn in FOOTNOTES:
+    for idx, fn in enumerate(FOOTNOTES, 1):
         print('.. [%d] %s' % (idx, fn))
-        idx += 1
 
 
 if __name__ == '__main__':

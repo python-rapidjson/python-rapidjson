@@ -25,28 +25,24 @@ contenders = []
 
 import rapidjson as rj
 
-contenders.append(Contender('rapidjson/dl',
+contenders.append(Contender('rapidjson_f',
                             rj.dumps,
                             rj.loads))
-contenders.append(Contender('rapidjson/ed',
+contenders.append(Contender('rapidjson_c',
                             rj.Encoder(),
                             rj.Decoder()))
-contenders.append(Contender('rapidjson_nativenumbers/dl',
+contenders.append(Contender('rapidjson_nn_f',
                             partial(rj.dumps, number_mode=rj.NM_NATIVE),
                             partial(rj.loads, number_mode=rj.NM_NATIVE)))
-contenders.append(Contender('rapidjson_nativenumbers/ed',
+contenders.append(Contender('rapidjson_nn_c',
                             rj.Encoder(number_mode=rj.NM_NATIVE),
                             rj.Decoder(number_mode=rj.NM_NATIVE)))
 
 numbers_contenders = [
-    Contender('Wide numbers/dl', rj.dumps, rj.loads),
-    Contender('Wide numbers/ed', rj.Encoder(), rj.Decoder()),
-    Contender('Native numbers/dl',
+    Contender('Wide numbers', rj.dumps, rj.loads),
+    Contender('Native numbers',
               partial(rj.dumps, number_mode=rj.NM_NATIVE),
               partial(rj.loads, number_mode=rj.NM_NATIVE)),
-    Contender('Native numbers/ed',
-              rj.Encoder(number_mode=rj.NM_NATIVE),
-              rj.Decoder(number_mode=rj.NM_NATIVE)),
 ]
 
 try:
