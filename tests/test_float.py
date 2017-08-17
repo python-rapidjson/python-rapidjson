@@ -7,7 +7,7 @@ import rapidjson as rj
 
 
 @pytest.mark.unit
-def test_infinity():
+def test_infinity_f():
     inf = float("inf")
 
     dumped = rj.dumps(inf)
@@ -37,7 +37,30 @@ def test_infinity():
 
 
 @pytest.mark.unit
-def test_negative_infinity():
+def test_infinity_c():
+    inf = float("inf")
+
+    dumped = rj.Encoder()(inf)
+    loaded = rj.Decoder()(dumped)
+    assert loaded == inf
+
+    with pytest.raises(ValueError):
+        rj.Encoder(number_mode=None)(inf)
+
+    d = Decimal(inf)
+    assert d.is_infinite()
+
+    with pytest.raises(ValueError):
+        rj.Encoder(number_mode=rj.NM_DECIMAL)(d)
+
+    dumped = rj.Encoder(number_mode=rj.NM_DECIMAL|rj.NM_NAN)(d)
+    loaded = rj.Decoder(number_mode=rj.NM_DECIMAL|rj.NM_NAN)(dumped)
+    assert loaded == inf
+    assert loaded.is_infinite()
+
+
+@pytest.mark.unit
+def test_negative_infinity_f():
     inf = float("-infinity")
     dumped = rj.dumps(inf)
     loaded = rj.loads(dumped)
@@ -66,7 +89,29 @@ def test_negative_infinity():
 
 
 @pytest.mark.unit
-def test_nan():
+def test_negative_infinity_c():
+    inf = float("-infinity")
+    dumped = rj.Encoder()(inf)
+    loaded = rj.Decoder()(dumped)
+    assert loaded == inf
+
+    with pytest.raises(ValueError):
+        rj.Encoder(number_mode=None)(inf)
+
+    d = Decimal(inf)
+    assert d.is_infinite()
+
+    with pytest.raises(ValueError):
+        rj.Encoder(number_mode=rj.NM_DECIMAL)(d)
+
+    dumped = rj.Encoder(number_mode=rj.NM_DECIMAL|rj.NM_NAN)(d)
+    loaded = rj.Decoder(number_mode=rj.NM_DECIMAL|rj.NM_NAN)(dumped)
+    assert loaded == inf
+    assert loaded.is_infinite()
+
+
+@pytest.mark.unit
+def test_nan_f():
     nan = float("nan")
     dumped = rj.dumps(nan)
     loaded = rj.loads(dumped)
@@ -88,4 +133,27 @@ def test_nan():
 
     dumped = rj.dumps(d, number_mode=rj.NM_DECIMAL|rj.NM_NAN)
     loaded = rj.loads(dumped, number_mode=rj.NM_DECIMAL|rj.NM_NAN)
+    assert loaded.is_nan()
+
+
+@pytest.mark.unit
+def test_nan_c():
+    nan = float("nan")
+    dumped = rj.Encoder()(nan)
+    loaded = rj.Decoder()(dumped)
+
+    assert math.isnan(nan)
+    assert math.isnan(loaded)
+
+    with pytest.raises(ValueError):
+        rj.Encoder(number_mode=None)(nan)
+
+    d = Decimal(nan)
+    assert d.is_nan()
+
+    with pytest.raises(ValueError):
+        rj.Encoder(number_mode=rj.NM_DECIMAL)(d)
+
+    dumped = rj.Encoder(number_mode=rj.NM_DECIMAL|rj.NM_NAN)(d)
+    loaded = rj.Decoder(number_mode=rj.NM_DECIMAL|rj.NM_NAN)(dumped)
     assert loaded.is_nan()

@@ -22,11 +22,32 @@ def test_skipkeys():
 
 
 @pytest.mark.unit
-def test_ensure_ascii():
+def test_skip_invalid_keys():
+    o = {True: False, -1: 1, 1.1: 1.1, (1,2): "foo", b"asdf": 1, None: None}
+
+    with pytest.raises(TypeError):
+        rj.Encoder()(o)
+
+    with pytest.raises(TypeError):
+        rj.Encoder(skip_invalid_keys=False)(o)
+
+    assert rj.Encoder(skip_invalid_keys=True)(o) == '{}'
+
+
+@pytest.mark.unit
+def test_ensure_ascii_f():
     s = '\N{GREEK SMALL LETTER ALPHA}\N{GREEK CAPITAL LETTER OMEGA}'
     assert rj.dumps(s) == '"\\u03B1\\u03A9"'
     assert rj.dumps(s, ensure_ascii=True) == '"\\u03B1\\u03A9"'
     assert rj.dumps(s, ensure_ascii=False) == '"%s"' % s
+
+
+@pytest.mark.unit
+def test_ensure_ascii_c():
+    s = '\N{GREEK SMALL LETTER ALPHA}\N{GREEK CAPITAL LETTER OMEGA}'
+    assert rj.Encoder()(s) == '"\\u03B1\\u03A9"'
+    assert rj.Encoder(ensure_ascii=True)(s) == '"\\u03B1\\u03A9"'
+    assert rj.Encoder(ensure_ascii=False)(s) == '"%s"' % s
 
 
 @pytest.mark.unit
@@ -70,12 +91,11 @@ def test_allow_nan():
 
 
 @pytest.mark.unit
-def test_native():
+def test_native_f():
     f = [-1, 1, 1.1, -2.2]
     expected = '[-1,1,1.1,-2.2]'
     assert rj.dumps(f, number_mode=rj.NM_NATIVE) == expected
     assert rj.dumps(f) == expected
-    assert rj.loads(expected) == f
     assert rj.loads(expected, number_mode=rj.NM_NATIVE) == f
     assert rj.loads(expected) == f
 
@@ -92,6 +112,31 @@ def test_native():
     expected = [-1,1,-2.2]
     assert rj.loads(comments, number_mode=rj.NM_NATIVE,
                     parse_mode=rj.PM_COMMENTS | rj.PM_TRAILING_COMMAS) == expected
+
+
+@pytest.mark.unit
+def test_native_c():
+    f = [-1, 1, 1.1, -2.2]
+    expected = '[-1,1,1.1,-2.2]'
+    assert rj.Encoder(number_mode=rj.NM_NATIVE)(f) == expected
+    assert rj.Encoder()(f) == expected
+    assert rj.Decoder(number_mode=rj.NM_NATIVE)(expected) == f
+    assert rj.Decoder()(expected) == f
+
+    trailing_comma = '[-1,1,1.1,-2.2,]'
+    pytest.raises(ValueError, rj.Decoder(number_mode=rj.NM_NATIVE), trailing_comma)
+    expected = [-1,1,1.1,-2.2]
+    assert rj.Decoder(number_mode=rj.NM_NATIVE,
+                      parse_mode=rj.PM_TRAILING_COMMAS)(trailing_comma) == expected
+
+    comments = '[-1,1,/*1.1,*/-2.2,]'
+    pytest.raises(ValueError, rj.Decoder(number_mode=rj.NM_NATIVE), comments)
+    pytest.raises(ValueError, rj.Decoder(number_mode=rj.NM_NATIVE,
+                                         parse_mode=rj.PM_TRAILING_COMMAS),
+                  comments)
+    expected = [-1,1,-2.2]
+    assert rj.Decoder(number_mode=rj.NM_NATIVE,
+                      parse_mode=rj.PM_COMMENTS | rj.PM_TRAILING_COMMAS)(comments) == expected
 
 
 @pytest.mark.unit
