@@ -208,7 +208,12 @@ struct PyHandler {
                     return false;
                 }
 
-                int rc = PyObject_SetItem(current.object, key, value);
+                int rc;
+                if (PyDict_Check(current.object))
+                    // If it's a standard dictionary, this is +20% faster
+                    rc = PyDict_SetItem(current.object, key, value);
+                else
+                    rc = PyObject_SetItem(current.object, key, value);
                 Py_DECREF(key);
                 Py_DECREF(value);
 
@@ -304,7 +309,12 @@ struct PyHandler {
                     return false;
                 }
 
-                int rc = PyObject_SetItem(current.object, key, replacement);
+                int rc;
+                if (PyDict_Check(current.object))
+                    // If it's a standard dictionary, this is +20% faster
+                    rc = PyDict_SetItem(current.object, key, replacement);
+                else
+                    rc = PyObject_SetItem(current.object, key, replacement);
                 Py_DECREF(key);
 
                 if (rc == -1) {
@@ -379,7 +389,12 @@ struct PyHandler {
                     return false;
                 }
 
-                int rc = PyObject_SetItem(current.object, key, replacement);
+                int rc;
+                if (PyDict_Check(current.object))
+                    // If it's a standard dictionary, this is +20% faster
+                    rc = PyDict_SetItem(current.object, key, replacement);
+                else
+                    rc = PyObject_SetItem(current.object, key, replacement);
                 Py_DECREF(key);
 
                 if (rc == -1) {
