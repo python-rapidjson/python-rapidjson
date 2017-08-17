@@ -8,6 +8,7 @@
 #include <vector>
 
 #include "rapidjson/reader.h"
+#include "rapidjson/schema.h"
 #include "rapidjson/stringbuffer.h"
 #include "rapidjson/writer.h"
 #include "rapidjson/prettywriter.h"
@@ -142,6 +143,11 @@ static PyObject* do_encode(PyObject* value, bool skipInvalidKeys, PyObject* defa
                            DatetimeMode datetimeMode, UuidMode uuidMode);
 static PyObject* encoder_call(PyObject* self, PyObject* args, PyObject* kwargs);
 static PyObject* encoder_new(PyTypeObject* type, PyObject* args, PyObject* kwargs);
+
+
+static PyObject* validator_call(PyObject* self, PyObject* args, PyObject* kwargs);
+static void validator_dealloc(PyObject* self);
+static PyObject* validator_new(PyTypeObject* type, PyObject* args, PyObject* kwargs);
 
 
 /////////////
@@ -1101,8 +1107,7 @@ static PyMemberDef decoder_members[] = {
 };
 
 
-static
-PyTypeObject Decoder_Type = {
+static PyTypeObject Decoder_Type = {
     PyVarObject_HEAD_INIT(NULL, 0)
     "rapidjson.Decoder",                      /* tp_name */
     sizeof(DecoderObject),                    /* tp_basicsize */
@@ -2175,8 +2180,7 @@ static PyMemberDef encoder_members[] = {
 };
 
 
-static
-PyTypeObject Encoder_Type = {
+static PyTypeObject Encoder_Type = {
     PyVarObject_HEAD_INIT(NULL, 0)
     "rapidjson.Encoder",                      /* tp_name */
     sizeof(EncoderObject),                    /* tp_basicsize */
@@ -2395,6 +2399,187 @@ encoder_new(PyTypeObject* type, PyObject* args, PyObject* kwargs)
 }
 
 
+///////////////
+// Validator //
+///////////////
+
+
+typedef struct {
+    PyObject_HEAD
+    SchemaDocument *schema;
+} ValidatorObject;
+
+
+PyDoc_STRVAR(validator_doc,
+             "Validator(json_schema)\n"
+             "\n"
+             "Create and return a new Validator instance from the given `json_schema`"
+             " string.");
+
+
+static PyTypeObject Validator_Type = {
+    PyVarObject_HEAD_INIT(NULL, 0)
+    "rapidjson.Validator",          /* tp_name */
+    sizeof(ValidatorObject),        /* tp_basicsize */
+    0,                              /* tp_itemsize */
+    (destructor) validator_dealloc, /* tp_dealloc */
+    0,                              /* tp_print */
+    0,                              /* tp_getattr */
+    0,                              /* tp_setattr */
+    0,                              /* tp_compare */
+    0,                              /* tp_repr */
+    0,                              /* tp_as_number */
+    0,                              /* tp_as_sequence */
+    0,                              /* tp_as_mapping */
+    0,                              /* tp_hash */
+    (ternaryfunc) validator_call,   /* tp_call */
+    0,                              /* tp_str */
+    0,                              /* tp_getattro */
+    0,                              /* tp_setattro */
+    0,                              /* tp_as_buffer */
+    Py_TPFLAGS_DEFAULT,             /* tp_flags */
+    validator_doc,                  /* tp_doc */
+    0,                              /* tp_traverse */
+    0,                              /* tp_clear */
+    0,                              /* tp_richcompare */
+    0,                              /* tp_weaklistoffset */
+    0,                              /* tp_iter */
+    0,                              /* tp_iternext */
+    0,                              /* tp_methods */
+    0,                              /* tp_members */
+    0,                              /* tp_getset */
+    0,                              /* tp_base */
+    0,                              /* tp_dict */
+    0,                              /* tp_descr_get */
+    0,                              /* tp_descr_set */
+    0,                              /* tp_dictoffset */
+    0,                              /* tp_init */
+    0,                              /* tp_alloc */
+    validator_new,                  /* tp_new */
+    PyObject_Del,                   /* tp_free */
+};
+
+
+static PyObject* validator_call(PyObject* self, PyObject* args, PyObject* kwargs)
+{
+    PyObject* jsonObject;
+
+    if (!PyArg_ParseTuple(args, "O", &jsonObject))
+        return NULL;
+
+    const char* jsonStr;
+
+    if (PyBytes_Check(jsonObject)) {
+        jsonStr = PyBytes_AsString(jsonObject);
+        if (jsonStr == NULL)
+            return NULL;
+    }
+    else if (PyUnicode_Check(jsonObject)) {
+        jsonStr = PyUnicode_AsUTF8(jsonObject);
+        if (jsonStr == NULL)
+            return NULL;
+    }
+    else {
+        PyErr_SetString(PyExc_TypeError, "Expected string or utf-8 encoded bytes");
+        return NULL;
+    }
+
+    Document d;
+    bool error;
+
+    Py_BEGIN_ALLOW_THREADS
+    error = d.Parse(jsonStr).HasParseError();
+    Py_END_ALLOW_THREADS
+
+    if (error) {
+        PyErr_SetString(PyExc_ValueError, "Invalid JSON");
+        return NULL;
+    }
+
+    SchemaValidator validator(*((ValidatorObject*) self)->schema);
+    bool accept;
+
+    Py_BEGIN_ALLOW_THREADS
+    accept = d.Accept(validator);
+    Py_END_ALLOW_THREADS
+
+    if (!accept) {
+        StringBuffer sptr;
+        StringBuffer dptr;
+
+        Py_BEGIN_ALLOW_THREADS
+        validator.GetInvalidSchemaPointer().StringifyUriFragment(sptr);
+        validator.GetInvalidDocumentPointer().StringifyUriFragment(dptr);
+        Py_END_ALLOW_THREADS
+
+        PyErr_SetObject(PyExc_ValueError, Py_BuildValue("sss",
+                                                        validator.GetInvalidSchemaKeyword(),
+                                                        sptr.GetString(),
+                                                        dptr.GetString()));
+        sptr.Clear();
+        dptr.Clear();
+
+        return NULL;
+    }
+
+    Py_RETURN_NONE;
+}
+
+
+static void validator_dealloc(PyObject* self)
+{
+    ValidatorObject* s = (ValidatorObject*) self;
+    delete s->schema;
+    Py_TYPE(self)->tp_free(self);
+}
+
+
+static PyObject* validator_new(PyTypeObject* type, PyObject* args, PyObject* kwargs)
+{
+    PyObject* jsonObject;
+
+    if (!PyArg_ParseTuple(args, "O", &jsonObject))
+        return NULL;
+
+    const char* jsonStr;
+
+    if (PyBytes_Check(jsonObject)) {
+        jsonStr = PyBytes_AsString(jsonObject);
+        if (jsonStr == NULL)
+            return NULL;
+    }
+    else if (PyUnicode_Check(jsonObject)) {
+        jsonStr = PyUnicode_AsUTF8(jsonObject);
+        if (jsonStr == NULL)
+            return NULL;
+    }
+    else {
+        PyErr_SetString(PyExc_TypeError, "Expected string or utf-8 encoded bytes");
+        return NULL;
+    }
+
+    Document d;
+    bool error;
+
+    Py_BEGIN_ALLOW_THREADS
+    error = d.Parse(jsonStr).HasParseError();
+    Py_END_ALLOW_THREADS
+
+    if (error) {
+        PyErr_SetString(PyExc_ValueError, "Invalid JSON");
+        return NULL;
+    }
+
+    ValidatorObject* v = (ValidatorObject*) type->tp_alloc(type, 0);
+    if (v == NULL)
+        return NULL;
+
+    v->schema = new SchemaDocument(d);
+
+    return (PyObject*) v;
+}
+
+
 ////////////
 // Module //
 ////////////
@@ -2430,6 +2615,9 @@ PyInit_rapidjson()
         goto error;
 
     if (PyType_Ready(&Encoder_Type) < 0)
+        goto error;
+
+    if (PyType_Ready(&Validator_Type) < 0)
         goto error;
 
     PyDateTime_IMPORT;
@@ -2564,6 +2752,9 @@ PyInit_rapidjson()
 
     Py_INCREF(&Encoder_Type);
     PyModule_AddObject(m, "Encoder", (PyObject*) &Encoder_Type);
+
+    Py_INCREF(&Validator_Type);
+    PyModule_AddObject(m, "Validator", (PyObject*) &Validator_Type);
 
     return m;
 

@@ -11,6 +11,7 @@
    loads
    encoder
    decoder
+   validator
 
 .. data:: __author__
 
