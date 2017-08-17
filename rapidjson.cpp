@@ -243,8 +243,9 @@ struct PyHandler {
             if (mapping == NULL)
                 return false;
             if (!PyMapping_Check(mapping)) {
-                PyErr_SetString(PyExc_ValueError, "start_object() must return a mapping instance");
-                return NULL;
+                PyErr_SetString(PyExc_ValueError,
+                                "start_object() must return a mapping instance");
+                return false;
             }
             Py_INCREF(mapping);
         } else {
