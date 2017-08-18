@@ -2740,7 +2740,10 @@ PyInit_rapidjson()
     PyModule_AddIntConstant(m, "PM_COMMENTS", PM_COMMENTS);
     PyModule_AddIntConstant(m, "PM_TRAILING_COMMAS", PM_TRAILING_COMMAS);
 
-    PyModule_AddStringConstant(m, "__version__", Py_STRINGIFY(PYTHON_RAPIDJSON_VERSION));
+#define STRINGIFY(x) XSTRINGIFY(x)
+#define XSTRINGIFY(x) #x
+
+    PyModule_AddStringConstant(m, "__version__", STRINGIFY(PYTHON_RAPIDJSON_VERSION));
     PyModule_AddStringConstant(m, "__author__", "Ken Robbins <ken@kenrobbins.com>");
     PyModule_AddStringConstant(m, "__rapidjson_version__", RAPIDJSON_VERSION_STRING);
 
