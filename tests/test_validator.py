@@ -3,6 +3,19 @@ import pytest
 import rapidjson as rj
 
 
+@pytest.mark.unit
+def test_invalid_schema():
+    pytest.raises(ValueError, rj.Validator, '')
+    pytest.raises(ValueError, rj.Validator, '"')
+
+
+@pytest.mark.unit
+def test_invalid_json():
+    validate = rj.Validator('""')
+    pytest.raises(ValueError, validate, '')
+    pytest.raises(ValueError, validate, '"')
+
+
 @pytest.mark.parametrize('schema,json', (
     ('{ "type": ["number", "string"] }', '42'),
     ('{ "type": ["number", "string"] }', '"Life, the universe, and everything"'),
