@@ -19,10 +19,19 @@
    :param int uuid_mode: how should :class:`UUID` instances be handled
    :param int parse_mode: whether the parser should allow non-standard JSON extensions
 
-   .. method:: __call__(json_str)
+   .. method:: __call__(json)
 
-      :param str json_str: a string containing the ``JSON`` to be decoded
+      :param json: either a ``str`` instance or an *UTF-8* ``bytes`` instance,
+                   containing the ``JSON`` to be decoded
       :returns: a Python value
+
+      .. doctest::
+
+         >>> decoder = Decoder()
+         >>> decoder('"€ 0.50"')
+         '€ 0.50'
+         >>> decoder(b'"\xe2\x82\xac 0.50"')
+         '€ 0.50'
 
    .. method:: end_array(sequence)
 
