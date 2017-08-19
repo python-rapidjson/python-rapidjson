@@ -2308,7 +2308,7 @@ encoder_new(PyTypeObject* type, PyObject* args, PyObject* kwargs)
         NULL
     };
 
-    if (!PyArg_ParseTupleAndKeywords(args, kwargs, "|ppOpIOOOp:Encoder",
+    if (!PyArg_ParseTupleAndKeywords(args, kwargs, "|ppOpIOOO:Encoder",
                                      (char **) kwlist,
                                      &skipInvalidKeys,
                                      &ensureAscii,
