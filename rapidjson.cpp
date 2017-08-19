@@ -156,7 +156,6 @@ static PyObject* validator_new(PyTypeObject* type, PyObject* args, PyObject* kwa
 
 
 struct PyHandler {
-    PyObject* decoder;
     PyObject* decoderStartObject;
     PyObject* decoderEndObject;
     PyObject* decoderEndArray;
@@ -168,8 +167,7 @@ struct PyHandler {
     std::vector<HandlerContext> stack;
 
     PyHandler(PyObject* decoder, PyObject* hook, DatetimeMode dm, UuidMode um, NumberMode nm)
-        : decoder(decoder),
-          decoderStartObject(NULL),
+        : decoderStartObject(NULL),
           decoderEndObject(NULL),
           decoderEndArray(NULL),
           root(NULL),
