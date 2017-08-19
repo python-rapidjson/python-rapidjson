@@ -35,19 +35,11 @@ def test_skip_invalid_keys():
 
 
 @pytest.mark.unit
-def test_ensure_ascii_f():
+def test_ensure_ascii(dumps):
     s = '\N{GREEK SMALL LETTER ALPHA}\N{GREEK CAPITAL LETTER OMEGA}'
-    assert rj.dumps(s) == '"\\u03B1\\u03A9"'
-    assert rj.dumps(s, ensure_ascii=True) == '"\\u03B1\\u03A9"'
-    assert rj.dumps(s, ensure_ascii=False) == '"%s"' % s
-
-
-@pytest.mark.unit
-def test_ensure_ascii_c():
-    s = '\N{GREEK SMALL LETTER ALPHA}\N{GREEK CAPITAL LETTER OMEGA}'
-    assert rj.Encoder()(s) == '"\\u03B1\\u03A9"'
-    assert rj.Encoder(ensure_ascii=True)(s) == '"\\u03B1\\u03A9"'
-    assert rj.Encoder(ensure_ascii=False)(s) == '"%s"' % s
+    assert dumps(s) == '"\\u03B1\\u03A9"'
+    assert dumps(s, ensure_ascii=True) == '"\\u03B1\\u03A9"'
+    assert dumps(s, ensure_ascii=False) == '"%s"' % s
 
 
 @pytest.mark.unit
@@ -91,61 +83,36 @@ def test_allow_nan():
 
 
 @pytest.mark.unit
-def test_native_f():
+def test_native(dumps, loads):
     f = [-1, 1, 1.1, -2.2]
     expected = '[-1,1,1.1,-2.2]'
-    assert rj.dumps(f, number_mode=rj.NM_NATIVE) == expected
-    assert rj.dumps(f) == expected
-    assert rj.loads(expected, number_mode=rj.NM_NATIVE) == f
-    assert rj.loads(expected) == f
+    assert dumps(f, number_mode=rj.NM_NATIVE) == expected
+    assert dumps(f) == expected
+    assert loads(expected, number_mode=rj.NM_NATIVE) == f
+    assert loads(expected) == f
 
     trailing_comma = '[-1,1,1.1,-2.2,]'
-    pytest.raises(ValueError, rj.loads, trailing_comma, number_mode=rj.NM_NATIVE)
+    pytest.raises(ValueError, loads, trailing_comma, number_mode=rj.NM_NATIVE)
     expected = [-1,1,1.1,-2.2]
-    assert rj.loads(trailing_comma, number_mode=rj.NM_NATIVE,
-                    parse_mode=rj.PM_TRAILING_COMMAS) == expected
+    assert loads(trailing_comma, number_mode=rj.NM_NATIVE,
+                 parse_mode=rj.PM_TRAILING_COMMAS) == expected
 
     comments = '[-1,1,/*1.1,*/-2.2,]'
-    pytest.raises(ValueError, rj.loads, comments, number_mode=rj.NM_NATIVE)
-    pytest.raises(ValueError, rj.loads, comments,
+    pytest.raises(ValueError, loads, comments, number_mode=rj.NM_NATIVE)
+    pytest.raises(ValueError, loads, comments,
                   number_mode=rj.NM_NATIVE, parse_mode=rj.PM_TRAILING_COMMAS)
     expected = [-1,1,-2.2]
-    assert rj.loads(comments, number_mode=rj.NM_NATIVE,
-                    parse_mode=rj.PM_COMMENTS | rj.PM_TRAILING_COMMAS) == expected
+    assert loads(comments, number_mode=rj.NM_NATIVE,
+                 parse_mode=rj.PM_COMMENTS | rj.PM_TRAILING_COMMAS) == expected
 
 
 @pytest.mark.unit
-def test_native_c():
-    f = [-1, 1, 1.1, -2.2]
-    expected = '[-1,1,1.1,-2.2]'
-    assert rj.Encoder(number_mode=rj.NM_NATIVE)(f) == expected
-    assert rj.Encoder()(f) == expected
-    assert rj.Decoder(number_mode=rj.NM_NATIVE)(expected) == f
-    assert rj.Decoder()(expected) == f
-
-    trailing_comma = '[-1,1,1.1,-2.2,]'
-    pytest.raises(ValueError, rj.Decoder(number_mode=rj.NM_NATIVE), trailing_comma)
-    expected = [-1,1,1.1,-2.2]
-    assert rj.Decoder(number_mode=rj.NM_NATIVE,
-                      parse_mode=rj.PM_TRAILING_COMMAS)(trailing_comma) == expected
-
-    comments = '[-1,1,/*1.1,*/-2.2,]'
-    pytest.raises(ValueError, rj.Decoder(number_mode=rj.NM_NATIVE), comments)
-    pytest.raises(ValueError, rj.Decoder(number_mode=rj.NM_NATIVE,
-                                         parse_mode=rj.PM_TRAILING_COMMAS),
-                  comments)
-    expected = [-1,1,-2.2]
-    assert rj.Decoder(number_mode=rj.NM_NATIVE,
-                      parse_mode=rj.PM_COMMENTS | rj.PM_TRAILING_COMMAS)(comments) == expected
-
-
-@pytest.mark.unit
-def test_parse_mode():
+def test_parse_mode(dumps, loads):
     trailing_comma = '[-1,1,1.1,-2.2,]'
     expected = [-1,1,1.1,-2.2]
     pytest.raises(ValueError, rj.loads, trailing_comma)
     pytest.raises(ValueError, rj.loads, trailing_comma, parse_mode=rj.PM_COMMENTS)
-    assert rj.loads(trailing_comma, parse_mode=rj.PM_TRAILING_COMMAS) == expected
+    assert loads(trailing_comma, parse_mode=rj.PM_TRAILING_COMMAS) == expected
 
     comments = ('[true,  // boolean\n'
                 ' false, // idem\n'
@@ -156,9 +123,9 @@ def test_parse_mode():
                 '  */'
                 ' "this is the end"]')
     expected = [True, False, "this is the end"]
-    pytest.raises(ValueError, rj.loads, comments)
-    pytest.raises(ValueError, rj.loads, comments, parse_mode=rj.PM_TRAILING_COMMAS)
-    assert rj.loads(comments, parse_mode=rj.PM_COMMENTS) == expected
+    pytest.raises(ValueError, loads, comments)
+    pytest.raises(ValueError, loads, comments, parse_mode=rj.PM_TRAILING_COMMAS)
+    assert loads(comments, parse_mode=rj.PM_COMMENTS) == expected
 
     c_and_tc = ('[true,  // boolean\n'
                 ' false, // idem\n'
@@ -171,14 +138,14 @@ def test_parse_mode():
                 ' "this is the end",]'
     )
     expected = [True, False, {"one": 1, "three": 3}, "this is the end"]
-    pytest.raises(ValueError, rj.loads, c_and_tc)
-    pytest.raises(ValueError, rj.loads, c_and_tc, parse_mode=rj.PM_TRAILING_COMMAS)
-    pytest.raises(ValueError, rj.loads, c_and_tc, parse_mode=rj.PM_COMMENTS)
-    assert rj.loads(c_and_tc, parse_mode=rj.PM_COMMENTS | rj.PM_TRAILING_COMMAS) == expected
+    pytest.raises(ValueError, loads, c_and_tc)
+    pytest.raises(ValueError, loads, c_and_tc, parse_mode=rj.PM_TRAILING_COMMAS)
+    pytest.raises(ValueError, loads, c_and_tc, parse_mode=rj.PM_COMMENTS)
+    assert loads(c_and_tc, parse_mode=rj.PM_COMMENTS | rj.PM_TRAILING_COMMAS) == expected
 
 
 @pytest.mark.unit
-def test_indent():
+def test_indent(dumps):
     o = {"a": 1, "z": 2, "b": 3}
     expected1 = '{\n    "a": 1,\n    "z": 2,\n    "b": 3\n}'
     expected2 = '{\n    "a": 1,\n    "b": 3,\n    "z": 2\n}'
@@ -194,25 +161,25 @@ def test_indent():
         expected5,
         expected6)
 
-    assert rj.dumps(o, indent=4) in expected
+    assert dumps(o, indent=4) in expected
 
     with pytest.raises(TypeError):
-        rj.dumps(o, indent="\t")
+        dumps(o, indent="\t")
 
     with pytest.raises(TypeError):
-        rj.dumps(o, indent=-1)
+        dumps(o, indent=-1)
 
 
 @pytest.mark.unit
-def test_sort_keys():
+def test_sort_keys(dumps):
     o = {"a": 1, "z": 2, "b": 3}
     expected0 = '{\n"a": 1,\n"b": 3,\n"z": 2\n}'
     expected1 = '{"a":1,"b":3,"z":2}'
     expected2 = '{\n    "a": 1,\n    "b": 3,\n    "z": 2\n}'
 
-    assert rj.dumps(o, sort_keys=True) == expected1
-    assert rj.dumps(o, sort_keys=True, indent=4) == expected2
-    assert rj.dumps(o, sort_keys=True, indent=0) == expected0
+    assert dumps(o, sort_keys=True) == expected1
+    assert dumps(o, sort_keys=True, indent=4) == expected2
+    assert dumps(o, sort_keys=True, indent=0) == expected0
 
 
 @pytest.mark.unit
@@ -242,7 +209,7 @@ def test_default():
 
 
 @pytest.mark.unit
-def test_decimal():
+def test_decimal(dumps, loads):
     import math
     from decimal import Decimal
 
@@ -250,88 +217,88 @@ def test_decimal():
     d = Decimal(dstr)
 
     with pytest.raises(TypeError):
-        rj.dumps(d)
+        dumps(d)
 
-    assert rj.dumps(float(dstr)) == str(math.e)
-    assert rj.dumps(d, number_mode=rj.NM_DECIMAL) == dstr
-    assert rj.dumps({"foo": d}, number_mode=rj.NM_DECIMAL) == '{"foo":%s}' % dstr
+    assert dumps(float(dstr)) == str(math.e)
+    assert dumps(d, number_mode=rj.NM_DECIMAL) == dstr
+    assert dumps({"foo": d}, number_mode=rj.NM_DECIMAL) == '{"foo":%s}' % dstr
 
-    assert rj.loads(rj.dumps(d, number_mode=rj.NM_DECIMAL), number_mode=rj.NM_DECIMAL) == d
+    assert loads(dumps(d, number_mode=rj.NM_DECIMAL), number_mode=rj.NM_DECIMAL) == d
 
-    assert rj.loads(rj.dumps(d, number_mode=rj.NM_DECIMAL)) == float(dstr)
+    assert loads(dumps(d, number_mode=rj.NM_DECIMAL)) == float(dstr)
 
 
 @pytest.mark.unit
-def test_max_recursion_depth():
+def test_max_recursion_depth(dumps):
     a = {'a': {'b': {'c': 1}}}
 
-    assert rj.dumps(a) == '{"a":{"b":{"c":1}}}'
+    assert dumps(a) == '{"a":{"b":{"c":1}}}'
 
     with pytest.raises(OverflowError):
-        rj.dumps(a, max_recursion_depth=2)
+        dumps(a, max_recursion_depth=2)
 
 
 @pytest.mark.unit
-def test_datetime_mode_dumps():
+def test_datetime_mode_dumps(dumps):
     import pytz
 
     d = datetime.utcnow()
     dstr = d.isoformat()
 
     with pytest.raises(TypeError):
-        rj.dumps(d)
+        dumps(d)
 
     with pytest.raises(TypeError):
-        rj.dumps(d, datetime_mode=rj.DM_NONE)
+        dumps(d, datetime_mode=rj.DM_NONE)
 
-    assert rj.dumps(d, datetime_mode=rj.DM_ISO8601) == '"%s"' % dstr
-    assert rj.dumps(d, datetime_mode=(rj.DM_ISO8601 | rj.DM_IGNORE_TZ)) == '"%s"' % dstr
+    assert dumps(d, datetime_mode=rj.DM_ISO8601) == '"%s"' % dstr
+    assert dumps(d, datetime_mode=(rj.DM_ISO8601 | rj.DM_IGNORE_TZ)) == '"%s"' % dstr
 
     d = utcd = d.replace(tzinfo=pytz.utc)
     dstr = utcstr = d.isoformat()
 
-    assert rj.dumps(d, datetime_mode=rj.DM_ISO8601) == '"%s"' % dstr
-    assert rj.dumps(d, datetime_mode=(rj.DM_ISO8601 | rj.DM_IGNORE_TZ)) == '"%s"' % dstr[:-6]
+    assert dumps(d, datetime_mode=rj.DM_ISO8601) == '"%s"' % dstr
+    assert dumps(d, datetime_mode=(rj.DM_ISO8601 | rj.DM_IGNORE_TZ)) == '"%s"' % dstr[:-6]
 
     d = d.astimezone(pytz.timezone('Pacific/Chatham'))
     dstr = d.isoformat()
 
-    assert rj.dumps(d, datetime_mode=rj.DM_ISO8601) == '"%s"' % dstr
-    assert rj.dumps(d, datetime_mode=(rj.DM_ISO8601 | rj.DM_IGNORE_TZ)) == '"%s"' % dstr[:-6]
+    assert dumps(d, datetime_mode=rj.DM_ISO8601) == '"%s"' % dstr
+    assert dumps(d, datetime_mode=(rj.DM_ISO8601 | rj.DM_IGNORE_TZ)) == '"%s"' % dstr[:-6]
 
     d = d.astimezone(pytz.timezone('Asia/Kathmandu'))
     dstr = d.isoformat()
 
-    assert rj.dumps(d, datetime_mode=rj.DM_ISO8601) == '"%s"' % dstr
-    assert rj.dumps(d, datetime_mode=(rj.DM_ISO8601 | rj.DM_IGNORE_TZ)) == '"%s"' % dstr[:-6]
+    assert dumps(d, datetime_mode=rj.DM_ISO8601) == '"%s"' % dstr
+    assert dumps(d, datetime_mode=(rj.DM_ISO8601 | rj.DM_IGNORE_TZ)) == '"%s"' % dstr[:-6]
 
     d = d.astimezone(pytz.timezone('America/New_York'))
     dstr = d.isoformat()
 
-    assert rj.dumps(d, datetime_mode=rj.DM_ISO8601) == '"%s"' % dstr
-    assert rj.dumps(d, datetime_mode=(rj.DM_ISO8601 | rj.DM_IGNORE_TZ)) == '"%s"' % dstr[:-6]
-    assert rj.dumps(d, datetime_mode=(rj.DM_ISO8601 | rj.DM_SHIFT_TO_UTC)) == '"%s"' % utcstr
+    assert dumps(d, datetime_mode=rj.DM_ISO8601) == '"%s"' % dstr
+    assert dumps(d, datetime_mode=(rj.DM_ISO8601 | rj.DM_IGNORE_TZ)) == '"%s"' % dstr[:-6]
+    assert dumps(d, datetime_mode=(rj.DM_ISO8601 | rj.DM_SHIFT_TO_UTC)) == '"%s"' % utcstr
 
-    assert rj.dumps(d, datetime_mode=rj.DM_UNIX_TIME) == str(d.timestamp())
+    assert dumps(d, datetime_mode=rj.DM_UNIX_TIME) == str(d.timestamp())
 
-    assert rj.dumps(
+    assert dumps(
         d, datetime_mode=rj.DM_UNIX_TIME | rj.DM_SHIFT_TO_UTC) == str(utcd.timestamp())
 
-    assert rj.dumps(
+    assert dumps(
         d, datetime_mode= rj.DM_UNIX_TIME | rj.DM_ONLY_SECONDS
     ) == str(d.timestamp()).split('.')[0]
 
     d = datetime.now()
 
-    assert rj.dumps(
+    assert dumps(
         d, datetime_mode=rj.DM_ISO8601 | rj.DM_NAIVE_IS_UTC
     ) == '"%s+00:00"' % d.isoformat()
 
-    assert rj.dumps(
+    assert dumps(
         d, datetime_mode=rj.DM_UNIX_TIME | rj.DM_NAIVE_IS_UTC
     ) == ('%d.%06d' % (timegm(d.timetuple()), d.microsecond)).rstrip('0')
 
-    assert rj.dumps(
+    assert dumps(
         d, datetime_mode=(rj.DM_UNIX_TIME
                           | rj.DM_NAIVE_IS_UTC
                           | rj.DM_ONLY_SECONDS)
@@ -339,32 +306,32 @@ def test_datetime_mode_dumps():
 
 
 @pytest.mark.unit
-def test_datetime_mode_loads():
+def test_datetime_mode_loads(dumps, loads):
     import pytz
 
     utc = datetime.now(pytz.utc)
     utcstr = utc.isoformat()
 
-    jsond = rj.dumps(utc, datetime_mode=rj.DM_ISO8601)
+    jsond = dumps(utc, datetime_mode=rj.DM_ISO8601)
 
     assert jsond == '"%s"' % utcstr
-    assert rj.loads(jsond, datetime_mode=rj.DM_ISO8601) == utc
+    assert loads(jsond, datetime_mode=rj.DM_ISO8601) == utc
 
     local = utc.astimezone(pytz.timezone('Europe/Rome'))
     locstr = local.isoformat()
 
-    jsond = rj.dumps(local, datetime_mode=rj.DM_ISO8601)
+    jsond = dumps(local, datetime_mode=rj.DM_ISO8601)
 
     assert jsond == '"%s"' % locstr
-    assert rj.loads(jsond) == locstr
-    assert rj.loads(jsond, datetime_mode=rj.DM_ISO8601) == local
+    assert loads(jsond) == locstr
+    assert loads(jsond, datetime_mode=rj.DM_ISO8601) == local
 
-    load_as_utc = rj.loads(jsond, datetime_mode=(rj.DM_ISO8601 | rj.DM_SHIFT_TO_UTC))
+    load_as_utc = loads(jsond, datetime_mode=(rj.DM_ISO8601 | rj.DM_SHIFT_TO_UTC))
 
     assert load_as_utc == utc
     assert not load_as_utc.utcoffset()
 
-    load_as_naive = rj.loads(jsond, datetime_mode=(rj.DM_ISO8601 | rj.DM_IGNORE_TZ))
+    load_as_naive = loads(jsond, datetime_mode=(rj.DM_ISO8601 | rj.DM_IGNORE_TZ))
 
     assert load_as_naive == local.replace(tzinfo=None)
 
@@ -372,53 +339,53 @@ def test_datetime_mode_loads():
 @pytest.mark.unit
 @pytest.mark.parametrize(
     'value', [date.today(), datetime.now(), time(10,20,30)])
-def test_datetime_values(value):
+def test_datetime_values(value, dumps, loads):
     with pytest.raises(TypeError):
         rj.dumps(value)
 
-    dumped = rj.dumps(value, datetime_mode=rj.DM_ISO8601)
-    loaded = rj.loads(dumped, datetime_mode=rj.DM_ISO8601)
+    dumped = dumps(value, datetime_mode=rj.DM_ISO8601)
+    loaded = loads(dumped, datetime_mode=rj.DM_ISO8601)
     assert loaded == value
 
 
 @pytest.mark.unit
-def test_uuid_mode():
+def test_uuid_mode(dumps, loads):
     assert rj.UM_NONE == 0
     assert rj.UM_CANONICAL == 1
     assert rj.UM_HEX == 2
 
     value = uuid.uuid1()
     with pytest.raises(TypeError):
-        rj.dumps(value)
+        dumps(value)
 
     with pytest.raises(ValueError):
-        rj.dumps(value, uuid_mode=42)
+        dumps(value, uuid_mode=42)
 
     with pytest.raises(ValueError):
-        rj.loads('""', uuid_mode=42)
+        loads('""', uuid_mode=42)
 
-    dumped = rj.dumps(value, uuid_mode=rj.UM_CANONICAL)
-    loaded = rj.loads(dumped, uuid_mode=rj.UM_CANONICAL)
+    dumped = dumps(value, uuid_mode=rj.UM_CANONICAL)
+    loaded = loads(dumped, uuid_mode=rj.UM_CANONICAL)
     assert loaded == value
 
     # When loading, hex mode implies canonical format
-    loaded = rj.loads(dumped, uuid_mode=rj.UM_HEX)
+    loaded = loads(dumped, uuid_mode=rj.UM_HEX)
     assert loaded == value
 
-    dumped = rj.dumps(value, uuid_mode=rj.UM_HEX)
-    loaded = rj.loads(dumped, uuid_mode=rj.UM_HEX)
+    dumped = dumps(value, uuid_mode=rj.UM_HEX)
+    loaded = loads(dumped, uuid_mode=rj.UM_HEX)
     assert loaded == value
 
 
 @pytest.mark.unit
-def test_uuid_and_datetime_mode_together():
+def test_uuid_and_datetime_mode_together(dumps, loads):
     value = [date.today(), uuid.uuid1()]
-    dumped = rj.dumps(value,
-                      datetime_mode=rj.DM_ISO8601,
-                      uuid_mode=rj.UM_CANONICAL)
-    loaded = rj.loads(dumped,
-                      datetime_mode=rj.DM_ISO8601,
-                      uuid_mode=rj.UM_CANONICAL)
+    dumped = dumps(value,
+                   datetime_mode=rj.DM_ISO8601,
+                   uuid_mode=rj.UM_CANONICAL)
+    loaded = loads(dumped,
+                   datetime_mode=rj.DM_ISO8601,
+                   uuid_mode=rj.UM_CANONICAL)
     assert loaded == value
 
 
@@ -466,8 +433,8 @@ def test_uuid_and_datetime_mode_together():
         ('1999-02-03T10:20:30.123-05:00', datetime),
         ('1999-02-03T10:20:30.123456-05:00', datetime),
     ])
-def test_datetime_iso8601(value, cls):
-    result = rj.loads('"%s"' % value, datetime_mode=rj.DM_ISO8601)
+def test_datetime_iso8601(value, cls, loads):
+    result = loads('"%s"' % value, datetime_mode=rj.DM_ISO8601)
     assert isinstance(result, cls)
 
 
@@ -480,8 +447,8 @@ def test_datetime_iso8601(value, cls):
 
         ('7a683da4-9aa0-11e5-972e-3085a99ccac7', uuid.UUID),
     ])
-def test_uuid_canonical(value, cls):
-    result = rj.loads('"%s"' % value, uuid_mode=rj.UM_CANONICAL)
+def test_uuid_canonical(value, cls, loads):
+    result = loads('"%s"' % value, uuid_mode=rj.UM_CANONICAL)
     assert isinstance(result, cls), type(result)
 
 
@@ -493,8 +460,8 @@ def test_uuid_canonical(value, cls):
         ('7a683da49aa011e5972e3085a99ccac7', uuid.UUID),
         ('7a683da4-9aa0-11e5-972e-3085a99ccac7', uuid.UUID),
     ])
-def test_uuid_hex(value, cls):
-    result = rj.loads('"%s"' % value, uuid_mode=rj.UM_HEX)
+def test_uuid_hex(value, cls, loads):
+    result = loads('"%s"' % value, uuid_mode=rj.UM_HEX)
     assert isinstance(result, cls), type(result)
 
 
@@ -545,9 +512,9 @@ def test_object_hook():
         ( ('[]',), { 'parse_mode': 1.0 } ),
         ( ('[]',), { 'uuid_mode': -100 } ),
     ))
-def test_invalid_loads_params(posargs, kwargs):
+def test_invalid_loads_params(posargs, kwargs, loads):
     try:
-        rj.loads(*posargs, **kwargs)
+        loads(*posargs, **kwargs)
     except (TypeError, ValueError) as e:
         pass
     else:
@@ -571,9 +538,9 @@ def test_invalid_loads_params(posargs, kwargs):
         ( ([],), { 'uuid_mode': -100 } ),
         ( ([],), { 'uuid_mode': 100 } ),
     ))
-def test_invalid_dumps_params(posargs, kwargs):
+def test_invalid_dumps_params(posargs, kwargs, dumps):
     try:
-        rj.dumps(*posargs, **kwargs)
+        dumps(*posargs, **kwargs)
     except (TypeError, ValueError) as e:
         pass
     else:

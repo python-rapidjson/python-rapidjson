@@ -1,7 +1,5 @@
 import pytest
 
-import rapidjson as rj
-
 
 # from http://json.org/JSON_checker/test/pass1.json
 JSON = r'''
@@ -65,8 +63,8 @@ JSON = r'''
 '''
 
 @pytest.mark.unit
-def test_parse():
+def test_parse(dumps, loads):
     # test in/out equivalence and parsing
-    res = rj.loads(JSON)
-    out = rj.dumps(res)
-    assert res == rj.loads(out)
+    res = loads(JSON)
+    out = dumps(res)
+    assert res == loads(out)

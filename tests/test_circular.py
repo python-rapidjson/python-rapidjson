@@ -1,10 +1,7 @@
 import pytest
 
-import rapidjson as rj
-
 
 @pytest.mark.unit
-@pytest.mark.parametrize('dumps', (rj.dumps, rj.Encoder()))
 def test_circular_dict(dumps):
     dct = {}
     dct['a'] = dct
@@ -14,7 +11,6 @@ def test_circular_dict(dumps):
 
 
 @pytest.mark.unit
-@pytest.mark.parametrize('dumps', (rj.dumps, rj.Encoder()))
 def test_circular_list(dumps):
     lst = []
     lst.append(lst)
@@ -24,7 +20,6 @@ def test_circular_list(dumps):
 
 
 @pytest.mark.unit
-@pytest.mark.parametrize('dumps', (rj.dumps, rj.Encoder()))
 def test_circular_composite(dumps):
     dct2 = {}
     dct2['a'] = []

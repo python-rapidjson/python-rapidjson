@@ -2,8 +2,6 @@ import json
 
 import pytest
 
-import rapidjson as rj
-
 
 @pytest.mark.unit
 @pytest.mark.parametrize('u', [
@@ -11,10 +9,10 @@ import rapidjson as rj
     '\U0010ffff',
     'asdf \U0010ffff \U0001ffff qwert \uffff \u10ff \u00ff \u0080 \u7fff \b\n\r',
 ])
-def test_unicode(u):
+def test_unicode(u, dumps, loads):
     s = u.encode('utf-8')
-    ju = rj.dumps(u)
-    js = rj.dumps(s)
+    ju = dumps(u)
+    js = dumps(s)
     assert ju == js
     assert ju.lower() == json.dumps(u).lower()
-    assert rj.dumps(u, ensure_ascii=False) == json.dumps(u, ensure_ascii=False)
+    assert dumps(u, ensure_ascii=False) == json.dumps(u, ensure_ascii=False)

@@ -14,7 +14,6 @@ import rapidjson as rj
         [1, 2, 'a', 1.2, {'foo': 'bar'},],
         sys.maxsize, sys.maxsize**2,
 ))
-@pytest.mark.parametrize('dumps,loads', ((rj.dumps, rj.loads), (rj.Encoder(), rj.Decoder())))
 def test_base_values(value, dumps, loads):
     dumped = dumps(value)
     loaded = loads(dumped)
@@ -22,14 +21,12 @@ def test_base_values(value, dumps, loads):
 
 
 @pytest.mark.unit
-@pytest.mark.parametrize('dumps', (rj.dumps, rj.Encoder()))
 def test_bytes_value(dumps):
     dumped = dumps(b'cruel\x00world')
     assert dumped == r'"cruel\u0000world"'
 
 
 @pytest.mark.unit
-@pytest.mark.parametrize('dumps,loads', ((rj.dumps, rj.loads), (rj.Encoder(), rj.Decoder())))
 def test_larger_structure(dumps, loads):
     value = {
         'words': """
@@ -104,7 +101,6 @@ def test_encoder_default():
 
 
 @pytest.mark.unit
-@pytest.mark.parametrize('dumps,loads', ((rj.dumps, rj.loads), (rj.Encoder(), rj.Decoder())))
 def test_doubles(dumps, loads):
     for x in range(100000):
         d = sys.maxsize * random.random()
@@ -114,7 +110,6 @@ def test_doubles(dumps, loads):
 
 
 @pytest.mark.unit
-@pytest.mark.parametrize('dumps,loads', ((rj.dumps, rj.loads), (rj.Encoder(), rj.Decoder())))
 def test_unicode(dumps, loads):
    arabic='بينهم ان يكون مسلما رشيدا عاقلا ًوابنا شرعيا لابوين عمانيين'
    chinese='本站所提供的資料和服務都不收費，因此網站所需要的資金全來自廣告及捐款。若您願意捐款補助'
@@ -153,7 +148,6 @@ def test_serialize_sets_encoder():
 
 
 @pytest.mark.unit
-@pytest.mark.parametrize('dumps,loads', ((rj.dumps, rj.loads), (rj.Encoder(), rj.Decoder())))
 def test_constants(dumps, loads):
     for c in [None, True, False]:
         assert loads(dumps(c)) is c
