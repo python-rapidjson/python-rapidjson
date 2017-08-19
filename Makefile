@@ -34,7 +34,7 @@ help::
 .PHONY: distclean
 distclean:: clean
 	rm -rf build dist
-	rm -rf rapidjson/.* rapidjson/*
+	git submodule deinit
 
 help::
 	@printf "doc\n\tbuild Sphinx documentation\n"
