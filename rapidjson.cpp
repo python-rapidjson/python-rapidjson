@@ -3,8 +3,6 @@
 #include <structmember.h>
 
 #include <algorithm>
-#include <cctype>
-#include <string>
 #include <vector>
 
 #include "rapidjson/reader.h"
