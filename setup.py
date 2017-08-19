@@ -50,18 +50,29 @@ extension_options = {
     'define_macros': [('PYTHON_RAPIDJSON_VERSION', VERSION)],
 }
 
-cc = sysconfig.get_config_var('CC')
-if cc and 'gcc' in cc:
-    cflags = sysconfig.get_config_var('CFLAGS')
+
+cxx = sysconfig.get_config_var('CXX')
+if cxx and 'gnu' in cxx:
     # Avoid warning about invalid flag for C++
+    cflags = sysconfig.get_config_var('CFLAGS')
     if cflags and '-Wstrict-prototypes' in cflags:
         cflags = cflags.replace('-Wstrict-prototypes', '')
         sysconfig.get_config_vars()['CFLAGS'] = cflags
+    opt = sysconfig.get_config_var('OPT')
+    if opt and '-Wstrict-prototypes' in opt:
+        opt = opt.replace('-Wstrict-prototypes', '')
+        sysconfig.get_config_vars()['OPT'] = opt
 
     # Add -pedantic, so we get a warning when using non-standard features, and
     # -Wno-long-long to pacify old gcc (or Apple's hybrids) that treat "long
     # long" as an error under C++ (see issue #69)
     extension_options['extra_compile_args'] = ['-pedantic', '-Wno-long-long']
+
+    # Up to Python 3.7, some structures use "char*" instead of "const char*",
+    # and ISO C++ forbids assigning string literal constants
+    if sys.version_info < (3,7):
+        extension_options['extra_compile_args'].append('-Wno-write-strings')
+
 
 setup(
     name='python-rapidjson',
