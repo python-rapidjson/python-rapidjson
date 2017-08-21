@@ -893,8 +893,7 @@ struct PyHandler {
         if (pystr == NULL)
             return false;
 
-        PyObject* value = PyObject_CallFunctionObjArgs(uuid_type,
-                                                       pystr, NULL);
+        PyObject* value = PyObject_CallFunctionObjArgs(uuid_type, pystr, NULL);
         Py_DECREF(pystr);
 
         if (value == NULL)

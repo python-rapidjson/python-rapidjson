@@ -104,5 +104,5 @@
          ...     return OrderedDict()
          ...
          >>> od = OrderedDecoder()
-         >>> print(type(od('{"foo": "bar"}')))
+         >>> type(od('{"foo": "bar"}'))
          <class 'collections.OrderedDict'>
