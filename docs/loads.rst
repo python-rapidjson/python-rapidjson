@@ -14,6 +14,9 @@
 .. function:: loads(s, object_hook=None, number_mode=None, datetime_mode=None, \
                     uuid_mode=None, parse_mode=None, allow_nan=True)
 
+   Decode the given Python string `s` containing a ``JSON`` formatted value
+   into Python object.
+
    :param str s: The JSON string to parse
    :param callable object_hook: an optional function that will be called with
                                 the result of any object literal decoded (a
@@ -27,8 +30,6 @@
    :param bool allow_nan: *compatibility* flag equivalent to ``number_mode=NM_NAN``
    :returns: An equivalent Python object.
 
-   Decode the given Python string `s` containing a JSON formatted value into
-   Python object.
 
    `object_hook` may be used to inject a custom deserializer that can replace
    any :class:`dict` instance found in the JSON structure with a *derived*

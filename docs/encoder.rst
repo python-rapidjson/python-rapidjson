@@ -15,6 +15,8 @@
                    sort_keys=False, max_recursion_depth=2048, \
                    number_mode=None, datetime_mode=None, uuid_mode=None)
 
+   Class-based :func:`dumps`\ -like functionality.
+
    :param bool skip_invalid_keys: whether skip invalid :class:`dict` keys
    :param bool ensure_ascii: whether the output should contain only ASCII
                              characters
@@ -26,6 +28,7 @@
    :param int datetime_mode: how should :class:`datetime`, :class:`time` and
                              :class:`date` instances be handled
    :param int uuid_mode: how should :class:`UUID` instances be handled
+
 
    .. method:: __call__(value)
 

@@ -947,9 +947,9 @@ typedef struct {
 
 PyDoc_STRVAR(loads_docstring,
              "loads(s, object_hook=None, number_mode=None, datetime_mode=None,"
-             " uuid_mode=None, allow_nan=True)\n"
+             " uuid_mode=None, parse_mode=None, allow_nan=True)\n"
              "\n"
-             "Decodes a JSON string into a Python object.");
+             "Decode a JSON string into a Python object.");
 
 
 static PyObject*
@@ -2032,7 +2032,7 @@ PyDoc_STRVAR(dumps_docstring,
              " number_mode=None, datetime_mode=None, uuid_mode=None,"
              " allow_nan=True)\n"
              "\n"
-             "Encodes a Python object into a JSON string.");
+             "Encode a Python object into a JSON string.");
 
 
 static PyObject*

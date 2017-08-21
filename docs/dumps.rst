@@ -16,6 +16,8 @@
                     number_mode=None, datetime_mode=None, uuid_mode=None, \
                     allow_nan=True)
 
+   Encode given Python `obj` instance into a ``JSON`` string.
+
    :param bool skipkeys: whether skip invalid :class:`dict` keys
    :param bool ensure_ascii: whether the output should contain only ASCII
                              characters
@@ -32,7 +34,6 @@
    :param bool allow_nan: *compatibility* flag equivalent to ``number_mode=NM_NAN``
    :returns: A Python :class:`str` instance.
 
-   Encode given Python `obj` instance into a JSON string.
 
    If `skipkeys` is true (default: ``False``), then dict keys that are not of
    a basic type (:class:`str`, :class:`int`, :class:`float`, :class:`bool`,

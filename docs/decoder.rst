@@ -13,11 +13,14 @@
 
 .. class:: Decoder(number_mode=None, datetime_mode=None, uuid_mode=None, parse_mode=None)
 
+   Class-based :func:`loads`\ -like functionality.
+
    :param int number_mode: enable particular behaviors in handling numbers
    :param int datetime_mode: how should :class:`datetime` and :class:`date`
                              instances be handled
    :param int uuid_mode: how should :class:`UUID` instances be handled
    :param int parse_mode: whether the parser should allow non-standard JSON extensions
+
 
    .. method:: __call__(json)
 
