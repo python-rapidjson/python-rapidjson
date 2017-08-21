@@ -40,6 +40,7 @@ static PyObject* start_object_name = NULL;
 static PyObject* end_object_name = NULL;
 static PyObject* default_name = NULL;
 static PyObject* end_array_name = NULL;
+static PyObject* string_name = NULL;
 
 static PyObject* minus_inf_string_value = NULL;
 static PyObject* nan_string_value = NULL;
@@ -157,6 +158,7 @@ struct PyHandler {
     PyObject* decoderStartObject;
     PyObject* decoderEndObject;
     PyObject* decoderEndArray;
+    PyObject* decoderString;
     PyObject* root;
     PyObject* objectHook;
     DatetimeMode datetimeMode;
@@ -168,6 +170,7 @@ struct PyHandler {
         : decoderStartObject(NULL),
           decoderEndObject(NULL),
           decoderEndArray(NULL),
+          decoderString(NULL),
           root(NULL),
           objectHook(hook),
           datetimeMode(dm),
@@ -189,6 +192,10 @@ struct PyHandler {
                 decoderEndArray = PyObject_GetAttr(decoder, end_array_name);
                 Py_INCREF(decoderEndArray);
             }
+            if (PyObject_HasAttr(decoder, string_name)) {
+                decoderString = PyObject_GetAttr(decoder, string_name);
+                Py_INCREF(decoderString);
+            }
         }
     }
 
@@ -196,6 +203,7 @@ struct PyHandler {
         Py_CLEAR(decoderStartObject);
         Py_CLEAR(decoderEndObject);
         Py_CLEAR(decoderEndArray);
+        Py_CLEAR(decoderString);
     }
 
     bool Handle(PyObject* value) {
@@ -912,6 +920,17 @@ struct PyHandler {
             return HandleUuid(str, length);
 
         value = PyUnicode_FromStringAndSize(str, length);
+        if (value == NULL)
+            return false;
+
+        if (decoderString != NULL) {
+            PyObject* replacement = PyObject_CallFunctionObjArgs(decoderString, value, NULL);
+            Py_DECREF(value);
+            if (replacement == NULL)
+                return false;
+            value = replacement;
+        }
+
         return Handle(value);
     }
 };
@@ -2707,6 +2726,10 @@ PyInit_rapidjson()
     if (end_array_name == NULL)
         goto error;
 
+    string_name = PyUnicode_InternFromString("string");
+    if (string_name == NULL)
+        goto error;
+
     PyObject* m;
 
     m = PyModule_Create(&module);
@@ -2772,6 +2795,7 @@ error:
     Py_CLEAR(end_object_name);
     Py_CLEAR(default_name);
     Py_CLEAR(end_array_name);
+    Py_CLEAR(string_name);
 
     return NULL;
 }

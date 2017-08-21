@@ -106,3 +106,40 @@
          >>> od = OrderedDecoder()
          >>> type(od('{"foo": "bar"}'))
          <class 'collections.OrderedDict'>
+
+   .. method:: string(s)
+
+      :param s: a ``str`` instance
+      :returns: a new value
+
+      This method, when implemented, is called whenever a *JSON string* has
+      been completely parsed, and can be used to replace it with an arbitrary
+      different value:
+
+      .. doctest::
+
+         >>> class SwapStringCase(Decoder):
+         ...   def string(self, s):
+         ...     return s.swapcase()
+         ...
+         >>> ssc = SwapStringCase()
+         >>> ssc('"Hello World!"')
+         'hELLO wORLD!'
+
+      Note that it is called **after** the recognition of dates and UUIDs,
+      when `datetime_mode` and/or `uuid_mode` are specified:
+
+      .. doctest::
+
+         >>> class DDMMYYYY(Decoder):
+         ...   def string(self, s):
+         ...     if len(s) == 8 and s.isdigit():
+         ...       dd = int(s[:2])
+         ...       mm = int(s[2:4])
+         ...       yyyy = int(s[-4:])
+         ...       return (yyyy, mm, dd)
+         ...     return s
+         ...
+         >>> ddmmyyyy = DDMMYYYY(datetime_mode=DM_ISO8601)
+         >>> ddmmyyyy('["2017-08-21", "21082017"]')
+         [datetime.date(2017, 8, 21), (2017, 8, 21)]
