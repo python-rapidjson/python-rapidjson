@@ -58,17 +58,17 @@ struct HandlerContext {
 enum DatetimeMode {
     DM_NONE = 0,
     // Formats
-    DM_ISO8601 = 1,        // Bidirectional ISO8601 for datetimes, dates and times
-    DM_UNIX_TIME = 2,      // Serialization only, "Unix epoch"-based number of seconds
+    DM_ISO8601 = 1<<0,      // Bidirectional ISO8601 for datetimes, dates and times
+    DM_UNIX_TIME = 1<<1,    // Serialization only, "Unix epoch"-based number of seconds
     // Options
-    DM_ONLY_SECONDS = 16,  // Truncate values to the whole second, ignoring micro seconds
-    DM_IGNORE_TZ = 32,     // Ignore timezones
-    DM_NAIVE_IS_UTC = 64,  // Assume naive datetime are in UTC timezone
-    DM_SHIFT_TO_UTC = 128  // Shift to/from UTC
+    DM_ONLY_SECONDS = 1<<4, // Truncate values to the whole second, ignoring micro seconds
+    DM_IGNORE_TZ = 1<<5,    // Ignore timezones
+    DM_NAIVE_IS_UTC = 1<<6, // Assume naive datetime are in UTC timezone
+    DM_SHIFT_TO_UTC = 1<<7  // Shift to/from UTC
 };
 
 
-#define DATETIME_MODE_FORMATS_MASK 0x0f
+#define DATETIME_MODE_FORMATS_MASK 0b00001111
 
 
 static inline int
@@ -103,23 +103,23 @@ days_per_month(int year, int month) {
 
 enum UuidMode {
     UM_NONE = 0,
-    UM_CANONICAL = 1, // only 4-dashed 32 hex chars: xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
-    UM_HEX = 2        // canonical OR 32 hex chars
+    UM_CANONICAL = 1<<0, // only 4-dashed 32 hex chars: xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
+    UM_HEX = 1<<1        // canonical OR 32 hex chars
 };
 
 
 enum NumberMode {
     NM_NONE = 0,
-    NM_NAN = 1,       // allow "not-a-number" values
-    NM_DECIMAL = 2,   // serialize Decimal instances, deserialize floats as Decimal
-    NM_NATIVE = 4     // use faster native C library number handling
+    NM_NAN = 1<<0,     // allow "not-a-number" values
+    NM_DECIMAL = 1<<1, // serialize Decimal instances, deserialize floats as Decimal
+    NM_NATIVE = 1<<2   // use faster native C library number handling
 };
 
 
 enum ParseMode {
     PM_NONE = 0,
-    PM_COMMENTS = 1,       // Allow one-line // ... and multi-line /* ... */ comments
-    PM_TRAILING_COMMAS = 2 // allow trailing commas at the end of objects and arrays
+    PM_COMMENTS = 1<<0,       // Allow one-line // ... and multi-line /* ... */ comments
+    PM_TRAILING_COMMAS = 1<<1 // allow trailing commas at the end of objects and arrays
 };
 
 
