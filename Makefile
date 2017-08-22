@@ -34,7 +34,7 @@ help::
 .PHONY: distclean
 distclean:: clean
 	rm -rf build dist
-	git submodule deinit
+	git submodule deinit --all
 
 help::
 	@printf "doc\n\tbuild Sphinx documentation\n"
