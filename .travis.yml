@@ -5,6 +5,15 @@
 # :Copyright: © 2017 Lele Gaifax
 #
 
+# Note that due to a strange issue with Travis CI, the Python 3.6 wheels are
+# actually built via Gitlab CI, on the repository
+# https://gitlab.com/metapensiero/python-rapidjson.
+#
+# Here we execute the Python 3.6 tests; Python 3.4 and 3.5 tests are run by
+# cibuildwheel, inside the manylinux1 Docker image.
+#
+# See https://mail.python.org/pipermail/wheel-builders/2017-August/000285.html
+
 language: python
 python: "3.6"
 
@@ -22,14 +31,15 @@ env:
   global:
     - CIBW_TEST_REQUIRES="pytest pytest-benchmark pytz"
     - CIBW_TEST_COMMAND="py.test {project}/tests"
-    - CIBW_SKIP="cp2* cp33*"
+    - CIBW_SKIP="cp2* cp33* cp36*"
     - TWINE_USERNAME=lelit
       # Note: TWINE_PASSWORD is set in Travis settings
 
 install: pip install -r requirements-test.txt
 
 script:
-  - pip install cibuildwheel==0.4.0
+  - pytest tests
+  - pip install cibuildwheel==0.4.1
   - cibuildwheel --output-dir wheelhouse
   - |
     if [[ $TRAVIS_TAG ]]; then
