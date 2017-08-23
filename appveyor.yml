@@ -1,3 +1,10 @@
+# -*- coding: utf-8 -*-
+# :Project:   python-rapidjson -- Appveyor configuration to build and upload Windows wheels to PyPI
+# :Author:    Lele Gaifax <lele@metapensiero.it>
+# :License:   MIT License
+# :Copyright: © 2017 Lele Gaifax
+#
+
 environment:
   CIBW_TEST_REQUIRES: "pytest pytz"
   CIBW_TEST_COMMAND: "py.test {project}\\tests"
