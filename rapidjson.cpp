@@ -285,6 +285,7 @@ struct PyHandler {
         HandlerContext ctx;
         ctx.isObject = true;
         ctx.object = mapping;
+        Py_INCREF(mapping);
 
         stack.push_back(ctx);
 
@@ -292,13 +293,13 @@ struct PyHandler {
     }
 
     bool EndObject(SizeType member_count) {
-        if (objectHook == NULL && decoderEndObject == NULL) {
-            stack.pop_back();
-            return true;
-        }
-
         PyObject* mapping = stack.back().object;
         stack.pop_back();
+
+        if (objectHook == NULL && decoderEndObject == NULL) {
+            Py_DECREF(mapping);
+            return true;
+        }
 
         PyObject* replacement;
         if (decoderEndObject != NULL) {
@@ -371,6 +372,7 @@ struct PyHandler {
         HandlerContext ctx;
         ctx.isObject = false;
         ctx.object = list;
+        Py_INCREF(list);
 
         stack.push_back(ctx);
 
@@ -378,13 +380,13 @@ struct PyHandler {
     }
 
     bool EndArray(SizeType elementCount) {
-        if (decoderEndArray == NULL) {
-            stack.pop_back();
-            return true;
-        }
-
         PyObject* sequence = stack.back().object;
         stack.pop_back();
+
+        if (decoderEndArray == NULL) {
+            Py_DECREF(sequence);
+            return true;
+        }
 
         PyObject* replacement = PyObject_CallFunctionObjArgs(decoderEndArray, sequence, NULL);
         Py_DECREF(sequence);
