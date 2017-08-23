@@ -76,7 +76,7 @@ enum DatetimeMode {
 };
 
 
-#define DATETIME_MODE_FORMATS_MASK 0b00001111
+#define DATETIME_MODE_FORMATS_MASK 0x0f // 0b00001111 in C++14
 
 
 static inline int
