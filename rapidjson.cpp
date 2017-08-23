@@ -303,16 +303,13 @@ struct PyHandler {
         PyObject* replacement;
         if (decoderEndObject != NULL) {
             replacement = PyObject_CallFunctionObjArgs(decoderEndObject, mapping, NULL);
-            Py_DECREF(mapping);
-            if (replacement == NULL)
-                return false;
-            mapping = replacement;
         } else /* if (objectHook != NULL) */ {
             replacement = PyObject_CallFunctionObjArgs(objectHook, mapping, NULL);
-            Py_DECREF(mapping);
-            if (replacement == NULL)
-                return false;
         }
+
+        Py_DECREF(mapping);
+        if (replacement == NULL)
+            return false;
 
         Py_INCREF(replacement);
 
