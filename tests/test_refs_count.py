@@ -46,14 +46,29 @@ date = right_now.date()
 time = right_now.time()
 nil = uuid.UUID(int=0)
 foo = Foo('foo')
-
+array = [dict(index=j, array=[dict(index=i,
+                                   plain_string=plain_string,
+                                   bigint=bigint,
+                                   pi=pi,
+                                   right_now=right_now,
+                                   date=date,
+                                   time=time,
+                                   nil=nil,
+                                   foos=[foo, foo, foo, foo, foo])
+                              for i in range(10)])
+         for j in range(10)]
 
 NO_OPTION = {}
 DATETIMES = {'datetime_mode': rj.DM_ISO8601}
 UUIDS = {'uuid_mode': rj.UM_CANONICAL}
 FOOS_DUMP = {'default': default}
 FOOS_LOAD = {'object_hook': hook}
-
+ARRAY_DUMP = {'datetime_mode': rj.DM_ISO8601,
+              'uuid_mode': rj.UM_CANONICAL,
+              'default': default}
+ARRAY_LOAD = {'datetime_mode': rj.DM_ISO8601,
+              'uuid_mode': rj.UM_CANONICAL,
+              'object_hook': hook}
 
 @pytest.mark.skipif(not hasattr(sys, 'gettotalrefcount'), reason='Non-debug Python')
 @pytest.mark.parametrize('value,dumps_options,loads_options', [
@@ -65,6 +80,7 @@ FOOS_LOAD = {'object_hook': hook}
     ( time, DATETIMES, DATETIMES ),
     ( nil, UUIDS, UUIDS ),
     ( foo, FOOS_DUMP, FOOS_LOAD ),
+    ( array, ARRAY_DUMP, ARRAY_LOAD ),
 ])
 def test_leaks(value, dumps_options, loads_options):
     rc0 = sys.gettotalrefcount()
