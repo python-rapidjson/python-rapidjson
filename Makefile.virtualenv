@@ -1,3 +1,10 @@
+# -*- coding: utf-8 -*-
+# :Project:   python-rapidjson -- Virtualenv related targets
+# :Author:    Lele Gaifax <lele@metapensiero.it>
+# :License:   MIT License
+# :Copyright: © 2017 Lele Gaifax
+#
+
 ACTIVATE_SCRIPT := $(VENVDIR)/bin/activate
 PIP := $(VENVDIR)/bin/pip
 REQUIREMENTS ?= requirements.txt

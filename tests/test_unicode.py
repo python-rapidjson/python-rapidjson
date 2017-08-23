@@ -1,3 +1,11 @@
+# -*- coding: utf-8 -*-
+# :Project:   python-rapidjson -- Unicode tests
+# :Author:    John Anderson <sontek@gmail.com>
+# :License:   MIT License
+# :Copyright: © 2015 John Anderson
+# :Copyright: © 2016, 2017 Lele Gaifax
+#
+
 import json
 
 import pytest

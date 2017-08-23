@@ -1,3 +1,10 @@
+# -*- coding: utf-8 -*-
+# :Project:   python-rapidjson -- Development Makefile
+# :Author:    Lele Gaifax <lele@metapensiero.it>
+# :License:   MIT License
+# :Copyright: © 2017 Lele Gaifax
+#
+
 export TOPDIR := $(CURDIR)
 export VENVDIR := $(TOPDIR)/env
 export PYTHON := $(VENVDIR)/bin/python

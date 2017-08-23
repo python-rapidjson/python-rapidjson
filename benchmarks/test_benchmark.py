@@ -1,3 +1,11 @@
+# -*- coding: utf-8 -*-
+# :Project:   python-rapidjson -- Performance tests
+# :Author:    John Anderson <sontek@gmail.com>
+# :License:   MIT License
+# :Copyright: © 2015 John Anderson
+# :Copyright: © 2015, 2016, 2017 Lele Gaifax
+#
+
 import datetime
 import random
 import sys

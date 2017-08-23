@@ -1,3 +1,10 @@
+# -*- coding: utf-8 -*-
+# :Project:   python-rapidjson -- Release specific targets
+# :Author:    Lele Gaifax <lele@metapensiero.it>
+# :License:   MIT License
+# :Copyright: © 2017 Lele Gaifax
+#
+
 BUMPER := $(VENVDIR)/bin/bump_version -f minor
 VERSION_TXT := version.txt
 VERSION = $(shell cat $(VERSION_TXT))

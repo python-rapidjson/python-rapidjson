@@ -1,3 +1,10 @@
+# -*- coding: utf-8 -*-
+# :Project:   python-rapidjson -- Validator class tests
+# :Author:    Lele Gaifax <lele@metapensiero.it>
+# :License:   MIT License
+# :Copyright: © 2017 Lele Gaifax
+#
+
 import pytest
 
 import rapidjson as rj

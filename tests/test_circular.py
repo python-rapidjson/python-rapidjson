@@ -1,3 +1,11 @@
+# -*- coding: utf-8 -*-
+# :Project:   python-rapidjson -- Circular references tests
+# :Author:    John Anderson <sontek@gmail.com>
+# :License:   MIT License
+# :Copyright: © 2015 John Anderson
+# :Copyright: © 2017 Lele Gaifax
+#
+
 import pytest
 
 

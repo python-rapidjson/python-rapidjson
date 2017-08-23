@@ -1,3 +1,10 @@
+# -*- coding: utf-8 -*-
+# :Project:   python-rapidjson -- reST tables writer tool
+# :Author:    Lele Gaifax <lele@metapensiero.it>
+# :License:   MIT License
+# :Copyright: © 2017 Lele Gaifax
+#
+
 # Assume we did::
 #
 #  pytest --benchmark-json=comparison.json --compare-other-engines benchmarks/

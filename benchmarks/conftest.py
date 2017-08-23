@@ -1,3 +1,10 @@
+# -*- coding: utf-8 -*-
+# :Project:   python-rapidjson -- Benchmarks specific pytest configuration
+# :Author:    Lele Gaifax <lele@metapensiero.it>
+# :License:   MIT License
+# :Copyright: © 2016, 2017 Lele Gaifax
+#
+
 from collections import namedtuple
 from functools import partial
 from operator import attrgetter

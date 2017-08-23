@@ -1,3 +1,10 @@
+# -*- coding: utf-8 -*-
+# :Project:   python-rapidjson -- Refs leaks tests
+# :Author:    Lele Gaifax <lele@metapensiero.it>
+# :License:   MIT License
+# :Copyright: © 2017 Lele Gaifax
+#
+
 # NB: this is a simplicistic test that uses sys.gettotalrefcount(), available
 # when the interpreter is built --with-pydebug, that tries to assert that
 # repeated calls to dumps() and loads() does not leak object references.

@@ -1,3 +1,10 @@
+.. -*- coding: utf-8 -*-
+.. :Project:   python-rapidjson -- Encoder class documentation
+.. :Author:    Lele Gaifax <lele@metapensiero.it>
+.. :License:   MIT License
+.. :Copyright: © 2017 Lele Gaifax
+..
+
 ===============
  Encoder class
 ===============

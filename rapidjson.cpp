@@ -1,3 +1,11 @@
+// -*- coding: utf-8 -*-
+// :Project:   python-rapidjson -- Python extension module
+// :Author:    Ken Robbins <ken@kenrobbins.com>
+// :License:   MIT License
+// :Copyright: © 2015 Ken Robbins
+// :Copyright: © 2015, 2016, 2017 Lele Gaifax
+//
+
 #include <Python.h>
 #include <datetime.h>
 #include <structmember.h>

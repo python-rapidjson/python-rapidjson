@@ -1,3 +1,11 @@
+# -*- coding: utf-8 -*-
+# :Project:   python-rapidjson -- Packaging
+# :Author:    Ken Robbins <ken@kenrobbins.com>
+# :License:   MIT License
+# :Copyright: © 2015 Ken Robbins
+# :Copyright: © 2016, 2017 Lele Gaifax
+#
+
 import os.path
 import sys
 

@@ -1,9 +1,8 @@
-python-rapidjson is licensed under the MIT license except for third party
-components whose licenses are included in the thirdparty directory.
+python-rapidjson is licensed under the MIT license.
 
 The MIT License (MIT)
 
-Copyright (c) 2015 Ken Robbins
+Copyright (c) 2015, 2016, 2017 Ken Robbins
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal

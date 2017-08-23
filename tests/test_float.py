@@ -1,3 +1,11 @@
+# -*- coding: utf-8 -*-
+# :Project:   python-rapidjson -- Tests on floats
+# :Author:    John Anderson <sontek@gmail.com>
+# :License:   MIT License
+# :Copyright: © 2015 John Anderson
+# :Copyright: © 2016, 2017 Lele Gaifax
+#
+
 from decimal import Decimal
 import math
 

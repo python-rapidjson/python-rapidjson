@@ -1,3 +1,11 @@
+# -*- coding: utf-8 -*-
+# :Project:   python-rapidjson -- Basic params tests
+# :Author:    Ken Robbins <ken@kenrobbins.com>
+# :License:   MIT License
+# :Copyright: © 2015 Ken Robbins
+# :Copyright: © 2015, 2016, 2017 Lele Gaifax
+#
+
 from calendar import timegm
 from datetime import date, datetime, time
 import math
