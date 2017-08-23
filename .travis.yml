@@ -38,7 +38,7 @@ env:
 install: pip install -r requirements-test.txt
 
 script:
-  - pytest tests
+  - pip install . && pytest tests
   - pip install cibuildwheel==0.4.1
   - cibuildwheel --output-dir wheelhouse
   - |

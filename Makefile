@@ -40,7 +40,7 @@ help::
 
 .PHONY: distclean
 distclean:: clean
-	rm -rf build dist
+	rm -rf .tox build dist
 	git submodule deinit --all
 
 help::
