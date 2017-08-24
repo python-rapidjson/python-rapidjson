@@ -1,7 +1,7 @@
 Changes
 -------
 
-0.2.2 (unreleased)
+0.2.2 (2017-08-24)
 ~~~~~~~~~~~~~~~~~~
 
 * Nothing new, attempt to fix production of Python 3.6 binary wheels
