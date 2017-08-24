@@ -30,12 +30,12 @@ static PyObject* timezone_utc = NULL;
 static PyObject* uuid_type = NULL;
 
 
-/* These are the names of oftenly used methods or literal values, interned in the
-   module initialization function, to avoid repeated creation/destruction of
-   PyUnicode values from plain C strings.
+/* These are the names of oftenly used methods or literal values, interned in the module
+   initialization function, to avoid repeated creation/destruction of PyUnicode values
+   from plain C strings.
 
-   We cannot use _Py_IDENTIFIER() because that upsets the GNU C++ compiler in
-   -pedantic mode. */
+   We cannot use _Py_IDENTIFIER() because that upsets the GNU C++ compiler in -pedantic
+   mode. */
 
 static PyObject* astimezone_name = NULL;
 static PyObject* hex_name = NULL;
@@ -111,8 +111,8 @@ days_per_month(int year, int month) {
 
 enum UuidMode {
     UM_NONE = 0,
-    UM_CANONICAL = 1<<0, // only 4-dashed 32 hex chars: xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
-    UM_HEX = 1<<1        // canonical OR 32 hex chars
+    UM_CANONICAL = 1<<0, // 4-dashed 32 hex chars: xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
+    UM_HEX = 1<<1        // canonical OR 32 hex chars in a row
 };
 
 
@@ -174,7 +174,11 @@ struct PyHandler {
     NumberMode numberMode;
     std::vector<HandlerContext> stack;
 
-    PyHandler(PyObject* decoder, PyObject* hook, DatetimeMode dm, UuidMode um, NumberMode nm)
+    PyHandler(PyObject* decoder,
+              PyObject* hook,
+              DatetimeMode dm,
+              UuidMode um,
+              NumberMode nm)
         : decoderStartObject(NULL),
           decoderEndObject(NULL),
           decoderEndArray(NULL),
@@ -184,28 +188,28 @@ struct PyHandler {
           datetimeMode(dm),
           uuidMode(um),
           numberMode(nm)
-    {
-        stack.reserve(128);
-        if (decoder != NULL) {
-            assert(!objectHook);
-            if (PyObject_HasAttr(decoder, start_object_name)) {
-                decoderStartObject = PyObject_GetAttr(decoder, start_object_name);
-                Py_INCREF(decoderStartObject);
-            }
-            if (PyObject_HasAttr(decoder, end_object_name)) {
-                decoderEndObject = PyObject_GetAttr(decoder, end_object_name);
-                Py_INCREF(decoderEndObject);
-            }
-            if (PyObject_HasAttr(decoder, end_array_name)) {
-                decoderEndArray = PyObject_GetAttr(decoder, end_array_name);
-                Py_INCREF(decoderEndArray);
-            }
-            if (PyObject_HasAttr(decoder, string_name)) {
-                decoderString = PyObject_GetAttr(decoder, string_name);
-                Py_INCREF(decoderString);
+        {
+            stack.reserve(128);
+            if (decoder != NULL) {
+                assert(!objectHook);
+                if (PyObject_HasAttr(decoder, start_object_name)) {
+                    decoderStartObject = PyObject_GetAttr(decoder, start_object_name);
+                    Py_INCREF(decoderStartObject);
+                }
+                if (PyObject_HasAttr(decoder, end_object_name)) {
+                    decoderEndObject = PyObject_GetAttr(decoder, end_object_name);
+                    Py_INCREF(decoderEndObject);
+                }
+                if (PyObject_HasAttr(decoder, end_array_name)) {
+                    decoderEndArray = PyObject_GetAttr(decoder, end_array_name);
+                    Py_INCREF(decoderEndArray);
+                }
+                if (PyObject_HasAttr(decoder, string_name)) {
+                    decoderString = PyObject_GetAttr(decoder, string_name);
+                    Py_INCREF(decoderString);
+                }
             }
         }
-    }
 
     ~PyHandler() {
         Py_CLEAR(decoderStartObject);
@@ -388,7 +392,8 @@ struct PyHandler {
             return true;
         }
 
-        PyObject* replacement = PyObject_CallFunctionObjArgs(decoderEndArray, sequence, NULL);
+        PyObject* replacement = PyObject_CallFunctionObjArgs(decoderEndArray, sequence,
+                                                             NULL);
         Py_DECREF(sequence);
         if (replacement == NULL)
             return false;
@@ -931,7 +936,8 @@ struct PyHandler {
             return false;
 
         if (decoderString != NULL) {
-            PyObject* replacement = PyObject_CallFunctionObjArgs(decoderString, value, NULL);
+            PyObject* replacement = PyObject_CallFunctionObjArgs(decoderString, value,
+                                                                 NULL);
             Py_DECREF(value);
             if (replacement == NULL)
                 return false;
@@ -1059,7 +1065,8 @@ loads(PyObject* self, PyObject* args, PyObject* kwargs)
             datetimeMode = (DatetimeMode) mode;
             if (datetimeMode && datetime_mode_format(datetimeMode) != DM_ISO8601) {
                 PyErr_SetString(PyExc_ValueError,
-                                "Invalid datetime_mode, can deserialize only from ISO8601");
+                                "Invalid datetime_mode, can deserialize only from"
+                                " ISO8601");
                 return NULL;
             }
         }
@@ -1110,7 +1117,8 @@ loads(PyObject* self, PyObject* args, PyObject* kwargs)
 
 
 PyDoc_STRVAR(decoder_doc,
-             "Decoder(number_mode=None, datetime_mode=None, uuid_mode=None, parse_mode=None)\n"
+             "Decoder(number_mode=None, datetime_mode=None, uuid_mode=None,"
+             " parse_mode=None)\n"
              "\n"
              "Create and return a new Decoder instance.");
 
@@ -1176,9 +1184,9 @@ static PyTypeObject Decoder_Type = {
 
 
 static PyObject*
-do_decode(PyObject* decoder, const char* jsonStr, Py_ssize_t jsonStrLen, PyObject* objectHook,
-          NumberMode numberMode, DatetimeMode datetimeMode, UuidMode uuidMode,
-          ParseMode parseMode)
+do_decode(PyObject* decoder, const char* jsonStr, Py_ssize_t jsonStrLen,
+          PyObject* objectHook, NumberMode numberMode, DatetimeMode datetimeMode,
+          UuidMode uuidMode, ParseMode parseMode)
 {
     char* jsonStrCopy = (char*) malloc(sizeof(char) * (jsonStrLen+1));
     memcpy(jsonStrCopy, jsonStr, jsonStrLen+1);
@@ -1377,7 +1385,8 @@ decoder_new(PyTypeObject* type, PyObject* args, PyObject* kwargs)
             datetimeMode = (DatetimeMode) mode;
             if (datetimeMode && datetime_mode_format(datetimeMode) != DM_ISO8601) {
                 PyErr_SetString(PyExc_ValueError,
-                                "Invalid datetime_mode, can deserialize only from ISO8601");
+                                "Invalid datetime_mode, can deserialize only from"
+                                " ISO8601");
                 return NULL;
             }
         }
@@ -1454,13 +1463,13 @@ struct WriterContext {
                   bool isO,
                   int l,
                   PyObject* d=NULL)
-    : key(k),
-      size(s),
-      object(o),
-      decref(d),
-      level(l),
-      isObject(isO)
-    {}
+        : key(k),
+          size(s),
+          object(o),
+          decref(d),
+          level(l),
+          isObject(isO)
+        {}
 };
 
 
@@ -1472,10 +1481,10 @@ struct DictItem {
     DictItem(char* k,
              Py_ssize_t s,
              PyObject* i)
-    : key_str(k),
-      key_size(s),
-      item(i)
-    {}
+        : key_str(k),
+          key_size(s),
+          item(i)
+        {}
 
     bool operator<(const DictItem& other) const {
         return strcmp(other.key_str, this->key_str) < 0;
@@ -1546,7 +1555,8 @@ dumps_internal(
 
             if (!(numberMode & NM_NAN)) {
                 bool is_inf_or_nan;
-                PyObject* is_inf = PyObject_CallMethodObjArgs(object, is_infinite_name, NULL);
+                PyObject* is_inf = PyObject_CallMethodObjArgs(object, is_infinite_name,
+                                                              NULL);
 
                 if (is_inf == NULL) {
                     return NULL;
@@ -1555,7 +1565,8 @@ dumps_internal(
                 Py_DECREF(is_inf);
 
                 if (!is_inf_or_nan) {
-                    PyObject* is_nan = PyObject_CallMethodObjArgs(object, is_nan_name, NULL);
+                    PyObject* is_nan = PyObject_CallMethodObjArgs(object, is_nan_name,
+                                                                  NULL);
 
                     if (is_nan == NULL) {
                         return NULL;
@@ -1951,7 +1962,8 @@ dumps_internal(
                     goto error;
                 }
 
-                timestampObj = PyObject_CallMethodObjArgs(midnightObj, timestamp_name, NULL);
+                timestampObj = PyObject_CallMethodObjArgs(midnightObj, timestamp_name,
+                                                          NULL);
 
                 Py_DECREF(midnightObj);
 
@@ -2174,8 +2186,9 @@ dumps(PyObject* self, PyObject* args, PyObject* kwargs)
     }
 
     return do_encode(value, skipKeys ? true : false, defaultFn, sortKeys ? true : false,
-                     maxRecursionDepth, ensureAscii ? true : false, prettyPrint ? true : false,
-                     indentCharCount, numberMode, datetimeMode, uuidMode);
+                     maxRecursionDepth, ensureAscii ? true : false,
+                     prettyPrint ? true : false, indentCharCount, numberMode,
+                     datetimeMode, uuidMode);
 }
 
 
@@ -2302,9 +2315,9 @@ encoder_call(PyObject* self, PyObject* args, PyObject* kwargs)
         defaultFn = PyObject_GetAttr(self, default_name);
     }
 
-    return do_encode(value, e->skipInvalidKeys, defaultFn, e->sortKeys, e->maxRecursionDepth,
-                     e->ensureAscii, e->prettyPrint, e->indent, e->numberMode, e->datetimeMode,
-                     e->uuidMode);
+    return do_encode(value, e->skipInvalidKeys, defaultFn, e->sortKeys,
+                     e->maxRecursionDepth, e->ensureAscii, e->prettyPrint,
+                     e->indent, e->numberMode, e->datetimeMode, e->uuidMode);
 }
 
 
@@ -2540,10 +2553,9 @@ static PyObject* validator_call(PyObject* self, PyObject* args, PyObject* kwargs
         validator.GetInvalidDocumentPointer().StringifyUriFragment(dptr);
         Py_END_ALLOW_THREADS
 
-        PyErr_SetObject(PyExc_ValueError, Py_BuildValue("sss",
-                                                        validator.GetInvalidSchemaKeyword(),
-                                                        sptr.GetString(),
-                                                        dptr.GetString()));
+        PyErr_SetObject(PyExc_ValueError,
+                        Py_BuildValue("sss", validator.GetInvalidSchemaKeyword(),
+                                      sptr.GetString(), dptr.GetString()));
         sptr.Clear();
         dptr.Clear();
 
