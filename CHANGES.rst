@@ -1,7 +1,7 @@
 Changes
 -------
 
-0.2.0 (unreleased)
+0.2.0 (2017-08-24)
 ~~~~~~~~~~~~~~~~~~
 
 * New ``parse_mode`` option, implementing relaxed JSON syntax (`issue #73`__)
