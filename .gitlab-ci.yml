@@ -18,7 +18,7 @@ variables:
   CIBW_OUTPUT_DIR: wheelhouse
   CIBW_PLATFORM: linux
   CIBW_SKIP: "cp2* cp33* cp34* cp35*"
-  CIBW_TEST_COMMAND: "(set +e; py.test {project}/tests; status=$?; git -C {project} clean -fXd; exit $status)"
+  CIBW_TEST_COMMAND: "(set +e; py.test {project}/tests; status=$?; cd {project}; git clean -fXd; exit $status)"
   CIBW_TEST_REQUIRES: "pytest pytest-benchmark pytz"
   TWINE_USERNAME: lelit
   # Note: TWINE_PASSWORD is set in Gitlab settings
