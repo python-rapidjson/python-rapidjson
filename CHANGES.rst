@@ -1,6 +1,12 @@
 Changes
 -------
 
+0.2.3 (unreleased)
+~~~~~~~~~~~~~~~~~~
+
+* Limit the precision of DM_UNIX_TIME timestamps to six decimal digits
+
+
 0.2.2 (2017-08-24)
 ~~~~~~~~~~~~~~~~~~
 
