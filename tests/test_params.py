@@ -189,6 +189,10 @@ def test_sort_keys(dumps):
     assert dumps(o, sort_keys=True, indent=4) == expected2
     assert dumps(o, sort_keys=True, indent=0) == expected0
 
+    o = {'a0': 'a0', 'a': 'a', 'a1': 'a1', 'a\x00b': 'a\x00b'}
+    assert sorted(o.keys()) == ['a', 'a\x00b', 'a0', 'a1']
+    assert dumps(o, sort_keys=True) == '{"a":"a","a\\u0000b":"a\\u0000b","a0":"a0","a1":"a1"}'
+
 
 @pytest.mark.unit
 def test_default():

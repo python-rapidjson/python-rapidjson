@@ -1487,7 +1487,10 @@ struct DictItem {
         {}
 
     bool operator<(const DictItem& other) const {
-        return strcmp(other.key_str, this->key_str) < 0;
+        Py_ssize_t tks = this->key_size;
+        Py_ssize_t oks = other.key_size;
+        int cmp = strncmp(other.key_str, this->key_str, oks < tks ? oks : tks);
+        return (cmp == 0) ? oks < tks : cmp < 0;
     }
 };
 
