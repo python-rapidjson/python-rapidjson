@@ -1,6 +1,20 @@
 Changes
 -------
 
+0.2.0 (unreleased)
+~~~~~~~~~~~~~~~~~~
+
+* New ``parse_mode`` option, implementing relaxed JSON syntax (`issue #73`__)
+
+  __ https://github.com/python-rapidjson/python-rapidjson/issues/73
+
+* New ``Encoder`` and ``Decoder``, implementing a class-based interface
+
+* New ``Validator``, exposing the underlying *JSON schema* validation (`issue #71`__)
+
+  __ https://github.com/python-rapidjson/python-rapidjson/issues/71
+
+
 0.1.0 (2017-08-16)
 ~~~~~~~~~~~~~~~~~~
 
