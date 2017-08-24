@@ -1900,8 +1900,12 @@ dumps_internal(
 
                     if (datetimeMode & DM_ONLY_SECONDS)
                         writer->Int64(timestamp);
-                    else
+                    else {
+                        int precision = writer->GetMaxDecimalPlaces();
+                        writer->SetMaxDecimalPlaces(6);
                         writer->Double(timestamp);
+                        writer->SetMaxDecimalPlaces(precision);
+                    }
                 } else {
                     hour = PyDateTime_TIME_GET_HOUR(dtObject);
                     min = PyDateTime_TIME_GET_MINUTE(dtObject);
@@ -1947,8 +1951,7 @@ dumps_internal(
                     goto error;
                 }
 
-                timestampObj = PyObject_CallMethodObjArgs(midnightObj, timestamp_name,
-                                                          NULL);
+                timestampObj = PyObject_CallMethodObjArgs(midnightObj, timestamp_name, NULL);
 
                 Py_DECREF(midnightObj);
 
@@ -1962,8 +1965,12 @@ dumps_internal(
 
                 if (datetimeMode & DM_ONLY_SECONDS)
                     writer->Int64(timestamp);
-                else
+                else {
+                    int precision = writer->GetMaxDecimalPlaces();
+                    writer->SetMaxDecimalPlaces(6);
                     writer->Double(timestamp);
+                    writer->SetMaxDecimalPlaces(precision);
+                }
             }
         }
         else if (uuidMode != UM_NONE
