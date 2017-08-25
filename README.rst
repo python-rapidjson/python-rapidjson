@@ -1,5 +1,5 @@
 .. -*- coding: utf-8 -*-
-.. :Project:   python-rapidjson -- Development Makefile
+.. :Project:   python-rapidjson -- Introduction
 .. :Author:    Ken Robbins <ken@kenrobbins.com>
 .. :License:   MIT License
 .. :Copyright: © 2015 Ken Robbins

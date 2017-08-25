@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# :Project:   python-rapidjson -- Appveyor configuration to build and upload Windows wheels to PyPI
+# :Project:   python-rapidjson -- Configuration to build and upload Windows wheels to PyPI
 # :Author:    Lele Gaifax <lele@metapensiero.it>
 # :License:   MIT License
 # :Copyright: © 2017 Lele Gaifax
