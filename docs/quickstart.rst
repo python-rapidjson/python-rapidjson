@@ -21,16 +21,15 @@ First install ``python-rapidjson``:
 
     $ pip install python-rapidjson
 
-As the module is written in C++, you most probably will need to install a
-minimal C++ compiler toolchain on your system.
+As the module is written in C++, you most probably will need to install a minimal C++
+compiler toolchain on your system.
 
 
 Basic examples
 --------------
 
-``python-rapidjson`` tries to be compatible with the standard library
-``json.dumps()`` and ``json.loads()`` functions (but see the
-incompatibilities_).
+``python-rapidjson`` tries to be compatible with the standard library ``json.dumps()`` and
+``json.loads()`` functions (but see the incompatibilities_).
 
 Basic usage looks like this:
 
@@ -67,8 +66,7 @@ All JSON_ data types are supported using their native Python counterparts:
                 'string': '√2 ≅ 1.4142',
                 'true': True}}
 
-``python-rapidjson`` can optionally handle also a few other commonly used data
-types:
+``python-rapidjson`` can optionally handle also a few other commonly used data types:
 
 .. doctest::
 
@@ -121,18 +119,17 @@ types:
 Incompatibilities
 -----------------
 
-Here are things in the standard ``json`` library that we have decided not to
-support:
+Here are things in the standard ``json`` library that we have decided not to support:
 
 ``separators`` argument
-  This is mostly used for pretty printing and not supported by RapidJSON_ so
-  it isn't a high priority. We do support ``indent`` kwarg that would get you
-  nice looking JSON anyways.
+  This is mostly used for pretty printing and not supported by RapidJSON_ so it isn't a
+  high priority. We do support ``indent`` kwarg that would get you nice looking JSON
+  anyways.
 
 Coercing keys when dumping
-  ``json`` will turn ``True`` into ``'True'`` if you dump it out but when you
-  load it back in it'll still be a string. We want the dump and load to return
-  the exact same objects so we have decided not to do this coercion.
+  ``json`` will turn ``True`` into ``'True'`` if you dump it out but when you load it back
+  in it'll still be a string. We want the dump and load to return the exact same objects
+  so we have decided not to do this coercion.
 
 
 .. _JSON: http://json.org/

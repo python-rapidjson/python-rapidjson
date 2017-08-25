@@ -13,8 +13,8 @@
 Python 3 wrapper around RapidJSON_
 ----------------------------------
 
-This module implements a Python 3 wrapper around RapidJSON_, which is an extremely fast C++
-JSON_ serialization library.
+This module implements a Python 3 wrapper around RapidJSON_, which is an extremely fast
+C++ JSON_ serialization library.
 
 Contents:
 

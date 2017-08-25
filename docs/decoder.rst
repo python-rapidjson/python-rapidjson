@@ -22,17 +22,19 @@
 
    Class-based :func:`loads`\ -like functionality.
 
-   :param int number_mode: enable particular behaviors in handling numbers
-   :param int datetime_mode: how should :class:`datetime` and :class:`date`
-                             instances be handled
-   :param int uuid_mode: how should :class:`UUID` instances be handled
-   :param int parse_mode: whether the parser should allow non-standard JSON extensions
+   :param int number_mode: enable particular :ref:`behaviors in handling numbers
+                           <loads-number-mode>`
+   :param int datetime_mode: how should :ref:`datetime, time and date instances be handled
+                             <loads-datetime-mode>`
+   :param int uuid_mode: how should :ref:`UUID instances be handled <loads-uuid-mode>`
+   :param int parse_mode: whether the parser should allow :ref:`non-standard JSON
+                          extensions <loads-parse-mode>`
 
 
    .. method:: __call__(json)
 
-      :param json: either a ``str`` instance or an *UTF-8* ``bytes`` instance,
-                   containing the ``JSON`` to be decoded
+      :param json: either a ``str`` instance or an *UTF-8* ``bytes`` instance, containing
+                   the ``JSON`` to be decoded
       :returns: a Python value
 
       .. doctest::
@@ -48,8 +50,8 @@
       :param sequence: an instance implement the *mutable sequence* protocol
       :returns: a new value
 
-      This is called, if implemented, when a *JSON array* has been completely
-      parsed, and can be used replace it with an arbitrary different value:
+      This is called, if implemented, when a *JSON array* has been completely parsed, and
+      can be used replace it with an arbitrary different value:
 
       .. doctest::
 
@@ -71,10 +73,9 @@
       :param mapping: an instance implementing the *mapping protocol*
       :returns: a new value
 
-      This is called, if implemented, when a *JSON object* has been completely
-      parsed, and can be used replace it with an arbitrary different value,
-      like what can be done with the ``object_hook`` argument of the
-      :func:`loads` function:
+      This is called, if implemented, when a *JSON object* has been completely parsed, and
+      can be used replace it with an arbitrary different value, like what can be done with
+      the ``object_hook`` argument of the :func:`loads` function:
 
       .. doctest::
 
@@ -100,11 +101,11 @@
 
       :returns: a mapping instance
 
-      This method, when implemented, is called whenever a new *JSON object* is
-      found: it must return an instance implementing the *mapping protocol*.
+      This method, when implemented, is called whenever a new *JSON object* is found: it
+      must return an instance implementing the *mapping protocol*.
 
-      It can be used to select a different implementation than the standard
-      ``dict`` used by default:
+      It can be used to select a different implementation than the standard ``dict`` used
+      by default:
 
       .. doctest::
 
@@ -122,9 +123,8 @@
       :param s: a ``str`` instance
       :returns: a new value
 
-      This method, when implemented, is called whenever a *JSON string* has
-      been completely parsed, and can be used to replace it with an arbitrary
-      different value:
+      This method, when implemented, is called whenever a *JSON string* has been
+      completely parsed, and can be used to replace it with an arbitrary different value:
 
       .. doctest::
 
@@ -136,8 +136,8 @@
          >>> ssc('"Hello World!"')
          'hELLO wORLD!'
 
-      Note that it is called **after** the recognition of dates and UUIDs,
-      when `datetime_mode` and/or `uuid_mode` are specified:
+      Note that it is called **after** the recognition of dates and UUIDs, when
+      `datetime_mode` and/or `uuid_mode` are specified:
 
       .. doctest::
 

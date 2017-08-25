@@ -9,17 +9,15 @@
  Performance
 =============
 
-``python-rapidjson`` tries to be as performant as possible while staying
-compatible with the ``json`` module.
+``python-rapidjson`` tries to be as performant as possible while staying compatible with
+the ``json`` module.
 
-The following tables show a comparison between this module and other libraries
-with different data sets.  Last row (“overall”) is the total time taken by all
-the benchmarks.
+The following tables show a comparison between this module and other libraries with
+different data sets.  Last row (“overall”) is the total time taken by all the benchmarks.
 
 Each number show the factor between the time taken by each contender and
-``python-rapidjson`` (in other words, they are *normalized* against a value of
-1.0 for ``python-rapidjson``): the lower the number, the speedier the
-contender.
+``python-rapidjson`` (in other words, they are *normalized* against a value of 1.0 for
+``python-rapidjson``): the lower the number, the speedier the contender.
 
 In **bold** the winner.
 
@@ -98,9 +96,9 @@ To run these tests yourself, clone the repo and run:
 
    $ tox -e py36 -- -m benchmark --compare-other-engines
 
-Without the option ``--compare-other-engines`` it will focus only on
-``RapidJSON``.  This is particularly handy coupled with the `compare past
-runs`__ functionality of ``pytest-benchmark``:
+Without the option ``--compare-other-engines`` it will focus only on ``RapidJSON``.  This
+is particularly handy coupled with the `compare past runs`__ functionality of
+``pytest-benchmark``:
 
 .. code-block:: bash
 
@@ -115,9 +113,9 @@ runs`__ functionality of ``pytest-benchmark``:
    test_loads[rapidjson-256 Trues array] (0001)                        5.4180 (1.04)…
    …
 
-To reproduce the tables above, use the option ``--benchmark-json`` so that the
-the results are written in the specified filename the run the
-``benchmark-tables.py`` script giving that filename as the only argument:
+To reproduce the tables above, use the option ``--benchmark-json`` so that the the results
+are written in the specified filename the run the ``benchmark-tables.py`` script giving
+that filename as the only argument:
 
 .. code-block:: bash
 

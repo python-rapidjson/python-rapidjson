@@ -24,17 +24,19 @@
 
    Class-based :func:`dumps`\ -like functionality.
 
-   :param bool skip_invalid_keys: whether skip invalid :class:`dict` keys
-   :param bool ensure_ascii: whether the output should contain only ASCII
-                             characters
-   :param int indent: indentation width to produce pretty printed JSON
-   :param bool sort_keys: whether dictionary keys should be sorted
-                          alphabetically
-   :param int max_recursion_depth: maximum depth for nested structures
-   :param int number_mode: enable particular behaviors in handling numbers
-   :param int datetime_mode: how should :class:`datetime`, :class:`time` and
-                             :class:`date` instances be handled
-   :param int uuid_mode: how should :class:`UUID` instances be handled
+   :param bool skip_invalid_keys: whether :ref:`skip invalid keys <skip-invalid-keys>`
+   :param bool ensure_ascii: whether the output should contain :ref:`only ASCII
+                             characters <ensure-ascii>`
+   :param int indent: indentation width to produce :ref:`pretty printed JSON
+                      <pretty-print>`
+   :param bool sort_keys: whether dictionary keys should be :ref:`sorted
+                          alphabetically <sort-keys>`
+   :param int max_recursion_depth: :ref:`maximum depth <max-depth>` for nested structures
+   :param int number_mode: enable particular :ref:`behaviors in handling numbers
+                           <dumps-number-mode>`
+   :param int datetime_mode: how should :ref:`datetime, time and date instances be handled
+                             <dumps-datetime-mode>`
+   :param int uuid_mode: how should :ref:`UUID instances be handled <dumps-uuid-mode>`
 
 
    .. method:: __call__(value)
@@ -47,10 +49,9 @@
       :param value: the Python value to be encoded
       :returns: a *JSON-serializable* value
 
-      If implemented, this method is called whenever the serialization
-      machinery finds a Python object that it does not recognize: if possible,
-      the method should returns a *JSON encodable* version of the `value`,
-      otherwise raise a :exc:`TypeError`:
+      If implemented, this method is called whenever the serialization machinery finds a
+      Python object that it does not recognize: if possible, the method should returns a
+      *JSON encodable* version of the `value`, otherwise raise a :exc:`TypeError`:
 
       .. doctest::
 

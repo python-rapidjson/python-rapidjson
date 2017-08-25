@@ -27,10 +27,10 @@
       :param json: the ``JSON`` value, specified as a ``str`` instance or an *UTF-8*
                    ``bytes`` instance, that will be validated
 
-      The given `json` value will be validated accordingly to the *schema*: a ``ValueError``
-      will be raised if the validation fails, and the exception will contain three arguments,
-      respectively the type of the error, the position in the schema and the position in the
-      ``JSON`` document where the error occurred:
+      The given `json` value will be validated accordingly to the *schema*: a
+      ``ValueError`` will be raised if the validation fails, and the exception will
+      contain three arguments, respectively the type of the error, the position in the
+      schema and the position in the ``JSON`` document where the error occurred:
 
       .. doctest::
 
