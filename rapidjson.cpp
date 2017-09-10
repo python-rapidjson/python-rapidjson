@@ -11,6 +11,7 @@
 #include <structmember.h>
 
 #include <algorithm>
+#include <cmath>
 #include <string>
 #include <vector>
 
