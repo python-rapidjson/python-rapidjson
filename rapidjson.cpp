@@ -1083,11 +1083,12 @@ loads(PyObject* self, PyObject* args, PyObject* kwargs)
         if (uuidModeObj == Py_None)
             uuidMode = UM_NONE;
         else if (PyLong_Check(uuidModeObj)) {
-            uuidMode = (UuidMode) PyLong_AsLong(uuidModeObj);
-            if (uuidMode < UM_NONE || uuidMode > UM_HEX) {
+            int mode = PyLong_AsLong(uuidModeObj);
+            if (mode < 0 || mode >= 1<<2) {
                 PyErr_SetString(PyExc_ValueError, "Invalid uuid_mode");
                 return NULL;
             }
+            uuidMode = (UuidMode) mode;
         }
         else {
             PyErr_SetString(PyExc_TypeError,
@@ -1100,11 +1101,12 @@ loads(PyObject* self, PyObject* args, PyObject* kwargs)
         if (parseModeObj == Py_None)
             parseMode = PM_NONE;
         else if (PyLong_Check(parseModeObj)) {
-            parseMode = (ParseMode) PyLong_AsLong(parseModeObj);
-            if (parseMode < PM_NONE || parseMode > PM_TRAILING_COMMAS) {
+            int mode = PyLong_AsLong(parseModeObj);
+            if (mode < 0 || mode >= 1<<2) {
                 PyErr_SetString(PyExc_ValueError, "Invalid parse_mode");
                 return NULL;
             }
+            parseMode = (ParseMode) mode;
         }
         else {
             PyErr_SetString(PyExc_TypeError,
@@ -1403,11 +1405,12 @@ decoder_new(PyTypeObject* type, PyObject* args, PyObject* kwargs)
         if (uuidModeObj == Py_None)
             uuidMode = UM_NONE;
         else if (PyLong_Check(uuidModeObj)) {
-            uuidMode = (UuidMode) PyLong_AsLong(uuidModeObj);
-            if (uuidMode < UM_NONE || uuidMode > UM_HEX) {
+            int mode = PyLong_AsLong(uuidModeObj);
+            if (mode < 0 || mode >= 1<<2) {
                 PyErr_SetString(PyExc_ValueError, "Invalid uuid_mode");
                 return NULL;
             }
+            uuidMode = (UuidMode) mode;
         }
         else {
             PyErr_SetString(PyExc_TypeError,
@@ -1420,11 +1423,12 @@ decoder_new(PyTypeObject* type, PyObject* args, PyObject* kwargs)
         if (parseModeObj == Py_None)
             parseMode = PM_NONE;
         else if (PyLong_Check(parseModeObj)) {
-            parseMode = (ParseMode) PyLong_AsLong(parseModeObj);
-            if (parseMode < PM_NONE || parseMode > PM_TRAILING_COMMAS) {
+            int mode = PyLong_AsLong(parseModeObj);
+            if (mode < 0 || mode >= 1<<2) {
                 PyErr_SetString(PyExc_ValueError, "Invalid parse_mode");
                 return NULL;
             }
+            parseMode = (ParseMode) mode;
         }
         else {
             PyErr_SetString(PyExc_TypeError,
