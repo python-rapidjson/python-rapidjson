@@ -39,7 +39,7 @@ install: pip install -r requirements-test.txt
 
 script:
   - pip install . && pytest tests
-  - pip install cibuildwheel==0.4.1
+  - pip install cibuildwheel==0.5.0
   - cibuildwheel --output-dir wheelhouse
   - |
     if [[ $TRAVIS_TAG ]]; then
