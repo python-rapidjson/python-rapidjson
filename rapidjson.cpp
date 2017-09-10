@@ -6,12 +6,13 @@
 // :Copyright: © 2015, 2016, 2017 Lele Gaifax
 //
 
+#include <cmath>
+
 #include <Python.h>
 #include <datetime.h>
 #include <structmember.h>
 
 #include <algorithm>
-#include <cmath>
 #include <string>
 #include <vector>
 
