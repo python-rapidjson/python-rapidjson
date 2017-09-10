@@ -14,12 +14,11 @@
 #
 # See https://mail.python.org/pipermail/wheel-builders/2017-August/000285.html
 
-language: python
-python: "3.6"
-
 matrix:
   include:
     - sudo: required
+      language: python
+      python: "3.6"
       services:
         - docker
     - os: osx
