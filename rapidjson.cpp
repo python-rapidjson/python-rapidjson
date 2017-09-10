@@ -11,6 +11,7 @@
 #include <structmember.h>
 
 #include <algorithm>
+#include <string>
 #include <vector>
 
 #include "rapidjson/reader.h"
