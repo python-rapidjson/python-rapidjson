@@ -1101,7 +1101,7 @@ loads(PyObject* self, PyObject* args, PyObject* kwargs)
             parseMode = PM_NONE;
         else if (PyLong_Check(parseModeObj)) {
             parseMode = (ParseMode) PyLong_AsLong(parseModeObj);
-            if (parseMode < PM_NONE || parseMode >= 1<<2) {
+            if (parseMode < PM_NONE || parseMode > PM_TRAILING_COMMAS) {
                 PyErr_SetString(PyExc_ValueError, "Invalid parse_mode");
                 return NULL;
             }
@@ -1421,7 +1421,7 @@ decoder_new(PyTypeObject* type, PyObject* args, PyObject* kwargs)
             parseMode = PM_NONE;
         else if (PyLong_Check(parseModeObj)) {
             parseMode = (ParseMode) PyLong_AsLong(parseModeObj);
-            if (parseMode < PM_NONE || parseMode >= 1<<2) {
+            if (parseMode < PM_NONE || parseMode > PM_TRAILING_COMMAS) {
                 PyErr_SetString(PyExc_ValueError, "Invalid parse_mode");
                 return NULL;
             }
