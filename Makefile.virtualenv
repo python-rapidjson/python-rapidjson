@@ -22,7 +22,7 @@ virtualenv: $(VENVDIR) requirements
 
 $(VENVDIR):
 	@echo "Bootstrapping Python 3 virtualenv..."
-	@$(SYS_PYTHON) -m venv --prompt $(notdir $(TOPDIR)) $@
+	@$(SYS_PYTHON) -m venv --prompt $(notdir $(TOPDIR)) $@ 2>/dev/null || $(SYS_PYTHON) -m venv $@
 	@$(MAKE) upgrade-pip
 
 help::
