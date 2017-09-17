@@ -1,6 +1,12 @@
 Changes
 -------
 
+0.2.4 (unreleased)
+~~~~~~~~~~~~~~~~~~
+
+* Fix compatibility with MacOS/clang
+
+
 0.2.3 (2017-08-24)
 ~~~~~~~~~~~~~~~~~~
 
