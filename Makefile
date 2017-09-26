@@ -6,7 +6,11 @@
 #
 
 export TOPDIR := $(CURDIR)
+ifdef VIRTUAL_ENV
+export VENVDIR := $(VIRTUAL_ENV)
+else
 export VENVDIR := $(TOPDIR)/env
+endif
 export PYTHON := $(VENVDIR)/bin/python
 export SHELL := /bin/bash
 export SYS_PYTHON := $(shell which python3.6 || which python3)
