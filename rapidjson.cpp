@@ -1675,6 +1675,8 @@ dumps_internal(
         else if (PyUnicode_Check(object)) {
             Py_ssize_t l;
             char* s = PyUnicode_AsUTF8AndSize(object, &l);
+            if (s == NULL)
+                return NULL;
             writer->String(s, l);
         }
         else if (PyList_Check(object)) {
@@ -1712,6 +1714,8 @@ dumps_internal(
                     if (PyUnicode_Check(key)) {
                         Py_ssize_t l;
                         char* key_str = PyUnicode_AsUTF8AndSize(key, &l);
+                        if (key_str == NULL)
+                            goto error;
                         stack.push_back(WriterContext(NULL, 0, item, false, nextLevel));
                         stack.push_back(WriterContext(key_str, l, NULL, false, nextLevel));
                     }
@@ -1728,6 +1732,8 @@ dumps_internal(
                     if (PyUnicode_Check(key)) {
                         Py_ssize_t l;
                         char* key_str = PyUnicode_AsUTF8AndSize(key, &l);
+                        if (key_str == NULL)
+                            goto error;
                         items.push_back(DictItem(key_str, l, item));
                     }
                     else if (!skipKeys) {

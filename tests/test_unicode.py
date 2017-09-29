@@ -24,3 +24,25 @@ def test_unicode(u, dumps, loads):
     assert ju == js
     assert ju.lower() == json.dumps(u).lower()
     assert dumps(u, ensure_ascii=False) == json.dumps(u, ensure_ascii=False)
+
+
+@pytest.mark.unit
+@pytest.mark.parametrize('o', [
+    "\ud80d",
+    {"foo": "\ud80d"},
+    {"\ud80d": "foo"},
+])
+def test_dump_surrogate(o, dumps):
+    with pytest.raises(UnicodeEncodeError, match="surrogates not allowed"):
+        dumps(o)
+
+
+@pytest.mark.unit
+@pytest.mark.parametrize('j', [
+    '"\\ud80d"',
+    '{"foo": "\\ud80d"}',
+    '{"\\ud80d": "foo"}',
+])
+def test_load_surrogate(j, loads):
+    with pytest.raises(ValueError, match="surrogate pair in string is invalid"):
+        loads(j)
