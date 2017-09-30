@@ -1,6 +1,13 @@
 Changes
 -------
 
+Unreleased
+~~~~~~~~~~
+
+* Fix bug where error handling code could raise an exception causing a
+  confusing exception to be returned.
+
+
 0.2.4 (2017-09-17)
 ~~~~~~~~~~~~~~~~~~
 

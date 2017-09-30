@@ -1278,11 +1278,16 @@ do_decode(PyObject* decoder, const char* jsonStr, Py_ssize_t jsonStrLen,
             PyObject* etraceback;
             PyErr_Fetch(&etype, &evalue, &etraceback);
 
+            // Try to add the offset in the error message if the exception
+            // value is a string.  Otherwise, use the original exception since
+            // we can't be sure the exception type takes a single string.
             const char* emsg = msg;
-            if (PyUnicode_Check(evalue))
+            if (PyUnicode_Check(evalue)) {
                 emsg = PyUnicode_AsUTF8(evalue);
-
-            PyErr_Format(etype, fmt, offset, emsg);
+                PyErr_Format(etype, fmt, offset, emsg);
+            }
+            else
+                PyErr_Restore(etype, evalue, etraceback);
         }
         else
             PyErr_Format(PyExc_ValueError, fmt, offset, msg);
