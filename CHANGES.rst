@@ -7,6 +7,9 @@ Unreleased
 * Fix bug where error handling code could raise an exception causing a
   confusing exception to be returned.
 
+* Fix bug where loads's ``object_hook`` and dumps's ``default`` arguments
+  could not be passed ``None`` explicitly.
+
 
 0.2.4 (2017-09-17)
 ~~~~~~~~~~~~~~~~~~

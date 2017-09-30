@@ -557,3 +557,33 @@ def test_invalid_dumps_params(posargs, kwargs, dumps):
         pass
     else:
         assert False, "Expected either a TypeError or a ValueError"
+
+
+@pytest.mark.unit
+def test_explicit_defaults_loads():
+    assert rj.loads(
+        s='"foo"',
+        object_hook=None,
+        number_mode=None,
+        datetime_mode=None,
+        uuid_mode=None,
+        parse_mode=None,
+        allow_nan=True,
+    ) == "foo"
+
+
+@pytest.mark.unit
+def test_explicit_defaults_dumps():
+    assert rj.dumps(
+        obj='foo',
+        skipkeys=False,
+        ensure_ascii=True,
+        indent=None,
+        default=None,
+        sort_keys=False,
+        max_recursion_depth=2048,
+        number_mode=None,
+        datetime_mode=None,
+        uuid_mode=None,
+        allow_nan=True,
+    ) == '"foo"'

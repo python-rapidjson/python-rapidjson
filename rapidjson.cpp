@@ -1008,8 +1008,12 @@ loads(PyObject* self, PyObject* args, PyObject* kwargs)
         return NULL;
 
     if (objectHook && !PyCallable_Check(objectHook)) {
-        PyErr_SetString(PyExc_TypeError, "object_hook is not callable");
-        return NULL;
+        if (objectHook == Py_None)
+            objectHook = NULL;
+        else {
+            PyErr_SetString(PyExc_TypeError, "object_hook is not callable");
+            return NULL;
+        }
     }
 
     Py_ssize_t jsonStrLen;
@@ -2135,8 +2139,12 @@ dumps(PyObject* self, PyObject* args, PyObject* kwargs)
         return NULL;
 
     if (defaultFn && !PyCallable_Check(defaultFn)) {
-        PyErr_SetString(PyExc_TypeError, "default must be a callable");
-        return NULL;
+        if (defaultFn == Py_None)
+            defaultFn = NULL;
+        else {
+            PyErr_SetString(PyExc_TypeError, "default must be a callable");
+            return NULL;
+        }
     }
 
     if (indent && indent != Py_None) {
