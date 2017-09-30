@@ -46,3 +46,13 @@ def test_dump_surrogate(o, dumps):
 def test_load_surrogate(j, loads):
     with pytest.raises(ValueError, match="surrogate pair in string is invalid"):
         loads(j)
+
+
+@pytest.mark.unit
+@pytest.mark.parametrize('j', [
+    '"\\udc00"',
+    '"\\udfff"',
+])
+def test_unicode_decode_error(j, loads):
+    with pytest.raises(UnicodeDecodeError, match="'utf-8' codec can't decode byte"):
+        loads(j)
