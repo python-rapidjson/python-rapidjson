@@ -1,6 +1,13 @@
 Changes
 -------
 
+Unreleased
+~~~~~~~~~~
+
+* Fix bug where loads's ``object_hook`` and dumps's ``default`` arguments could
+  not be passed ``None`` explicitly.
+
+
 0.2.4 (2017-09-17)
 ~~~~~~~~~~~~~~~~~~
 
