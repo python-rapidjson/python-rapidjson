@@ -5,10 +5,18 @@ Unreleased
 ~~~~~~~~~~
 
 * Fix bug where error handling code could raise an exception causing a
-  confusing exception to be returned.
+  confusing exception to be returned (`PR #82`__)
+
+  __ https://github.com/python-rapidjson/python-rapidjson/pull/82
 
 * Fix bug where loads's ``object_hook`` and dumps's ``default`` arguments
-  could not be passed ``None`` explicitly.
+  could not be passed ``None`` explicitly (`PR #83`__)
+
+  __ https://github.com/python-rapidjson/python-rapidjson/pull/83
+
+* Fix crash when dealing with surrogate pairs (`issue #81`__)
+
+  __ https://github.com/python-rapidjson/python-rapidjson/issues/81
 
 
 0.2.4 (2017-09-17)
