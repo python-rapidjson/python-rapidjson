@@ -1,8 +1,8 @@
 Changes
 -------
 
-Unreleased
-~~~~~~~~~~
+0.2.5 (2017-09-30)
+~~~~~~~~~~~~~~~~~~
 
 * Fix bug where error handling code could raise an exception causing a
   confusing exception to be returned (`PR #82`__)
