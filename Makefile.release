@@ -16,7 +16,7 @@ help::
 .PHONY: assert-clean-tree
 assert-clean-tree:
 	@(test -z "$(shell git status -s --untracked=no)" || \
-	  (echo "UNCOMMITTED STAFF" && false))
+	  (echo "UNCOMMITTED STUFF" && false))
 
 .PHONY: assert-master-branch
 assert-master-branch:
