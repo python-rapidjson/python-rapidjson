@@ -25,6 +25,16 @@
 using namespace rapidjson;
 
 
+/* Python < 3.6 compatibility */
+#ifndef Py_SETREF
+#define Py_SETREF(op, op2)                      \
+    do {                                        \
+        PyObject *_py_tmp = (PyObject *)(op);   \
+        (op) = (op2);                           \
+        Py_DECREF(_py_tmp);                     \
+    } while (0)
+#endif
+
 static PyObject* decimal_type = NULL;
 static PyObject* timezone_type = NULL;
 static PyObject* timezone_utc = NULL;
