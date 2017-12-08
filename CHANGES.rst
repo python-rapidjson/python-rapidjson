@@ -1,6 +1,12 @@
 Changes
 -------
 
+0.2.7 (unreleased)
+~~~~~~~~~~~~~~~~~~
+
+* Restore compatibility with Python < 3.6
+
+
 0.2.6 (2017-12-08)
 ~~~~~~~~~~~~~~~~~~
 
