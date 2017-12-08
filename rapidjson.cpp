@@ -271,11 +271,11 @@ struct PyHandler {
             if (mapping == NULL)
                 return false;
             if (!PyMapping_Check(mapping)) {
+                Py_DECREF(mapping);
                 PyErr_SetString(PyExc_ValueError,
                                 "start_object() must return a mapping instance");
                 return false;
             }
-            Py_INCREF(mapping);
         } else {
             mapping = PyDict_New();
             if (mapping == NULL) {
@@ -317,8 +317,6 @@ struct PyHandler {
         if (replacement == NULL)
             return false;
 
-        Py_INCREF(replacement);
-
         if (!stack.empty()) {
             const HandlerContext& current = stack.back();
 
@@ -359,7 +357,6 @@ struct PyHandler {
             Py_SETREF(root, replacement);
         }
 
-        Py_DECREF(replacement);
         return true;
     }
 
@@ -398,8 +395,6 @@ struct PyHandler {
         if (replacement == NULL)
             return false;
 
-        Py_INCREF(replacement);
-
         if (!stack.empty()) {
             const HandlerContext& current = stack.back();
 
@@ -440,7 +435,6 @@ struct PyHandler {
             Py_SETREF(root, replacement);
         }
 
-        Py_DECREF(replacement);
         return true;
     }
 
