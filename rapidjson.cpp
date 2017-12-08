@@ -356,8 +356,7 @@ struct PyHandler {
             }
         }
         else {
-            Py_DECREF(root);
-            root = replacement;
+            Py_SETREF(root, replacement);
         }
 
         Py_DECREF(replacement);
@@ -438,8 +437,7 @@ struct PyHandler {
             }
         }
         else {
-            Py_DECREF(root);
-            root = replacement;
+            Py_SETREF(root, replacement);
         }
 
         Py_DECREF(replacement);
