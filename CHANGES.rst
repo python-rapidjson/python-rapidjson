@@ -1,6 +1,12 @@
 Changes
 -------
 
+0.2.6 (unreleased)
+~~~~~~~~~~~~~~~~~~
+
+* Fix memory leaks when using object_hook/start_object/end_object
+
+
 0.2.5 (2017-09-30)
 ~~~~~~~~~~~~~~~~~~
 
