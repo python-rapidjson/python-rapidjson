@@ -1919,9 +1919,9 @@ dumps_internal(
                 writer->String(isoformat);
             } else /* if (datetimeMode & DM_UNIX_TIME) */ {
                 if (PyDateTime_Check(dtObject)) {
-                    PyObject* timestampObj;
-
-                    timestampObj = PyObject_CallMethodObjArgs(dtObject, timestamp_name, NULL);
+                    PyObject* timestampObj = PyObject_CallMethodObjArgs(dtObject,
+                                                                        timestamp_name,
+                                                                        NULL);
 
                     if (!timestampObj) {
                         Py_XDECREF(asUTC);
