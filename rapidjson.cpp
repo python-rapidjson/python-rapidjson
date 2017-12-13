@@ -1851,7 +1851,7 @@ dumps_internal(
                                 goto error;
                             }
 
-                            seconds_from_utc = PyFloat_AsDouble(tsObj);
+                            seconds_from_utc = (int) PyFloat_AsDouble(tsObj);
 
                             Py_DECREF(tsObj);
                         }
@@ -1935,7 +1935,7 @@ dumps_internal(
                     Py_DECREF(timestampObj);
 
                     if (datetimeMode & DM_ONLY_SECONDS)
-                        writer->Int64(timestamp);
+                        writer->Int64((int64_t) timestamp);
                     else {
                         int precision = writer->GetMaxDecimalPlaces();
                         writer->SetMaxDecimalPlaces(6);
@@ -2001,7 +2001,7 @@ dumps_internal(
                 Py_DECREF(timestampObj);
 
                 if (datetimeMode & DM_ONLY_SECONDS)
-                    writer->Int64(timestamp);
+                    writer->Int64((int64_t) timestamp);
                 else {
                     int precision = writer->GetMaxDecimalPlaces();
                     writer->SetMaxDecimalPlaces(6);
