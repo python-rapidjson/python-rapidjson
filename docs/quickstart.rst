@@ -133,4 +133,4 @@ Coercing keys when dumping
 
 
 .. _JSON: http://json.org/
-.. _RapidJSON: https://github.com/miloyip/rapidjson
+.. _RapidJSON: http://rapidjson.org/

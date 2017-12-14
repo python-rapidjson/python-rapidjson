@@ -290,6 +290,6 @@
       [1, 3]
 
 .. _ISO 8601: https://en.wikipedia.org/wiki/ISO_8601
-.. _RapidJSON: https://github.com/miloyip/rapidjson
+.. _RapidJSON: http://rapidjson.org/
 .. _UTC: https://en.wikipedia.org/wiki/Coordinated_Universal_Time
 .. _Unix time: https://en.wikipedia.org/wiki/Unix_time

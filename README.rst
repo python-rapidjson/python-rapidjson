@@ -13,7 +13,7 @@
 Python wrapper around RapidJSON
 ===============================
 
-RapidJSON_ is an extremely fast C++ JSON serialization library.
+RapidJSON_ is an extremely fast C++ JSON parser and serialization library.
 
 We do not support legacy Python versions, you will need to upgrade to Python 3
 to use this library.
@@ -213,4 +213,4 @@ Coercing keys when dumping
   load it back in it'll still be a string. We want the dump and load to return
   the exact same objects so we have decided not to do this coercion.
 
-.. _RapidJSON: https://github.com/miloyip/rapidjson
+.. _RapidJSON: http://rapidjson.org/

@@ -25,7 +25,7 @@ Contents:
    benchmarks
    api
 
-.. _RapidJSON: https://github.com/miloyip/rapidjson
+.. _RapidJSON: http://rapidjson.org/
 .. _JSON: http://json.org/
 
 
