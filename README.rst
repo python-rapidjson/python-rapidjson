@@ -13,13 +13,13 @@
 Python wrapper around RapidJSON
 ===============================
 
-RapidJSON_ is an extremely fast C++ JSON parser and serialization library.
-
-We do not support legacy Python versions, you will need to upgrade to Python 3
-to use this library.
+RapidJSON_ is an extremely fast C++ JSON parser and serialization library:
+this module wraps it into a Python 3 extension, exposing its
+serialization/deserialization and `JSON Schema`__ validation capabilities.
 
 Latest version documentation is automatically rendered by `Read the Docs`__.
 
+__ http://json-schema.org/documentation.html
 __ http://python-rapidjson.readthedocs.io/en/latest/
 
 .. image:: https://travis-ci.org/python-rapidjson/python-rapidjson.svg?branch=master
