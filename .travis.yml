@@ -39,7 +39,7 @@ install:
 script:
   - pip3 install . && pytest tests
   - |
-    pip3 install cibuildwheel==0.5.1
+    pip3 install cibuildwheel==0.6.0
     cibuildwheel --output-dir wheelhouse
     if [[ $TRAVIS_TAG ]]; then
       pip install twine
