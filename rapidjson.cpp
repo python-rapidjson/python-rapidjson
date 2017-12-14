@@ -44,7 +44,7 @@ using namespace rapidjson;
    https://stackoverflow.com/questions/38441740/where-is-isnan-in-msvc-2010).
    Oh well... */
 
-#if defined (_MSC_VER) && _MSC_VER < 1400
+#if defined (_MSC_VER) && (_MSC_VER < 1900)
 #define IS_NAN(x) Py_IS_NAN(x)
 #define IS_INF(x) Py_IS_INFINITY(x)
 #else
