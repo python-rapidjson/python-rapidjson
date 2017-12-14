@@ -21,8 +21,10 @@ First install ``python-rapidjson``:
 
     $ pip install python-rapidjson
 
-As the module is written in C++, you most probably will need to install a minimal C++
-compiler toolchain on your system.
+If possible this installs a *binary wheel*, containing the latest version of the package
+already compiled for your system.  Otherwise it will download a *source distribution* and
+will try to compile it: as the module is written in C++, in this case you most probably
+will need to install a minimal C++ compiler toolchain on your system.
 
 
 Basic examples
