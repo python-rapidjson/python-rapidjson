@@ -11,6 +11,7 @@
 #include <structmember.h>
 
 #include <algorithm>
+#include <cmath>
 #include <string>
 #include <vector>
 
@@ -1652,7 +1653,7 @@ dumps_internal(
             if (d == -1.0 && PyErr_Occurred())
                 return NULL;
 
-            if (Py_IS_NAN(d)) {
+            if (std::isnan(d)) {
                 if (numberMode & NM_NAN)
                     writer->RawValue("NaN", 3, kNumberType);
                 else {
@@ -1660,7 +1661,7 @@ dumps_internal(
                                     "Out of range float values are not JSON compliant");
                     return NULL;
                 }
-            } else if (Py_IS_INFINITY(d)) {
+            } else if (std::isinf(d)) {
                 if (!(numberMode & NM_NAN)) {
                     PyErr_SetString(PyExc_ValueError,
                                     "Out of range float values are not JSON compliant");
