@@ -40,6 +40,14 @@ First install ``python-rapidjson``:
 
     $ pip install python-rapidjson
 
+or, if you prefer `Conda`__:
+
+.. code-block:: bash
+
+    $ conda install -c conda-forge python-rapidjson
+
+__ https://conda.io/docs/
+
 Basic usage looks like this:
 
 .. code-block:: python

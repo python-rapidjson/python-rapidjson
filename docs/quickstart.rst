@@ -26,6 +26,10 @@ already compiled for your system.  Otherwise it will download a *source distribu
 will try to compile it: as the module is written in C++, in this case you most probably
 will need to install a minimal C++ compiler toolchain on your system.
 
+Alternatively it is also possible to install it using `Conda`__.
+
+__ https://anaconda.org/conda-forge/python-rapidjson
+
 
 Basic examples
 --------------
