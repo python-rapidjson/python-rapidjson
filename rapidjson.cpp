@@ -1226,6 +1226,26 @@ do_decode(PyObject* decoder, const char* jsonStr, Py_ssize_t jsonStrLen,
     Reader reader;
     InsituStringStream ss(jsonStrCopy);
 
+    /* FIXME: isn't there a cleverer way to write the following?
+
+       Ideally, one would do something like:
+
+           unsigned flags = kParseInsituFlag;
+
+           if (! (numberMode & NM_NATIVE))
+               flags |= kParseNumbersAsStringsFlag;
+           if (numberMode & NM_NAN)
+               flags |= kParseNanAndInfFlag;
+           if (parseMode & PM_COMMENTS)
+               flags |= kParseCommentsFlag;
+           if (parseMode & PM_TRAILING_COMMAS)
+               flags |= kParseTrailingCommasFlag;
+
+           reader.Parse<flags>(ss, handler);
+
+       but C++ does not allow that...
+     */
+
     if (numberMode & NM_NAN)
         if (numberMode & NM_NATIVE)
             if (parseMode & PM_TRAILING_COMMAS)
