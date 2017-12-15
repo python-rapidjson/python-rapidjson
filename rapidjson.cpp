@@ -11,6 +11,7 @@
 #include <structmember.h>
 
 #include <algorithm>
+#include <cmath>
 #include <string>
 #include <vector>
 
@@ -26,6 +27,7 @@ using namespace rapidjson;
 
 
 /* Python < 3.6 compatibility */
+
 #ifndef Py_SETREF
 #define Py_SETREF(op, op2)                      \
     do {                                        \
@@ -34,6 +36,22 @@ using namespace rapidjson;
         Py_DECREF(_py_tmp);                     \
     } while (0)
 #endif
+
+
+/* On some MacOS combo, using Py_IS_XXX() macros does not work (see
+   https://github.com/python-rapidjson/python-rapidjson/issues/78).
+   OTOH, MSVC < 2015 does not have std::isxxx() (see
+   https://stackoverflow.com/questions/38441740/where-is-isnan-in-msvc-2010).
+   Oh well... */
+
+#if defined (_MSC_VER) && (_MSC_VER < 1900)
+#define IS_NAN(x) Py_IS_NAN(x)
+#define IS_INF(x) Py_IS_INFINITY(x)
+#else
+#define IS_NAN(x) std::isnan(x)
+#define IS_INF(x) std::isinf(x)
+#endif
+
 
 static PyObject* decimal_type = NULL;
 static PyObject* timezone_type = NULL;
@@ -1652,7 +1670,7 @@ dumps_internal(
             if (d == -1.0 && PyErr_Occurred())
                 return NULL;
 
-            if (Py_IS_NAN(d)) {
+            if (IS_NAN(d)) {
                 if (numberMode & NM_NAN)
                     writer->RawValue("NaN", 3, kNumberType);
                 else {
@@ -1660,7 +1678,7 @@ dumps_internal(
                                     "Out of range float values are not JSON compliant");
                     return NULL;
                 }
-            } else if (Py_IS_INFINITY(d)) {
+            } else if (IS_INF(d)) {
                 if (!(numberMode & NM_NAN)) {
                     PyErr_SetString(PyExc_ValueError,
                                     "Out of range float values are not JSON compliant");

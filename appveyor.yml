@@ -17,7 +17,7 @@ environment:
 install: "git submodule update --init --recursive"
 
 build_script:
-  - "%PYTHON% -m pip install cibuildwheel==0.5.1"
+  - "%PYTHON% -m pip install cibuildwheel==0.6.0"
   - "%PYTHON% -m cibuildwheel --output-dir wheelhouse"
   - ps: >-
       if ($env:APPVEYOR_REPO_TAG -eq "true") {
