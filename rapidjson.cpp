@@ -1216,6 +1216,10 @@ do_decode(PyObject* decoder, const char* jsonStr, Py_ssize_t jsonStrLen,
           UuidMode uuidMode, ParseMode parseMode)
 {
     char* jsonStrCopy = (char*) malloc(sizeof(char) * (jsonStrLen+1));
+
+    if (jsonStrCopy == NULL)
+        return PyErr_NoMemory();
+
     memcpy(jsonStrCopy, jsonStr, jsonStrLen+1);
 
     PyHandler handler(decoder, objectHook, datetimeMode, uuidMode, numberMode);
