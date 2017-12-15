@@ -1266,33 +1266,32 @@ do_decode(PyObject* decoder, const char* jsonStr, Py_ssize_t jsonStrLen,
             reader.Parse<kParseInsituFlag |
                          kParseNumbersAsStringsFlag |
                          kParseNanAndInfFlag>(ss, handler);
-    else
-        if (numberMode & NM_NATIVE)
-            if (parseMode & PM_TRAILING_COMMAS)
-                if (parseMode & PM_COMMENTS)
-                    reader.Parse<kParseInsituFlag |
-                                 kParseCommentsFlag |
-                                 kParseTrailingCommasFlag>(ss, handler);
-                else
-                    reader.Parse<kParseInsituFlag |
-                                 kParseTrailingCommasFlag>(ss, handler);
-            else if (parseMode & PM_COMMENTS)
-                reader.Parse<kParseInsituFlag |
-                             kParseCommentsFlag>(ss, handler);
-            else
-                reader.Parse<kParseInsituFlag>(ss, handler);
-        else if (parseMode & PM_TRAILING_COMMAS)
+    else if (numberMode & NM_NATIVE)
+        if (parseMode & PM_TRAILING_COMMAS)
             if (parseMode & PM_COMMENTS)
                 reader.Parse<kParseInsituFlag |
-                             kParseNumbersAsStringsFlag |
                              kParseCommentsFlag |
-                             kParseNumbersAsStringsFlag>(ss, handler);
+                             kParseTrailingCommasFlag>(ss, handler);
             else
                 reader.Parse<kParseInsituFlag |
-                             kParseNumbersAsStringsFlag |
                              kParseTrailingCommasFlag>(ss, handler);
+        else if (parseMode & PM_COMMENTS)
+            reader.Parse<kParseInsituFlag |
+                         kParseCommentsFlag>(ss, handler);
         else
-            reader.Parse<kParseInsituFlag | kParseNumbersAsStringsFlag>(ss, handler);
+            reader.Parse<kParseInsituFlag>(ss, handler);
+    else if (parseMode & PM_TRAILING_COMMAS)
+        if (parseMode & PM_COMMENTS)
+            reader.Parse<kParseInsituFlag |
+                         kParseNumbersAsStringsFlag |
+                         kParseCommentsFlag |
+                         kParseNumbersAsStringsFlag>(ss, handler);
+        else
+            reader.Parse<kParseInsituFlag |
+                         kParseNumbersAsStringsFlag |
+                         kParseTrailingCommasFlag>(ss, handler);
+    else
+        reader.Parse<kParseInsituFlag | kParseNumbersAsStringsFlag>(ss, handler);
 
     if (reader.HasParseError()) {
         SizeType offset = reader.GetErrorOffset();
