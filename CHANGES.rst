@@ -1,6 +1,14 @@
 Changes
 -------
 
+Unreleased
+~~~~~~~~~~
+
+* Fix compilation on MacOS (`issue #78`__)
+
+  __ https://github.com/python-rapidjson/python-rapidjson/issues/78
+
+
 0.2.7 (2017-12-08)
 ~~~~~~~~~~~~~~~~~~
 
