@@ -1037,10 +1037,10 @@ loads(PyObject* self, PyObject* args, PyObject* kwargs)
     }
 
     Py_ssize_t jsonStrLen;
-    char* jsonStr;
+    const char* jsonStr;
 
     if (PyBytes_Check(jsonObject)) {
-        int rc = PyBytes_AsStringAndSize(jsonObject, &jsonStr, &jsonStrLen);
+        int rc = PyBytes_AsStringAndSize(jsonObject, (char**)&jsonStr, &jsonStrLen);
         if (rc == -1)
             return NULL;
     }
@@ -1358,10 +1358,10 @@ decoder_call(PyObject* self, PyObject* args, PyObject* kwargs)
         return NULL;
 
     Py_ssize_t jsonStrLen;
-    char* jsonStr;
+    const char* jsonStr;
 
     if (PyBytes_Check(jsonObject)) {
-        int rc = PyBytes_AsStringAndSize(jsonObject, &jsonStr, &jsonStrLen);
+        int rc = PyBytes_AsStringAndSize(jsonObject, (char**)&jsonStr, &jsonStrLen);
         if (rc == -1)
             return NULL;
     }
@@ -1531,11 +1531,11 @@ struct WriterContext {
 
 
 struct DictItem {
-    char* key_str;
+    const char* key_str;
     Py_ssize_t key_size;
     PyObject* item;
 
-    DictItem(char* k,
+    DictItem(const char* k,
              Py_ssize_t s,
              PyObject* i)
         : key_str(k),
@@ -1647,7 +1647,7 @@ dumps_internal(
                 return NULL;
 
             Py_ssize_t size;
-            char* decStr = PyUnicode_AsUTF8AndSize(decStrObj, &size);
+            const char* decStr = PyUnicode_AsUTF8AndSize(decStrObj, &size);
             if (decStr == NULL) {
                 Py_DECREF(decStrObj);
                 return NULL;
@@ -1678,7 +1678,7 @@ dumps_internal(
                     return NULL;
 
                 Py_ssize_t size;
-                char* intStr = PyUnicode_AsUTF8AndSize(intStrObj, &size);
+                const char* intStr = PyUnicode_AsUTF8AndSize(intStrObj, &size);
                 if (intStr == NULL) {
                     Py_DECREF(intStrObj);
                     return NULL;
@@ -1726,7 +1726,7 @@ dumps_internal(
         }
         else if (PyUnicode_Check(object)) {
             Py_ssize_t l;
-            char* s = PyUnicode_AsUTF8AndSize(object, &l);
+            const char* s = PyUnicode_AsUTF8AndSize(object, &l);
             if (s == NULL)
                 return NULL;
             writer->String(s, l);
@@ -1765,7 +1765,7 @@ dumps_internal(
                 while (PyDict_Next(object, &pos, &key, &item)) {
                     if (PyUnicode_Check(key)) {
                         Py_ssize_t l;
-                        char* key_str = PyUnicode_AsUTF8AndSize(key, &l);
+                        const char* key_str = PyUnicode_AsUTF8AndSize(key, &l);
                         if (key_str == NULL)
                             goto error;
                         stack.push_back(WriterContext(NULL, 0, item, false, nextLevel));
@@ -1783,7 +1783,7 @@ dumps_internal(
                 while (PyDict_Next(object, &pos, &key, &item)) {
                     if (PyUnicode_Check(key)) {
                         Py_ssize_t l;
-                        char* key_str = PyUnicode_AsUTF8AndSize(key, &l);
+                        const char* key_str = PyUnicode_AsUTF8AndSize(key, &l);
                         if (key_str == NULL)
                             goto error;
                         items.push_back(DictItem(key_str, l, item));
