@@ -1753,9 +1753,9 @@ dumps_internal(
 
             std::sort(items.begin(), items.end());
 
-            for (DictItem iter : items) {
-                writer->Key(iter.key_str, iter.key_size);
-                if (!RECURSE(iter.item))
+            for (int i=0, s=items.size(); i < s; i++) {
+                writer->Key(items[i].key_str, items[i].key_size);
+                if (!RECURSE(items[i].item))
                     return false;
             }
         }
