@@ -91,3 +91,14 @@ def test_leaks(value, dumps_options, loads_options):
         del aspython
         rc1 = sys.gettotalrefcount()
         assert (rc1 - rc0) < THRESHOLD
+
+
+@pytest.mark.skipif(not hasattr(sys, 'gettotalrefcount'), reason='Non-debug Python')
+def test_dump_iterator_leaks():
+    rc0 = sys.gettotalrefcount()
+    value = iter(range(10000))
+    asjson = rj.dumps(value)
+    del asjson
+    del value
+    rc1 = sys.gettotalrefcount()
+    assert (rc1 - rc0) < THRESHOLD

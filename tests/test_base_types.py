@@ -29,6 +29,12 @@ def test_base_values(value, dumps, loads):
 
 
 @pytest.mark.unit
+def test_tuple(dumps):
+    obj = [1, 2, 'a', 1.2, {'foo': 'bar'},]
+    assert dumps(obj) == dumps(tuple(obj))
+
+
+@pytest.mark.unit
 def test_bytes_value(dumps):
     dumped = dumps(b'cruel\x00world')
     assert dumped == r'"cruel\u0000world"'
@@ -161,6 +167,18 @@ def test_constants(dumps, loads):
         assert loads(dumps(c)) is c
         assert loads(dumps([c]))[0] is c
         assert loads(dumps({'a': c}))['a'] is c
+
+
+@pytest.mark.unit
+def test_iterables(dumps):
+    assert dumps(iter("abc")) == '["a","b","c"]'
+
+    def gen():
+        yield 1
+        yield 2
+        yield 3
+
+    assert dumps(gen()) == '[1,2,3]'
 
 
 # TODO: Figure out what we want to do here

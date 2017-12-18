@@ -72,6 +72,19 @@ All JSON_ data types are supported using their native Python counterparts:
                 'string': '√2 ≅ 1.4142',
                 'true': True}}
 
+Python's lists, tuples and iterators get serialized as JSON arrays:
+
+.. doctest::
+
+    >>> names_t = ('Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat')
+    >>> names_l = list(names_t)
+    >>> names_i = iter(names_l)
+    >>> def names_g():
+    ...     for name in names_t:
+    ...         yield name
+    >>> dumps(names_t) == dumps(names_l) == dumps(names_i) == dumps(names_g())
+    True
+
 ``python-rapidjson`` can optionally handle also a few other commonly used data types:
 
 .. doctest::

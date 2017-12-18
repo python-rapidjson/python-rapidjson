@@ -1506,30 +1506,6 @@ decoder_new(PyTypeObject* type, PyObject* args, PyObject* kwargs)
 /////////////
 
 
-struct WriterContext {
-    const char* key;
-    Py_ssize_t size;
-    PyObject* object;
-    PyObject* decref;
-    unsigned level;
-    bool isObject;
-
-    WriterContext(const char* k,
-                  Py_ssize_t s,
-                  PyObject* o,
-                  bool isO,
-                  int l,
-                  PyObject* d=NULL)
-        : key(k),
-          size(s),
-          object(o),
-          decref(d),
-          level(l),
-          isObject(isO)
-        {}
-};
-
-
 struct DictItem {
     const char* key_str;
     Py_ssize_t key_size;
@@ -1546,8 +1522,8 @@ struct DictItem {
     bool operator<(const DictItem& other) const {
         Py_ssize_t tks = this->key_size;
         Py_ssize_t oks = other.key_size;
-        int cmp = strncmp(other.key_str, this->key_str, oks < tks ? oks : tks);
-        return (cmp == 0) ? oks < tks : cmp < 0;
+        int cmp = strncmp(this->key_str, other.key_str, tks < oks ? tks : oks);
+        return (cmp == 0) ? (tks < oks) : (cmp < 0);
     }
 };
 
@@ -1555,12 +1531,11 @@ struct DictItem {
 static const int MAX_RECURSION_DEPTH = 2048;
 
 
-template<typename WriterT, typename BufferT>
-static PyObject*
+template<typename WriterT>
+static bool
 dumps_internal(
     WriterT* writer,
-    BufferT* buf,
-    PyObject* value,
+    PyObject* object,
     bool skipKeys,
     PyObject* defaultFn,
     bool sortKeys,
@@ -1569,472 +1544,389 @@ dumps_internal(
     DatetimeMode datetimeMode,
     UuidMode uuidMode)
 {
-    int isDec;
-    std::vector<WriterContext> stack;
-    stack.reserve(128);
+    int is_decimal;
 
-    stack.push_back(WriterContext(NULL, 0, value, false, 0));
+    if (maxRecursionDepth == 0) {
+        PyErr_SetString(PyExc_OverflowError, "Max recursion depth reached");
+        return false;
+    }
 
-    while (!stack.empty()) {
-        const WriterContext& current = stack.back();
-        stack.pop_back();
+#define RECURSE(v) (dumps_internal(writer, v, skipKeys, defaultFn, sortKeys, \
+                                   maxRecursionDepth-1,                      \
+                                   numberMode, datetimeMode, uuidMode))
 
-        const unsigned currentLevel = current.level;
-        const unsigned nextLevel = current.level + 1;
-        PyObject* const object = current.object;
+    if (object == Py_None) {
+        writer->Null();
+    }
+    else if (PyBool_Check(object)) {
+        writer->Bool(object == Py_True);
+    }
+    else if (numberMode & NM_DECIMAL
+             && (is_decimal = PyObject_IsInstance(object, decimal_type))) {
+        if (is_decimal == -1)
+            return false;
 
-        if (currentLevel > maxRecursionDepth) {
-            PyErr_SetString(PyExc_OverflowError, "Max recursion depth reached");
-            return NULL;
-        }
+        if (!(numberMode & NM_NAN)) {
+            bool is_inf_or_nan;
+            PyObject* is_inf = PyObject_CallMethodObjArgs(object, is_infinite_name,
+                                                          NULL);
 
-        if (object == NULL) {
-            if (current.key != NULL) {
-                writer->Key(current.key, current.size);
+            if (is_inf == NULL) {
+                return false;
             }
-            else if (current.decref != NULL) {
-                Py_DECREF(current.decref);
-            }
-            else if (current.isObject) {
-                writer->EndObject();
-            }
-            else {
-                writer->EndArray();
-            }
-        }
-        else if (object == Py_None) {
-            writer->Null();
-        }
-        else if (PyBool_Check(object)) {
-            writer->Bool(object == Py_True);
-        }
-        else if (numberMode & NM_DECIMAL
-                 && (isDec = PyObject_IsInstance(object, decimal_type))) {
-            if (isDec == -1)
-                return NULL;
+            is_inf_or_nan = is_inf == Py_True;
+            Py_DECREF(is_inf);
 
-            if (!(numberMode & NM_NAN)) {
-                bool is_inf_or_nan;
-                PyObject* is_inf = PyObject_CallMethodObjArgs(object, is_infinite_name,
+            if (!is_inf_or_nan) {
+                PyObject* is_nan = PyObject_CallMethodObjArgs(object, is_nan_name,
                                                               NULL);
 
-                if (is_inf == NULL) {
-                    return NULL;
+                if (is_nan == NULL) {
+                    return false;
                 }
-                is_inf_or_nan = is_inf == Py_True;
-                Py_DECREF(is_inf);
-
-                if (!is_inf_or_nan) {
-                    PyObject* is_nan = PyObject_CallMethodObjArgs(object, is_nan_name,
-                                                                  NULL);
-
-                    if (is_nan == NULL) {
-                        return NULL;
-                    }
-                    is_inf_or_nan = is_nan == Py_True;
-                    Py_DECREF(is_nan);
-                }
-
-                if (is_inf_or_nan) {
-                    PyErr_SetString(PyExc_ValueError,
-                                    "Out of range decimal values are not JSON compliant");
-                    return NULL;
-                }
+                is_inf_or_nan = is_nan == Py_True;
+                Py_DECREF(is_nan);
             }
 
-            PyObject* decStrObj = PyObject_Str(object);
-            if (decStrObj == NULL)
-                return NULL;
+            if (is_inf_or_nan) {
+                PyErr_SetString(PyExc_ValueError,
+                                "Out of range decimal values are not JSON compliant");
+                return false;
+            }
+        }
+
+        PyObject* decStrObj = PyObject_Str(object);
+        if (decStrObj == NULL)
+            return false;
+
+        Py_ssize_t size;
+        const char* decStr = PyUnicode_AsUTF8AndSize(decStrObj, &size);
+        if (decStr == NULL) {
+            Py_DECREF(decStrObj);
+            return false;
+        }
+
+        writer->RawValue(decStr, size, kNumberType);
+        Py_DECREF(decStrObj);
+    }
+    else if (PyLong_Check(object)) {
+        if (numberMode & NM_NATIVE) {
+            int overflow;
+            long long i = PyLong_AsLongLongAndOverflow(object, &overflow);
+            if (i == -1 && PyErr_Occurred())
+                return false;
+
+            if (overflow == 0) {
+                writer->Int64(i);
+            } else {
+                unsigned long long ui = PyLong_AsUnsignedLongLong(object);
+                if (PyErr_Occurred())
+                    return false;
+
+                writer->Uint64(ui);
+            }
+        } else {
+            PyObject* intStrObj = PyObject_Str(object);
+            if (intStrObj == NULL)
+                return false;
 
             Py_ssize_t size;
-            const char* decStr = PyUnicode_AsUTF8AndSize(decStrObj, &size);
-            if (decStr == NULL) {
-                Py_DECREF(decStrObj);
-                return NULL;
+            const char* intStr = PyUnicode_AsUTF8AndSize(intStrObj, &size);
+            if (intStr == NULL) {
+                Py_DECREF(intStrObj);
+                return false;
             }
 
-            writer->RawValue(decStr, size, kNumberType);
-            Py_DECREF(decStrObj);
+            writer->RawValue(intStr, size, kNumberType);
+            Py_DECREF(intStrObj);
         }
-        else if (PyLong_Check(object)) {
-            if (numberMode & NM_NATIVE) {
-                int overflow;
-                long long i = PyLong_AsLongLongAndOverflow(object, &overflow);
-                if (i == -1 && PyErr_Occurred())
-                    return NULL;
+    }
+    else if (PyFloat_Check(object)) {
+        double d = PyFloat_AsDouble(object);
+        if (d == -1.0 && PyErr_Occurred())
+            return false;
 
-                if (overflow == 0) {
-                    writer->Int64(i);
-                } else {
-                    unsigned long long ui = PyLong_AsUnsignedLongLong(object);
-                    if (PyErr_Occurred())
-                        return NULL;
+        if (IS_NAN(d)) {
+            if (numberMode & NM_NAN)
+                writer->RawValue("NaN", 3, kNumberType);
+            else {
+                PyErr_SetString(PyExc_ValueError,
+                                "Out of range float values are not JSON compliant");
+                return false;
+            }
+        } else if (IS_INF(d)) {
+            if (!(numberMode & NM_NAN)) {
+                PyErr_SetString(PyExc_ValueError,
+                                "Out of range float values are not JSON compliant");
+                return false;
+            }
+            else if (d < 0)
+                writer->RawValue("-Infinity", 9, kNumberType);
+            else
+                writer->RawValue("Infinity", 8, kNumberType);
+        }
+        else
+            writer->Double(d);
+    }
+    else if (PyBytes_Check(object)) {
+        Py_ssize_t l;
+        char* s;
 
-                    writer->Uint64(ui);
+        if (PyBytes_AsStringAndSize(object, &s, &l) == -1)
+            return false;
+
+        writer->String(s, l);
+    }
+    else if (PyUnicode_Check(object)) {
+        Py_ssize_t l;
+        const char* s = PyUnicode_AsUTF8AndSize(object, &l);
+        if (s == NULL)
+            return false;
+        writer->String(s, l);
+    }
+    else if (PyList_Check(object)) {
+        writer->StartArray();
+
+        Py_ssize_t size = PyList_GET_SIZE(object);
+
+        for (Py_ssize_t i = 0; i < size; i++) {
+            PyObject* item = PyList_GET_ITEM(object, i);
+            if (!RECURSE(item))
+                return false;
+        }
+
+        writer->EndArray();
+    }
+    else if (PyTuple_Check(object)) {
+        writer->StartArray();
+
+        Py_ssize_t size = PyTuple_GET_SIZE(object);
+
+        for (Py_ssize_t i = 0; i < size; i++) {
+            PyObject* item = PyTuple_GET_ITEM(object, i);
+            if (!RECURSE(item))
+                return false;
+        }
+
+        writer->EndArray();
+    }
+    else if (PyDict_Check(object)) {
+        writer->StartObject();
+
+        Py_ssize_t pos = 0;
+        PyObject* key;
+        PyObject* item;
+
+        if (!sortKeys) {
+            while (PyDict_Next(object, &pos, &key, &item)) {
+                if (PyUnicode_Check(key)) {
+                    Py_ssize_t l;
+                    const char* key_str = PyUnicode_AsUTF8AndSize(key, &l);
+                    if (key_str == NULL)
+                        return false;
+                    writer->Key(key_str, l);
+                    if (!RECURSE(item))
+                        return false;
+                }
+                else if (!skipKeys) {
+                    PyErr_SetString(PyExc_TypeError, "keys must be strings");
+                    return false;
+                }
+            }
+        }
+        else {
+            std::vector<DictItem> items;
+
+            while (PyDict_Next(object, &pos, &key, &item)) {
+                if (PyUnicode_Check(key)) {
+                    Py_ssize_t l;
+                    const char* key_str = PyUnicode_AsUTF8AndSize(key, &l);
+                    if (key_str == NULL)
+                        return false;
+                    items.push_back(DictItem(key_str, l, item));
+                }
+                else if (!skipKeys) {
+                    PyErr_SetString(PyExc_TypeError, "keys must be strings");
+                    return false;
+                }
+            }
+
+            std::sort(items.begin(), items.end());
+
+            for (DictItem iter : items) {
+                writer->Key(iter.key_str, iter.key_size);
+                if (!RECURSE(iter.item))
+                    return false;
+            }
+        }
+
+        writer->EndObject();
+    }
+    else if (datetimeMode != DM_NONE
+             && (PyTime_Check(object) || PyDateTime_Check(object))) {
+        unsigned int year, month, day, hour, min, sec, microsec;
+        PyObject* dtObject = object;
+        PyObject* asUTC = NULL;
+
+        const int ISOFORMAT_LEN = 40;
+        char isoformat[ISOFORMAT_LEN];
+        memset(isoformat, 0, ISOFORMAT_LEN);
+
+        const int TIMEZONE_LEN = 16;
+        char timeZone[TIMEZONE_LEN] = { 0 };
+
+        if (!(datetimeMode & DM_IGNORE_TZ)
+            && PyObject_HasAttr(object, utcoffset_name)) {
+            PyObject* utcOffset = PyObject_CallMethodObjArgs(object,
+                                                             utcoffset_name,
+                                                             NULL);
+
+            if (!utcOffset)
+                return false;
+
+            if (utcOffset == Py_None) {
+                // Naive value: maybe assume it's in UTC instead of local time
+                if (datetimeMode & DM_NAIVE_IS_UTC) {
+                    if (PyDateTime_Check(object)) {
+                        hour = PyDateTime_DATE_GET_HOUR(dtObject);
+                        min = PyDateTime_DATE_GET_MINUTE(dtObject);
+                        sec = PyDateTime_DATE_GET_SECOND(dtObject);
+                        microsec = PyDateTime_DATE_GET_MICROSECOND(dtObject);
+                        year = PyDateTime_GET_YEAR(dtObject);
+                        month = PyDateTime_GET_MONTH(dtObject);
+                        day = PyDateTime_GET_DAY(dtObject);
+
+                        asUTC = PyDateTimeAPI->DateTime_FromDateAndTime(
+                            year, month, day, hour, min, sec, microsec,
+                            timezone_utc, PyDateTimeAPI->DateTimeType);
+                    } else {
+                        hour = PyDateTime_TIME_GET_HOUR(dtObject);
+                        min = PyDateTime_TIME_GET_MINUTE(dtObject);
+                        sec = PyDateTime_TIME_GET_SECOND(dtObject);
+                        microsec = PyDateTime_TIME_GET_MICROSECOND(dtObject);
+                        asUTC = PyDateTimeAPI->Time_FromTime(
+                            hour, min, sec, microsec,
+                            timezone_utc, PyDateTimeAPI->TimeType);
+                    }
+
+                    if (asUTC == NULL) {
+                        Py_DECREF(utcOffset);
+                        return false;
+                    }
+
+                    dtObject = asUTC;
+
+                    if (datetime_mode_format(datetimeMode) == DM_ISO8601)
+                        strcpy(timeZone, "+00:00");
                 }
             } else {
-                PyObject* intStrObj = PyObject_Str(object);
-                if (intStrObj == NULL)
-                    return NULL;
-
-                Py_ssize_t size;
-                const char* intStr = PyUnicode_AsUTF8AndSize(intStrObj, &size);
-                if (intStr == NULL) {
-                    Py_DECREF(intStrObj);
-                    return NULL;
-                }
-
-                writer->RawValue(intStr, size, kNumberType);
-                Py_DECREF(intStrObj);
-            }
-        }
-        else if (PyFloat_Check(object)) {
-            double d = PyFloat_AsDouble(object);
-            if (d == -1.0 && PyErr_Occurred())
-                return NULL;
-
-            if (IS_NAN(d)) {
-                if (numberMode & NM_NAN)
-                    writer->RawValue("NaN", 3, kNumberType);
-                else {
-                    PyErr_SetString(PyExc_ValueError,
-                                    "Out of range float values are not JSON compliant");
-                    return NULL;
-                }
-            } else if (IS_INF(d)) {
-                if (!(numberMode & NM_NAN)) {
-                    PyErr_SetString(PyExc_ValueError,
-                                    "Out of range float values are not JSON compliant");
-                    return NULL;
-                }
-                else if (d < 0)
-                    writer->RawValue("-Infinity", 9, kNumberType);
-                else
-                    writer->RawValue("Infinity", 8, kNumberType);
-            }
-            else
-                writer->Double(d);
-        }
-        else if (PyBytes_Check(object)) {
-            Py_ssize_t l;
-            char* s;
-
-            if (PyBytes_AsStringAndSize(object, &s, &l) == -1)
-                goto error;
-
-            writer->String(s, l);
-        }
-        else if (PyUnicode_Check(object)) {
-            Py_ssize_t l;
-            const char* s = PyUnicode_AsUTF8AndSize(object, &l);
-            if (s == NULL)
-                return NULL;
-            writer->String(s, l);
-        }
-        else if (PyList_Check(object)) {
-            writer->StartArray();
-            stack.push_back(WriterContext(NULL, 0, NULL, false, currentLevel));
-
-            Py_ssize_t size = PyList_GET_SIZE(object);
-
-            for (Py_ssize_t i = size - 1; i >= 0; --i) {
-                PyObject* item = PyList_GET_ITEM(object, i);
-                stack.push_back(WriterContext(NULL, 0, item, false, nextLevel));
-            }
-        }
-        else if (PyTuple_Check(object)) {
-            writer->StartArray();
-            stack.push_back(WriterContext(NULL, 0, NULL, false, currentLevel));
-
-            Py_ssize_t size = PyTuple_GET_SIZE(object);
-
-            for (Py_ssize_t i = size - 1; i >= 0; --i) {
-                PyObject* item = PyTuple_GET_ITEM(object, i);
-                stack.push_back(WriterContext(NULL, 0, item, false, nextLevel));
-            }
-        }
-        else if (PyDict_Check(object)) {
-            writer->StartObject();
-            stack.push_back(WriterContext(NULL, 0, NULL, true, currentLevel));
-
-            Py_ssize_t pos = 0;
-            PyObject* key;
-            PyObject* item;
-
-            if (!sortKeys) {
-                while (PyDict_Next(object, &pos, &key, &item)) {
-                    if (PyUnicode_Check(key)) {
-                        Py_ssize_t l;
-                        const char* key_str = PyUnicode_AsUTF8AndSize(key, &l);
-                        if (key_str == NULL)
-                            goto error;
-                        stack.push_back(WriterContext(NULL, 0, item, false, nextLevel));
-                        stack.push_back(WriterContext(key_str, l, NULL, false, nextLevel));
-                    }
-                    else if (!skipKeys) {
-                        PyErr_SetString(PyExc_TypeError, "keys must be strings");
-                        goto error;
-                    }
-                }
-            }
-            else {
-                std::vector<DictItem> items;
-
-                while (PyDict_Next(object, &pos, &key, &item)) {
-                    if (PyUnicode_Check(key)) {
-                        Py_ssize_t l;
-                        const char* key_str = PyUnicode_AsUTF8AndSize(key, &l);
-                        if (key_str == NULL)
-                            goto error;
-                        items.push_back(DictItem(key_str, l, item));
-                    }
-                    else if (!skipKeys) {
-                        PyErr_SetString(PyExc_TypeError, "keys must be strings");
-                        goto error;
-                    }
-                }
-
-                std::sort(items.begin(), items.end());
-
-                std::vector<DictItem>::const_iterator iter = items.begin();
-                for (; iter != items.end(); ++iter) {
-                    stack.push_back(WriterContext(NULL, 0, iter->item, false, nextLevel));
-                    stack.push_back(WriterContext(iter->key_str, iter->key_size,
-                                                  NULL, false, nextLevel));
-                }
-            }
-        }
-        else if (datetimeMode != DM_NONE
-                 && (PyTime_Check(object) || PyDateTime_Check(object))) {
-            unsigned int year, month, day, hour, min, sec, microsec;
-            PyObject* dtObject = object;
-            PyObject* asUTC = NULL;
-
-            const int ISOFORMAT_LEN = 40;
-            char isoformat[ISOFORMAT_LEN];
-            memset(isoformat, 0, ISOFORMAT_LEN);
-
-            const int TIMEZONE_LEN = 16;
-            char timeZone[TIMEZONE_LEN] = { 0 };
-
-            if (!(datetimeMode & DM_IGNORE_TZ)
-                && PyObject_HasAttr(object, utcoffset_name)) {
-                PyObject* utcOffset = PyObject_CallMethodObjArgs(object,
-                                                                 utcoffset_name,
-                                                                 NULL);
-
-                if (!utcOffset)
-                    goto error;
-
-                if (utcOffset == Py_None) {
-                    // Naive value: maybe assume it's in UTC instead of local time
-                    if (datetimeMode & DM_NAIVE_IS_UTC) {
-                        if (PyDateTime_Check(object)) {
-                            hour = PyDateTime_DATE_GET_HOUR(dtObject);
-                            min = PyDateTime_DATE_GET_MINUTE(dtObject);
-                            sec = PyDateTime_DATE_GET_SECOND(dtObject);
-                            microsec = PyDateTime_DATE_GET_MICROSECOND(dtObject);
-                            year = PyDateTime_GET_YEAR(dtObject);
-                            month = PyDateTime_GET_MONTH(dtObject);
-                            day = PyDateTime_GET_DAY(dtObject);
-
-                            asUTC = PyDateTimeAPI->DateTime_FromDateAndTime(
-                                year, month, day, hour, min, sec, microsec,
-                                timezone_utc, PyDateTimeAPI->DateTimeType);
-                        } else {
-                            hour = PyDateTime_TIME_GET_HOUR(dtObject);
-                            min = PyDateTime_TIME_GET_MINUTE(dtObject);
-                            sec = PyDateTime_TIME_GET_SECOND(dtObject);
-                            microsec = PyDateTime_TIME_GET_MICROSECOND(dtObject);
-                            asUTC = PyDateTimeAPI->Time_FromTime(
-                                hour, min, sec, microsec,
-                                timezone_utc, PyDateTimeAPI->TimeType);
-                        }
+                // Timezone-aware value
+                if (datetimeMode & DM_SHIFT_TO_UTC) {
+                    // If it's not already in UTC, shift the value
+                    if (PyObject_IsTrue(utcOffset)) {
+                        asUTC = PyObject_CallMethodObjArgs(object, astimezone_name,
+                                                           timezone_utc, NULL);
 
                         if (asUTC == NULL) {
                             Py_DECREF(utcOffset);
-                            goto error;
+                            return false;
                         }
 
                         dtObject = asUTC;
-
-                        if (datetime_mode_format(datetimeMode) == DM_ISO8601)
-                            strcpy(timeZone, "+00:00");
                     }
-                } else {
-                    // Timezone-aware value
-                    if (datetimeMode & DM_SHIFT_TO_UTC) {
-                        // If it's not already in UTC, shift the value
-                        if (PyObject_IsTrue(utcOffset)) {
-                            asUTC = PyObject_CallMethodObjArgs(object, astimezone_name,
-                                                               timezone_utc, NULL);
 
-                            if (asUTC == NULL) {
-                                Py_DECREF(utcOffset);
-                                goto error;
-                            }
+                    if (datetime_mode_format(datetimeMode) == DM_ISO8601)
+                        strcpy(timeZone, "+00:00");
+                } else if (datetime_mode_format(datetimeMode) == DM_ISO8601) {
+                    int seconds_from_utc = 0;
 
-                            dtObject = asUTC;
+                    if (PyObject_IsTrue(utcOffset)) {
+                        PyObject* tsObj = PyObject_CallMethodObjArgs(utcOffset,
+                                                                     total_seconds_name,
+                                                                     NULL);
+
+                        if (tsObj == NULL) {
+                            Py_DECREF(utcOffset);
+                            return false;
                         }
 
-                        if (datetime_mode_format(datetimeMode) == DM_ISO8601)
-                            strcpy(timeZone, "+00:00");
-                    } else if (datetime_mode_format(datetimeMode) == DM_ISO8601) {
-                        int seconds_from_utc = 0;
+                        seconds_from_utc = (int) PyFloat_AsDouble(tsObj);
 
-                        if (PyObject_IsTrue(utcOffset)) {
-                            PyObject* tsObj = PyObject_CallMethodObjArgs(utcOffset,
-                                                                         total_seconds_name,
-                                                                         NULL);
-
-                            if (tsObj == NULL) {
-                                Py_DECREF(utcOffset);
-                                goto error;
-                            }
-
-                            seconds_from_utc = (int) PyFloat_AsDouble(tsObj);
-
-                            Py_DECREF(tsObj);
-                        }
-
-                        char sign = '+';
-
-                        if (seconds_from_utc < 0) {
-                            sign = '-';
-                            seconds_from_utc = -seconds_from_utc;
-                        }
-
-                        unsigned int tz_hour = seconds_from_utc / 3600;
-                        unsigned int tz_min = (seconds_from_utc % 3600) / 60;
-
-                        snprintf(timeZone, TIMEZONE_LEN-1, "%c%02u:%02u",
-                                 sign, tz_hour, tz_min);
-                    }
-                }
-                Py_DECREF(utcOffset);
-            }
-
-            if (datetime_mode_format(datetimeMode) == DM_ISO8601) {
-                if (PyDateTime_Check(dtObject)) {
-                    year = PyDateTime_GET_YEAR(dtObject);
-                    month = PyDateTime_GET_MONTH(dtObject);
-                    day = PyDateTime_GET_DAY(dtObject);
-                    hour = PyDateTime_DATE_GET_HOUR(dtObject);
-                    min = PyDateTime_DATE_GET_MINUTE(dtObject);
-                    sec = PyDateTime_DATE_GET_SECOND(dtObject);
-                    microsec = PyDateTime_DATE_GET_MICROSECOND(dtObject);
-
-                    if (microsec > 0) {
-                        snprintf(isoformat,
-                                 ISOFORMAT_LEN-1,
-                                 "%04u-%02u-%02uT%02u:%02u:%02u.%06u%s",
-                                 year, month, day,
-                                 hour, min, sec, microsec,
-                                 timeZone);
-                    } else {
-                        snprintf(isoformat,
-                                 ISOFORMAT_LEN-1,
-                                 "%04u-%02u-%02uT%02u:%02u:%02u%s",
-                                 year, month, day,
-                                 hour, min, sec,
-                                 timeZone);
-                    }
-                } else {
-                    hour = PyDateTime_TIME_GET_HOUR(dtObject);
-                    min = PyDateTime_TIME_GET_MINUTE(dtObject);
-                    sec = PyDateTime_TIME_GET_SECOND(dtObject);
-                    microsec = PyDateTime_TIME_GET_MICROSECOND(dtObject);
-
-                    if (microsec > 0) {
-                        snprintf(isoformat,
-                                 ISOFORMAT_LEN-1,
-                                 "%02u:%02u:%02u.%06u%s",
-                                 hour, min, sec, microsec,
-                                 timeZone);
-                    } else {
-                        snprintf(isoformat,
-                                 ISOFORMAT_LEN-1,
-                                 "%02u:%02u:%02u%s",
-                                 hour, min, sec,
-                                 timeZone);
-                    }
-                }
-                writer->String(isoformat);
-            } else /* if (datetimeMode & DM_UNIX_TIME) */ {
-                if (PyDateTime_Check(dtObject)) {
-                    PyObject* timestampObj = PyObject_CallMethodObjArgs(dtObject,
-                                                                        timestamp_name,
-                                                                        NULL);
-
-                    if (!timestampObj) {
-                        Py_XDECREF(asUTC);
-                        goto error;
+                        Py_DECREF(tsObj);
                     }
 
-                    double timestamp = PyFloat_AsDouble(timestampObj);
+                    char sign = '+';
 
-                    Py_DECREF(timestampObj);
-
-                    if (datetimeMode & DM_ONLY_SECONDS)
-                        writer->Int64((int64_t) timestamp);
-                    else {
-                        int precision = writer->GetMaxDecimalPlaces();
-                        writer->SetMaxDecimalPlaces(6);
-                        writer->Double(timestamp);
-                        writer->SetMaxDecimalPlaces(precision);
+                    if (seconds_from_utc < 0) {
+                        sign = '-';
+                        seconds_from_utc = -seconds_from_utc;
                     }
-                } else {
-                    hour = PyDateTime_TIME_GET_HOUR(dtObject);
-                    min = PyDateTime_TIME_GET_MINUTE(dtObject);
-                    sec = PyDateTime_TIME_GET_SECOND(dtObject);
-                    microsec = PyDateTime_TIME_GET_MICROSECOND(dtObject);
 
-                    long timestamp = hour * 3600 + min * 60 + sec;
+                    unsigned int tz_hour = seconds_from_utc / 3600;
+                    unsigned int tz_min = (seconds_from_utc % 3600) / 60;
 
-                    if (datetimeMode & DM_ONLY_SECONDS)
-                        writer->Int64(timestamp);
-                    else
-                        writer->Double(timestamp + (microsec / 1000000.0));
+                    snprintf(timeZone, TIMEZONE_LEN-1, "%c%02u:%02u",
+                             sign, tz_hour, tz_min);
                 }
             }
-            Py_XDECREF(asUTC);
+            Py_DECREF(utcOffset);
         }
-        else if (datetimeMode != DM_NONE && PyDate_Check(object)) {
-            unsigned int year = PyDateTime_GET_YEAR(object);
-            unsigned int month = PyDateTime_GET_MONTH(object);
-            unsigned int day = PyDateTime_GET_DAY(object);
 
-            if (datetime_mode_format(datetimeMode) == DM_ISO8601) {
-                const int ISOFORMAT_LEN = 16;
-                char isoformat[ISOFORMAT_LEN];
-                memset(isoformat, 0, ISOFORMAT_LEN);
+        if (datetime_mode_format(datetimeMode) == DM_ISO8601) {
+            if (PyDateTime_Check(dtObject)) {
+                year = PyDateTime_GET_YEAR(dtObject);
+                month = PyDateTime_GET_MONTH(dtObject);
+                day = PyDateTime_GET_DAY(dtObject);
+                hour = PyDateTime_DATE_GET_HOUR(dtObject);
+                min = PyDateTime_DATE_GET_MINUTE(dtObject);
+                sec = PyDateTime_DATE_GET_SECOND(dtObject);
+                microsec = PyDateTime_DATE_GET_MICROSECOND(dtObject);
 
-                snprintf(isoformat, ISOFORMAT_LEN-1, "%04u-%02u-%02u", year, month, day);
-                writer->String(isoformat);
-            } else /* datetime_mode_format(datetimeMode) == DM_UNIX_TIME */ {
-                // A date object, take its midnight timestamp
-                PyObject* midnightObj;
-                PyObject* timestampObj;
-
-                if (datetimeMode & (DM_SHIFT_TO_UTC | DM_NAIVE_IS_UTC))
-                    midnightObj = PyDateTimeAPI->DateTime_FromDateAndTime(
-                        year, month, day, 0, 0, 0, 0,
-                        timezone_utc, PyDateTimeAPI->DateTimeType);
-                else
-                    midnightObj = PyDateTime_FromDateAndTime(year, month, day,
-                                                             0, 0, 0, 0);
-
-                if (!midnightObj) {
-                    goto error;
+                if (microsec > 0) {
+                    snprintf(isoformat,
+                             ISOFORMAT_LEN-1,
+                             "%04u-%02u-%02uT%02u:%02u:%02u.%06u%s",
+                             year, month, day,
+                             hour, min, sec, microsec,
+                             timeZone);
+                } else {
+                    snprintf(isoformat,
+                             ISOFORMAT_LEN-1,
+                             "%04u-%02u-%02uT%02u:%02u:%02u%s",
+                             year, month, day,
+                             hour, min, sec,
+                             timeZone);
                 }
+            } else {
+                hour = PyDateTime_TIME_GET_HOUR(dtObject);
+                min = PyDateTime_TIME_GET_MINUTE(dtObject);
+                sec = PyDateTime_TIME_GET_SECOND(dtObject);
+                microsec = PyDateTime_TIME_GET_MICROSECOND(dtObject);
 
-                timestampObj = PyObject_CallMethodObjArgs(midnightObj, timestamp_name,
-                                                          NULL);
-
-                Py_DECREF(midnightObj);
+                if (microsec > 0) {
+                    snprintf(isoformat,
+                             ISOFORMAT_LEN-1,
+                             "%02u:%02u:%02u.%06u%s",
+                             hour, min, sec, microsec,
+                             timeZone);
+                } else {
+                    snprintf(isoformat,
+                             ISOFORMAT_LEN-1,
+                             "%02u:%02u:%02u%s",
+                             hour, min, sec,
+                             timeZone);
+                }
+            }
+            writer->String(isoformat);
+        } else /* if (datetimeMode & DM_UNIX_TIME) */ {
+            if (PyDateTime_Check(dtObject)) {
+                PyObject* timestampObj = PyObject_CallMethodObjArgs(dtObject,
+                                                                    timestamp_name,
+                                                                    NULL);
 
                 if (!timestampObj) {
-                    goto error;
+                    Py_XDECREF(asUTC);
+                    return false;
                 }
 
                 double timestamp = PyFloat_AsDouble(timestampObj);
@@ -2049,59 +1941,149 @@ dumps_internal(
                     writer->Double(timestamp);
                     writer->SetMaxDecimalPlaces(precision);
                 }
+            } else {
+                hour = PyDateTime_TIME_GET_HOUR(dtObject);
+                min = PyDateTime_TIME_GET_MINUTE(dtObject);
+                sec = PyDateTime_TIME_GET_SECOND(dtObject);
+                microsec = PyDateTime_TIME_GET_MICROSECOND(dtObject);
+
+                long timestamp = hour * 3600 + min * 60 + sec;
+
+                if (datetimeMode & DM_ONLY_SECONDS)
+                    writer->Int64(timestamp);
+                else
+                    writer->Double(timestamp + (microsec / 1000000.0));
             }
         }
-        else if (uuidMode != UM_NONE
-                 && PyObject_TypeCheck(object, (PyTypeObject*) uuid_type)) {
-            PyObject* retval;
-            if (uuidMode == UM_CANONICAL)
-                retval = PyObject_Str(object);
+        Py_XDECREF(asUTC);
+    }
+    else if (datetimeMode != DM_NONE && PyDate_Check(object)) {
+        unsigned int year = PyDateTime_GET_YEAR(object);
+        unsigned int month = PyDateTime_GET_MONTH(object);
+        unsigned int day = PyDateTime_GET_DAY(object);
+
+        if (datetime_mode_format(datetimeMode) == DM_ISO8601) {
+            const int ISOFORMAT_LEN = 16;
+            char isoformat[ISOFORMAT_LEN];
+            memset(isoformat, 0, ISOFORMAT_LEN);
+
+            snprintf(isoformat, ISOFORMAT_LEN-1, "%04u-%02u-%02u", year, month, day);
+            writer->String(isoformat);
+        } else /* datetime_mode_format(datetimeMode) == DM_UNIX_TIME */ {
+            // A date object, take its midnight timestamp
+            PyObject* midnightObj;
+            PyObject* timestampObj;
+
+            if (datetimeMode & (DM_SHIFT_TO_UTC | DM_NAIVE_IS_UTC))
+                midnightObj = PyDateTimeAPI->DateTime_FromDateAndTime(
+                    year, month, day, 0, 0, 0, 0,
+                    timezone_utc, PyDateTimeAPI->DateTimeType);
             else
-                retval = PyObject_GetAttr(object, hex_name);
-            if (retval == NULL)
-                goto error;
+                midnightObj = PyDateTime_FromDateAndTime(year, month, day,
+                                                         0, 0, 0, 0);
 
-            // Decref the return value once it's done being dumped to a string.
-            stack.push_back(WriterContext(NULL, 0, NULL, false, currentLevel, retval));
-            stack.push_back(WriterContext(NULL, 0, retval, false, currentLevel));
-        }
-        else if (defaultFn) {
-            PyObject* retval = PyObject_CallFunctionObjArgs(defaultFn, object, NULL);
-            if (retval == NULL)
-                goto error;
+            if (!midnightObj) {
+                return false;
+            }
 
-            // Decref the return value once it's done being dumped to a string.
-            stack.push_back(WriterContext(NULL, 0, NULL, false, currentLevel, retval));
-            stack.push_back(WriterContext(NULL, 0, retval, false, currentLevel));
-        }
-        else {
-            PyObject* repr = PyObject_Repr(object);
-            PyErr_Format(PyExc_TypeError, "%s is not JSON serializable",
-                         PyUnicode_AsUTF8(repr));
-            Py_XDECREF(repr);
-            goto error;
+            timestampObj = PyObject_CallMethodObjArgs(midnightObj, timestamp_name,
+                                                      NULL);
+
+            Py_DECREF(midnightObj);
+
+            if (!timestampObj) {
+                return false;
+            }
+
+            double timestamp = PyFloat_AsDouble(timestampObj);
+
+            Py_DECREF(timestampObj);
+
+            if (datetimeMode & DM_ONLY_SECONDS)
+                writer->Int64((int64_t) timestamp);
+            else {
+                int precision = writer->GetMaxDecimalPlaces();
+                writer->SetMaxDecimalPlaces(6);
+                writer->Double(timestamp);
+                writer->SetMaxDecimalPlaces(precision);
+            }
         }
     }
+    else if (uuidMode != UM_NONE
+             && PyObject_TypeCheck(object, (PyTypeObject*) uuid_type)) {
+        PyObject* retval;
+        if (uuidMode == UM_CANONICAL)
+            retval = PyObject_Str(object);
+        else
+            retval = PyObject_GetAttr(object, hex_name);
+        if (retval == NULL)
+            return false;
+        if (!RECURSE(retval)) {
+            Py_DECREF(retval);
+            return false;
+        }
+        Py_DECREF(retval);
+    }
+    else if (PyIter_Check(object)) {
+        PyObject* iterator = PyObject_GetIter(object);
+        if (iterator == NULL)
+            return false;
 
-    return PyUnicode_FromString(buf->GetString());
+        writer->StartArray();
 
-error:
-    return NULL;
+        PyObject* item;
+        while ((item = PyIter_Next(iterator))) {
+            if (!RECURSE(item)) {
+                Py_DECREF(item);
+                Py_DECREF(iterator);
+                return false;
+            }
+            Py_DECREF(item);
+        }
+
+        Py_DECREF(iterator);
+
+        // PyIter_Next() may exit with an error
+        if (PyErr_Occurred())
+            return false;
+
+        writer->EndArray();
+    }
+    else if (defaultFn) {
+        PyObject* retval = PyObject_CallFunctionObjArgs(defaultFn, object, NULL);
+        if (retval == NULL)
+            return false;
+        if (!RECURSE(retval)) {
+            Py_DECREF(retval);
+            return false;
+        }
+        Py_DECREF(retval);
+    }
+    else {
+        PyObject* repr = PyObject_Repr(object);
+        PyErr_Format(PyExc_TypeError, "%s is not JSON serializable",
+                     PyUnicode_AsUTF8(repr));
+        Py_XDECREF(repr);
+        return false;
+    }
+
+    return true;
+
+#undef RECURSE
 }
 
 
-#define DUMPS_INTERNAL_CALL \
-    dumps_internal( \
-        &writer, \
-        &buf, \
-        value, \
-        skipInvalidKeys, \
-        defaultFn, \
-        sortKeys, \
-        maxRecursionDepth, \
-        numberMode, \
-        datetimeMode, \
-        uuidMode)
+#define DUMPS_INTERNAL_CALL                             \
+    (dumps_internal(&writer,                            \
+                    value,                              \
+                    skipInvalidKeys,                    \
+                    defaultFn,                          \
+                    sortKeys,                           \
+                    maxRecursionDepth,                  \
+                    numberMode,                         \
+                    datetimeMode,                       \
+                    uuidMode)                           \
+     ? PyUnicode_FromString(buf.GetString()) : NULL)
 
 
 typedef struct {
