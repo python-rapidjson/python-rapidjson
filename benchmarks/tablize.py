@@ -31,7 +31,7 @@ FOOTNOTES = [
     '``rapidjson.dumps(number_mode=NM_NATIVE)``',
     '``rapidjson.Encoder(number_mode=NM_NATIVE)``',
     '`ujson 1.35 <https://pypi.python.org/pypi/ujson/1.35>`__',
-    '`simplejson 3.11.1 <https://pypi.python.org/pypi/simplejson/3.11.1>`__',
+    '`simplejson 3.13.2 <https://pypi.python.org/pypi/simplejson/3.13.2>`__',
     'Python %d.%d.%d standard library ``json``' % sys.version_info[:3],
     '`yajl 0.3.5 <https://pypi.python.org/pypi/yajl/0.3.5>`__',
     '``rapidjson.loads()``',

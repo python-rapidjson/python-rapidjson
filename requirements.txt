@@ -3,7 +3,7 @@
 pytest-benchmark==3.1.1
 
 # Keep in sync with benchmarks/tablize.py versions
-simplejson==3.11.1
+simplejson==3.13.2
 ujson==1.35
 yajl==0.3.5
 
