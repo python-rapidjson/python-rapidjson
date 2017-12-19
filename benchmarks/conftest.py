@@ -23,6 +23,14 @@ def pytest_benchmark_group_stats(config, benchmarks, group_by):
     return sorted(result.items())
 
 
+# Remove parametrization data from JSON output to keep it to a reasonable size
+# See https://github.com/ionelmc/pytest-benchmark/issues/96
+
+def pytest_benchmark_update_json(config, benchmarks, output_json):
+    for benchmark in output_json['benchmarks']:
+        benchmark['params'].pop('data')
+
+
 def pytest_addoption(parser):
     parser.addoption('--compare-other-engines', action='store_true',
                      help='compare against other JSON engines')
