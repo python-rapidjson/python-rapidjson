@@ -1545,6 +1545,13 @@ dumps_internal(
 #define RECURSE(v) dumps_internal(writer, v, skipKeys, defaultFn, sortKeys, \
                                   numberMode, datetimeMode, uuidMode)
 
+#define ASSERT_VALID_SIZE(l) do {                                       \
+    if (l < 0 || l > UINT_MAX) {                                        \
+        PyErr_SetString(PyExc_ValueError, "Out of range string size");  \
+        return false;                                                   \
+    } } while(0)
+
+
     if (object == Py_None) {
         writer->Null();
     }
@@ -1664,15 +1671,16 @@ dumps_internal(
 
         if (PyBytes_AsStringAndSize(object, &s, &l) == -1)
             return false;
-
-        writer->String(s, l);
+        ASSERT_VALID_SIZE(l);
+        writer->String(s, (SizeType) l);
     }
     else if (PyUnicode_Check(object)) {
         Py_ssize_t l;
         const char* s = PyUnicode_AsUTF8AndSize(object, &l);
         if (s == NULL)
             return false;
-        writer->String(s, l);
+        ASSERT_VALID_SIZE(l);
+        writer->String(s, (SizeType) l);
     }
     else if (PyList_Check(object)) {
         writer->StartArray();
@@ -1722,7 +1730,8 @@ dumps_internal(
                     const char* key_str = PyUnicode_AsUTF8AndSize(key, &l);
                     if (key_str == NULL)
                         return false;
-                    writer->Key(key_str, l);
+                    ASSERT_VALID_SIZE(l);
+                    writer->Key(key_str, (SizeType) l);
                     if (Py_EnterRecursiveCall(" while JSONifying dict object"))
                         return false;
                     bool r = RECURSE(item);
@@ -1745,6 +1754,7 @@ dumps_internal(
                     const char* key_str = PyUnicode_AsUTF8AndSize(key, &l);
                     if (key_str == NULL)
                         return false;
+                    ASSERT_VALID_SIZE(l);
                     items.push_back(DictItem(key_str, l, item));
                 }
                 else if (!skipKeys) {
@@ -1756,7 +1766,7 @@ dumps_internal(
             std::sort(items.begin(), items.end());
 
             for (size_t i=0, s=items.size(); i < s; i++) {
-                writer->Key(items[i].key_str, items[i].key_size);
+                writer->Key(items[i].key_str, (SizeType) items[i].key_size);
                 if (Py_EnterRecursiveCall(" while JSONifying dict object"))
                     return false;
                 bool r = RECURSE(items[i].item);
@@ -2031,7 +2041,7 @@ dumps_internal(
             Py_DECREF(retval);
             return false;
         }
-        writer->String(s, l);
+        writer->String(s, (SizeType) l);
         Py_DECREF(retval);
     }
     else if (PyIter_Check(object)) {
@@ -2087,6 +2097,7 @@ dumps_internal(
     return true;
 
 #undef RECURSE
+#undef ASSERT_VALID_SIZE
 }
 
 
