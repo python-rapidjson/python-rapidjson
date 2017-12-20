@@ -241,16 +241,6 @@ def test_decimal(dumps, loads):
 
 
 @pytest.mark.unit
-def test_max_recursion_depth(dumps):
-    a = {'a': {'b': {'c': 1}}}
-
-    assert dumps(a) == '{"a":{"b":{"c":1}}}'
-
-    with pytest.raises(OverflowError):
-        dumps(a, max_recursion_depth=2)
-
-
-@pytest.mark.unit
 def test_datetime_mode_dumps(dumps):
     import pytz
 
@@ -581,7 +571,6 @@ def test_explicit_defaults_dumps():
         indent=None,
         default=None,
         sort_keys=False,
-        max_recursion_depth=2048,
         number_mode=None,
         datetime_mode=None,
         uuid_mode=None,

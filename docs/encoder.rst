@@ -19,8 +19,7 @@
                           PM_NONE, PM_COMMENTS, PM_TRAILING_COMMAS)
 
 .. class:: Encoder(skip_invalid_keys=False, ensure_ascii=True, indent=None, \
-                   sort_keys=False, max_recursion_depth=2048, \
-                   number_mode=None, datetime_mode=None, uuid_mode=None)
+                   sort_keys=False, number_mode=None, datetime_mode=None, uuid_mode=None)
 
    Class-based :func:`dumps`\ -like functionality.
 
@@ -31,7 +30,6 @@
                       <pretty-print>`
    :param bool sort_keys: whether dictionary keys should be :ref:`sorted
                           alphabetically <sort-keys>`
-   :param int max_recursion_depth: :ref:`maximum depth <max-depth>` for nested structures
    :param int number_mode: enable particular :ref:`behaviors in handling numbers
                            <dumps-number-mode>`
    :param int datetime_mode: how should :ref:`datetime, time and date instances be handled

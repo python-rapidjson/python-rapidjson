@@ -19,9 +19,8 @@
                           PM_NONE, PM_COMMENTS, PM_TRAILING_COMMAS)
 
 .. function:: dumps(obj, skipkeys=False, ensure_ascii=True, indent=None, \
-                    default=None, sort_keys=False, max_recursion_depth=2048, \
-                    number_mode=None, datetime_mode=None, uuid_mode=None, \
-                    allow_nan=True)
+                    default=None, sort_keys=False, number_mode=None, datetime_mode=None, \
+                    uuid_mode=None, allow_nan=True)
 
    Encode given Python `obj` instance into a ``JSON`` string.
 
@@ -33,7 +32,6 @@
                             otherwise be serialized
    :param bool sort_keys: whether dictionary keys should be sorted
                           alphabetically
-   :param int max_recursion_depth: maximum depth for nested structures
    :param int number_mode: enable particular behaviors in handling numbers
    :param int datetime_mode: how should :class:`datetime`, :class:`time` and
                              :class:`date` instances be handled
@@ -146,26 +144,6 @@
 
       >>> dumps(point, default=point_jsonifier, sort_keys=True)
       '{"x":1,"y":2}'
-
-
-   .. _max-depth:
-   .. rubric:: `max_recursion_depth`
-
-   With `max_recursion_depth` you can control the maximum depth that will be reached when
-   serializing nested structures:
-
-   .. doctest::
-
-      >>> a = []
-      >>> for i in range(10):
-      ...  a = [a]
-      ...
-      >>> dumps(a)
-      '[[[[[[[[[[[]]]]]]]]]]]'
-      >>> dumps(a, max_recursion_depth=2)
-      Traceback (most recent call last):
-        File "<stdin>", line 1, in <module>
-      OverflowError: Max recursion depth reached
 
 
    .. _dumps-number-mode:

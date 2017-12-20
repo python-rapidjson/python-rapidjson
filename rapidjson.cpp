@@ -174,8 +174,8 @@ static PyObject* decoder_new(PyTypeObject* type, PyObject* args, PyObject* kwarg
 
 
 static PyObject* do_encode(PyObject* value, bool skipInvalidKeys, PyObject* defaultFn,
-                           bool sortKeys, unsigned maxRecursionDepth, bool ensureAscii,
-                           bool prettyPrint, unsigned indent, NumberMode numberMode,
+                           bool sortKeys, bool ensureAscii, bool prettyPrint,
+                           unsigned indent, NumberMode numberMode,
                            DatetimeMode datetimeMode, UuidMode uuidMode);
 static PyObject* encoder_call(PyObject* self, PyObject* args, PyObject* kwargs);
 static PyObject* encoder_new(PyTypeObject* type, PyObject* args, PyObject* kwargs);
@@ -1528,9 +1528,6 @@ struct DictItem {
 };
 
 
-static const int MAX_RECURSION_DEPTH = 2048;
-
-
 template<typename WriterT>
 static bool
 dumps_internal(
@@ -1539,21 +1536,14 @@ dumps_internal(
     bool skipKeys,
     PyObject* defaultFn,
     bool sortKeys,
-    unsigned maxRecursionDepth,
     NumberMode numberMode,
     DatetimeMode datetimeMode,
     UuidMode uuidMode)
 {
     int is_decimal;
 
-    if (maxRecursionDepth == 0) {
-        PyErr_SetString(PyExc_OverflowError, "Max recursion depth reached");
-        return false;
-    }
-
-#define RECURSE(v) (dumps_internal(writer, v, skipKeys, defaultFn, sortKeys, \
-                                   maxRecursionDepth-1,                      \
-                                   numberMode, datetimeMode, uuidMode))
+#define RECURSE(v) dumps_internal(writer, v, skipKeys, defaultFn, sortKeys, \
+                                  numberMode, datetimeMode, uuidMode)
 
     if (object == Py_None) {
         writer->Null();
@@ -1690,8 +1680,12 @@ dumps_internal(
         Py_ssize_t size = PyList_GET_SIZE(object);
 
         for (Py_ssize_t i = 0; i < size; i++) {
+            if (Py_EnterRecursiveCall(" while JSONifying list object"))
+                return false;
             PyObject* item = PyList_GET_ITEM(object, i);
-            if (!RECURSE(item))
+            bool r = RECURSE(item);
+            Py_LeaveRecursiveCall();
+            if (!r)
                 return false;
         }
 
@@ -1703,8 +1697,12 @@ dumps_internal(
         Py_ssize_t size = PyTuple_GET_SIZE(object);
 
         for (Py_ssize_t i = 0; i < size; i++) {
+            if (Py_EnterRecursiveCall(" while JSONifying tuple object"))
+                return false;
             PyObject* item = PyTuple_GET_ITEM(object, i);
-            if (!RECURSE(item))
+            bool r = RECURSE(item);
+            Py_LeaveRecursiveCall();
+            if (!r)
                 return false;
         }
 
@@ -1725,7 +1723,11 @@ dumps_internal(
                     if (key_str == NULL)
                         return false;
                     writer->Key(key_str, l);
-                    if (!RECURSE(item))
+                    if (Py_EnterRecursiveCall(" while JSONifying dict object"))
+                        return false;
+                    bool r = RECURSE(item);
+                    Py_LeaveRecursiveCall();
+                    if (!r)
                         return false;
                 }
                 else if (!skipKeys) {
@@ -1755,7 +1757,11 @@ dumps_internal(
 
             for (int i=0, s=items.size(); i < s; i++) {
                 writer->Key(items[i].key_str, items[i].key_size);
-                if (!RECURSE(items[i].item))
+                if (Py_EnterRecursiveCall(" while JSONifying dict object"))
+                    return false;
+                bool r = RECURSE(items[i].item);
+                Py_LeaveRecursiveCall();
+                if (!r)
                     return false;
             }
         }
@@ -2018,10 +2024,14 @@ dumps_internal(
             retval = PyObject_GetAttr(object, hex_name);
         if (retval == NULL)
             return false;
-        if (!RECURSE(retval)) {
+
+        Py_ssize_t l;
+        const char* s = PyUnicode_AsUTF8AndSize(retval, &l);
+        if (s == NULL) {
             Py_DECREF(retval);
             return false;
         }
+        writer->String(s, l);
         Py_DECREF(retval);
     }
     else if (PyIter_Check(object)) {
@@ -2033,12 +2043,18 @@ dumps_internal(
 
         PyObject* item;
         while ((item = PyIter_Next(iterator))) {
-            if (!RECURSE(item)) {
+            if (Py_EnterRecursiveCall(" while JSONifying iterable object")) {
                 Py_DECREF(item);
                 Py_DECREF(iterator);
                 return false;
             }
+            bool r = RECURSE(item);
+            Py_LeaveRecursiveCall();
             Py_DECREF(item);
+            if (!r) {
+                Py_DECREF(iterator);
+                return false;
+            }
         }
 
         Py_DECREF(iterator);
@@ -2053,11 +2069,15 @@ dumps_internal(
         PyObject* retval = PyObject_CallFunctionObjArgs(defaultFn, object, NULL);
         if (retval == NULL)
             return false;
-        if (!RECURSE(retval)) {
+        if (Py_EnterRecursiveCall(" while JSONifying default function result")) {
             Py_DECREF(retval);
             return false;
         }
+        bool r = RECURSE(retval);
+        Py_LeaveRecursiveCall();
         Py_DECREF(retval);
+        if (!r)
+            return false;
     }
     else {
         PyErr_Format(PyExc_TypeError, "%R is not JSON serializable", object);
@@ -2076,7 +2096,6 @@ dumps_internal(
                     skipInvalidKeys,                    \
                     defaultFn,                          \
                     sortKeys,                           \
-                    maxRecursionDepth,                  \
                     numberMode,                         \
                     datetimeMode,                       \
                     uuidMode)                           \
@@ -2090,7 +2109,6 @@ typedef struct {
     bool prettyPrint;
     unsigned indent;
     bool sortKeys;
-    unsigned maxRecursionDepth;
     DatetimeMode datetimeMode;
     UuidMode uuidMode;
     NumberMode numberMode;
@@ -2099,8 +2117,7 @@ typedef struct {
 
 PyDoc_STRVAR(dumps_docstring,
              "dumps(obj, skipkeys=False, ensure_ascii=True, indent=None, default=None,"
-             " sort_keys=False, max_recursion_depth=2048,"
-             " number_mode=None, datetime_mode=None, uuid_mode=None,"
+             " sort_keys=False, number_mode=None, datetime_mode=None, uuid_mode=None,"
              " allow_nan=True)\n"
              "\n"
              "Encode a Python object into a JSON string.");
@@ -2117,7 +2134,6 @@ dumps(PyObject* self, PyObject* args, PyObject* kwargs)
     PyObject* indent = NULL;
     PyObject* defaultFn = NULL;
     int sortKeys = false;
-    unsigned maxRecursionDepth = MAX_RECURSION_DEPTH;
     PyObject* numberModeObj = NULL;
     NumberMode numberMode = NM_NAN;
     PyObject* datetimeModeObj = NULL;
@@ -2134,7 +2150,6 @@ dumps(PyObject* self, PyObject* args, PyObject* kwargs)
         "indent",
         "default",
         "sort_keys",
-        "max_recursion_depth",
         "number_mode",
         "datetime_mode",
         "uuid_mode",
@@ -2145,7 +2160,7 @@ dumps(PyObject* self, PyObject* args, PyObject* kwargs)
         NULL
     };
 
-    if (!PyArg_ParseTupleAndKeywords(args, kwargs, "O|ppOOpIOOOp:rapidjson.dumps",
+    if (!PyArg_ParseTupleAndKeywords(args, kwargs, "O|ppOOpOOOp:rapidjson.dumps",
                                      (char **) kwlist,
                                      &value,
                                      &skipKeys,
@@ -2153,7 +2168,6 @@ dumps(PyObject* self, PyObject* args, PyObject* kwargs)
                                      &indent,
                                      &defaultFn,
                                      &sortKeys,
-                                     &maxRecursionDepth,
                                      &numberModeObj,
                                      &datetimeModeObj,
                                      &uuidModeObj,
@@ -2235,16 +2249,14 @@ dumps(PyObject* self, PyObject* args, PyObject* kwargs)
     }
 
     return do_encode(value, skipKeys ? true : false, defaultFn, sortKeys ? true : false,
-                     maxRecursionDepth, ensureAscii ? true : false,
-                     prettyPrint ? true : false, indentCharCount, numberMode,
-                     datetimeMode, uuidMode);
+                     ensureAscii ? true : false, prettyPrint ? true : false,
+                     indentCharCount, numberMode, datetimeMode, uuidMode);
 }
 
 
 PyDoc_STRVAR(encoder_doc,
              "Encoder(skip_invalid_keys=False, ensure_ascii=True, indent=None,"
-             " sort_keys=False, max_recursion_depth=2048, number_mode=None,"
-             " datetime_mode=None, uuid_mode=None)\n"
+             " sort_keys=False, number_mode=None, datetime_mode=None, uuid_mode=None)\n"
              "\n"
              "Create and return a new Encoder instance.");
 
@@ -2258,8 +2270,6 @@ static PyMemberDef encoder_members[] = {
      T_UINT, offsetof(EncoderObject, indent), READONLY, "indent"},
     {"sort_keys",
      T_BOOL, offsetof(EncoderObject, ensureAscii), READONLY, "sort_keys"},
-    {"max_recursion_depth",
-     T_UINT, offsetof(EncoderObject, maxRecursionDepth), READONLY, "max_recursion_depth"},
     {"datetime_mode",
      T_UINT, offsetof(EncoderObject, datetimeMode), READONLY, "datetime_mode"},
     {"uuid_mode",
@@ -2319,7 +2329,7 @@ static PyTypeObject Encoder_Type = {
 
 static PyObject*
 do_encode(PyObject* value, bool skipInvalidKeys, PyObject* defaultFn, bool sortKeys,
-          unsigned maxRecursionDepth, bool ensureAscii, bool prettyPrint, unsigned indent,
+          bool ensureAscii, bool prettyPrint, unsigned indent,
           NumberMode numberMode, DatetimeMode datetimeMode, UuidMode uuidMode)
 {
     if (!prettyPrint) {
@@ -2365,8 +2375,8 @@ encoder_call(PyObject* self, PyObject* args, PyObject* kwargs)
     }
 
     return do_encode(value, e->skipInvalidKeys, defaultFn, e->sortKeys,
-                     e->maxRecursionDepth, e->ensureAscii, e->prettyPrint,
-                     e->indent, e->numberMode, e->datetimeMode, e->uuidMode);
+                     e->ensureAscii, e->prettyPrint, e->indent,
+                     e->numberMode, e->datetimeMode, e->uuidMode);
 }
 
 
@@ -2378,7 +2388,6 @@ encoder_new(PyTypeObject* type, PyObject* args, PyObject* kwargs)
     int ensureAscii = true;
     PyObject* indent = NULL;
     int sortKeys = false;
-    unsigned maxRecursionDepth = MAX_RECURSION_DEPTH;
     PyObject* numberModeObj = NULL;
     NumberMode numberMode = NM_NAN;
     PyObject* datetimeModeObj = NULL;
@@ -2393,20 +2402,18 @@ encoder_new(PyTypeObject* type, PyObject* args, PyObject* kwargs)
         "ensure_ascii",
         "indent",
         "sort_keys",
-        "max_recursion_depth",
         "number_mode",
         "datetime_mode",
         "uuid_mode",
         NULL
     };
 
-    if (!PyArg_ParseTupleAndKeywords(args, kwargs, "|ppOpIOOO:Encoder",
+    if (!PyArg_ParseTupleAndKeywords(args, kwargs, "|ppOpOOO:Encoder",
                                      (char **) kwlist,
                                      &skipInvalidKeys,
                                      &ensureAscii,
                                      &indent,
                                      &sortKeys,
-                                     &maxRecursionDepth,
                                      &numberModeObj,
                                      &datetimeModeObj,
                                      &uuidModeObj))
@@ -2480,7 +2487,6 @@ encoder_new(PyTypeObject* type, PyObject* args, PyObject* kwargs)
     e->prettyPrint = prettyPrint;
     e->indent = indentCharCount;
     e->sortKeys = sortKeys ? true : false;
-    e->maxRecursionDepth = maxRecursionDepth;
     e->datetimeMode = datetimeMode;
     e->uuidMode = uuidMode;
     e->numberMode = numberMode;

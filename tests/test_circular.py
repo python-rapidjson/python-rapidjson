@@ -6,6 +6,7 @@
 # :Copyright: © 2017 Lele Gaifax
 #
 
+
 import pytest
 
 
@@ -14,7 +15,7 @@ def test_circular_dict(dumps):
     dct = {}
     dct['a'] = dct
 
-    with pytest.raises(OverflowError):
+    with pytest.raises(RecursionError):
         dumps(dct)
 
 
@@ -23,7 +24,7 @@ def test_circular_list(dumps):
     lst = []
     lst.append(lst)
 
-    with pytest.raises(OverflowError):
+    with pytest.raises(RecursionError):
         dumps(lst)
 
 
@@ -33,5 +34,25 @@ def test_circular_composite(dumps):
     dct2['a'] = []
     dct2['a'].append(dct2)
 
-    with pytest.raises(OverflowError):
+    with pytest.raises(RecursionError):
         dumps(dct2)
+
+@pytest.mark.unit
+def test_max_recursion_depth(dumps):
+    import sys
+
+    root = child = {}
+    for i in range(500):
+        nephew = {'value': i}
+        child['child'] = nephew
+        child = nephew
+
+    dumps(root)
+
+    rl = sys.getrecursionlimit()
+    sys.setrecursionlimit(500)
+    try:
+        with pytest.raises(RecursionError):
+            dumps(root)
+    finally:
+        sys.setrecursionlimit(rl)
