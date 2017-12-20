@@ -1,7 +1,7 @@
 Changes
 -------
 
-0.3.0 (unreleased)
+0.3.0 (2017-12-20)
 ~~~~~~~~~~~~~~~~~~
 
 * Fix compilation on MacOS (`issue #78`__)
