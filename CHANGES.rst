@@ -1,8 +1,8 @@
 Changes
 -------
 
-Unreleased
-~~~~~~~~~~
+0.3.0 (unreleased)
+~~~~~~~~~~~~~~~~~~
 
 * Fix compilation on MacOS (`issue #78`__)
 
