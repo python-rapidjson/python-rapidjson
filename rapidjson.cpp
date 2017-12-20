@@ -1314,7 +1314,7 @@ do_decode(PyObject* decoder, const char* jsonStr, Py_ssize_t jsonStrLen,
         reader.Parse<kParseInsituFlag | kParseNumbersAsStringsFlag>(ss, handler);
 
     if (reader.HasParseError()) {
-        SizeType offset = reader.GetErrorOffset();
+        size_t offset = reader.GetErrorOffset();
         ParseErrorCode code = reader.GetParseErrorCode();
         const char* msg = GetParseError_En(code);
         const char* fmt = "Parse error at offset %d: %s";
@@ -1755,7 +1755,7 @@ dumps_internal(
 
             std::sort(items.begin(), items.end());
 
-            for (int i=0, s=items.size(); i < s; i++) {
+            for (size_t i=0, s=items.size(); i < s; i++) {
                 writer->Key(items[i].key_str, items[i].key_size);
                 if (Py_EnterRecursiveCall(" while JSONifying dict object"))
                     return false;
