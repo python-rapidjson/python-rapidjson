@@ -6,8 +6,15 @@
 # :Copyright: © 2017 Lele Gaifax
 #
 
+import sys
 
 import pytest
+
+
+if sys.version_info >= (3, 5):
+    expected_exception = RecursionError
+else:
+    expected_exception = RuntimeError
 
 
 @pytest.mark.unit
@@ -15,7 +22,7 @@ def test_circular_dict(dumps):
     dct = {}
     dct['a'] = dct
 
-    with pytest.raises(RecursionError):
+    with pytest.raises(expected_exception):
         dumps(dct)
 
 
@@ -24,7 +31,7 @@ def test_circular_list(dumps):
     lst = []
     lst.append(lst)
 
-    with pytest.raises(RecursionError):
+    with pytest.raises(expected_exception):
         dumps(lst)
 
 
@@ -34,7 +41,7 @@ def test_circular_composite(dumps):
     dct2['a'] = []
     dct2['a'].append(dct2)
 
-    with pytest.raises(RecursionError):
+    with pytest.raises(expected_exception):
         dumps(dct2)
 
 @pytest.mark.unit
@@ -52,7 +59,7 @@ def test_max_recursion_depth(dumps):
     rl = sys.getrecursionlimit()
     sys.setrecursionlimit(500)
     try:
-        with pytest.raises(RecursionError):
+        with pytest.raises(expected_exception):
             dumps(root)
     finally:
         sys.setrecursionlimit(rl)
