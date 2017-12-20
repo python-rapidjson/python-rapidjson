@@ -2060,10 +2060,7 @@ dumps_internal(
         Py_DECREF(retval);
     }
     else {
-        PyObject* repr = PyObject_Repr(object);
-        PyErr_Format(PyExc_TypeError, "%s is not JSON serializable",
-                     PyUnicode_AsUTF8(repr));
-        Py_XDECREF(repr);
+        PyErr_Format(PyExc_TypeError, "%R is not JSON serializable", object);
         return false;
     }
 
