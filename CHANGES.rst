@@ -8,6 +8,18 @@ Unreleased
 
   __ https://github.com/python-rapidjson/python-rapidjson/issues/78
 
+* Handle generic iterables (`PR #89`__)
+
+  __ https://github.com/python-rapidjson/python-rapidjson/pull/89
+
+  **Backward incompatibility**: the ``dumps()`` function and the ``Encoder()``
+  constructor used to accept a ``max_recursion_depth`` argument, to control
+  the maximum allowed nesting of Python structures; since the underlying
+  function is now effectively recursive, it has been replaced by the generic
+  `sys.setrecursionlimit()`__ mechanism
+
+  __ https://docs.python.org/3.6/library/sys.html#sys.setrecursionlimit
+
 
 0.2.7 (2017-12-08)
 ~~~~~~~~~~~~~~~~~~
