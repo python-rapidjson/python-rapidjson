@@ -1,7 +1,7 @@
 Changes
 -------
 
-0.3.1 (unreleased)
+0.3.1 (2017-12-20)
 ~~~~~~~~~~~~~~~~~~
 
 * Fix Travis CI recipe to accomodate MacOS
