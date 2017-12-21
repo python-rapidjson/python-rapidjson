@@ -5,7 +5,8 @@
 # :Copyright: © 2017 Lele Gaifax
 #
 
-BUMPER := $(VENVDIR)/bin/bump_version -f minor
+BUMP_FIELD := minor
+BUMPER = $(VENVDIR)/bin/bump_version -f $(BUMP_FIELD)
 VERSION_TXT := version.txt
 VERSION = $(shell cat $(VERSION_TXT))
 
@@ -33,6 +34,13 @@ release: assert-master-branch assert-clean-tree
 	@echo ">>> Do your duties (update CHANGES.rst for example), then"
 	@echo ">>> execute “make tag-release”."
 	@echo ">>>"
+
+help::
+	@printf "tiny-release\n\tBump tiny version number\n"
+
+.PHONY: tiny-release
+tiny-release: BUMP_FIELD := tiny
+tiny-release: release
 
 help::
 	@printf "tag-release\n\tComplete the release tagging the working tree\n"
