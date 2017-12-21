@@ -1315,9 +1315,6 @@ do_decode(PyObject* decoder, const char* jsonStr, Py_ssize_t jsonStrLen,
 
     if (reader.HasParseError()) {
         size_t offset = reader.GetErrorOffset();
-        ParseErrorCode code = reader.GetParseErrorCode();
-        const char* msg = GetParseError_En(code);
-        const char* fmt = "Parse error at offset %d: %s";
 
         if (PyErr_Occurred()) {
             PyObject* etype;
@@ -1328,16 +1325,18 @@ do_decode(PyObject* decoder, const char* jsonStr, Py_ssize_t jsonStrLen,
             // Try to add the offset in the error message if the exception
             // value is a string.  Otherwise, use the original exception since
             // we can't be sure the exception type takes a single string.
-            const char* emsg = msg;
-            if (PyUnicode_Check(evalue)) {
-                emsg = PyUnicode_AsUTF8(evalue);
-                PyErr_Format(etype, fmt, offset, emsg);
+            if (evalue != NULL && PyUnicode_Check(evalue)) {
+                PyErr_Format(etype, "Parse error at offset %zu: %S", offset, evalue);
+                Py_DECREF(etype);
+                Py_DECREF(evalue);
+                Py_XDECREF(etraceback);
             }
             else
                 PyErr_Restore(etype, evalue, etraceback);
         }
         else
-            PyErr_Format(PyExc_ValueError, fmt, offset, msg);
+            PyErr_Format(PyExc_ValueError, "Parse error at offset %zu: %s",
+                         offset, GetParseError_En(reader.GetParseErrorCode()));
 
         Py_XDECREF(handler.root);
         free(jsonStrCopy);
