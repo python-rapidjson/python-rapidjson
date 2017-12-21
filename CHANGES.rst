@@ -1,6 +1,14 @@
 Changes
 -------
 
+0.3.2 (unreleased)
+~~~~~~~~~~~~~~~~~~
+
+* Reduce compiler warnings (`issue #87`__)
+
+  __ https://github.com/python-rapidjson/python-rapidjson/issues/87
+
+
 0.3.1 (2017-12-20)
 ~~~~~~~~~~~~~~~~~~
 
