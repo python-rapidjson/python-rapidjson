@@ -43,5 +43,5 @@ script:
     cibuildwheel --output-dir wheelhouse
     if [[ $TRAVIS_TAG ]]; then
       pip3 install twine
-      twine upload wheelhouse/*.whl
+      python3 -m twine upload wheelhouse/*.whl
     fi
