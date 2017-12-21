@@ -1,7 +1,7 @@
 Changes
 -------
 
-0.3.2 (unreleased)
+0.3.2 (2017-12-21)
 ~~~~~~~~~~~~~~~~~~
 
 * Reduce compiler warnings (`issue #87`__)
