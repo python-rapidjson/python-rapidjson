@@ -13,7 +13,7 @@
 
 .. testsetup::
 
-   from io import StringIO
+   import io
    from rapidjson import load
 
 .. function:: load(stream, *, object_hook=None, number_mode=None, datetime_mode=None, \
@@ -40,8 +40,9 @@
 
    .. doctest::
 
-      >>> stream = StringIO('["string", {"kind": "object"}, 3.14159]')
-      >>> load(stream)
+      >>> load(io.StringIO('"Naïve"'))
+      'Naïve'
+      >>> load(io.BytesIO(b'["string", {"kind": "object"}, 3.14159]'))
       ['string', {'kind': 'object'}, 3.14159]
 
    Consult the :func:`loads()` documentation for details on all other arguments.

@@ -46,6 +46,8 @@
          '€ 0.50'
          >>> decoder(io.StringIO('"€ 0.50"'))
          '€ 0.50'
+         >>> decoder(io.BytesIO(b'"\xe2\x82\xac 0.50"'))
+         '€ 0.50'
          >>> decoder(b'"\xe2\x82\xac 0.50"')
          '€ 0.50'
 

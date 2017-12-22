@@ -207,6 +207,7 @@ public:
         chunk = NULL;
         chunkLen = 0;
         pos = 0;
+        offset = 0;
         eof = false;
     }
 
@@ -264,7 +265,13 @@ private:
         }
         else {
             Py_ssize_t len;
-            buffer = PyUnicode_AsUTF8AndSize(chunk, &len);
+
+            if (PyBytes_Check(chunk)) {
+                len = PyBytes_GET_SIZE(chunk);
+                buffer = PyBytes_AS_STRING(chunk);
+            }
+            else
+                buffer = PyUnicode_AsUTF8AndSize(chunk, &len);
 
             if (len == 0) {
                 eof = true;
@@ -281,10 +288,10 @@ private:
     PyObject* chunkSize;
     PyObject* chunk;
     Ch* buffer;
-    unsigned int chunkLen;
-    unsigned int pos;
-    bool eof;
+    size_t chunkLen;
+    size_t pos;
     size_t offset;
+    bool eof;
 };
 
 

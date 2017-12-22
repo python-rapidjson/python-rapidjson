@@ -26,9 +26,11 @@ def pytest_generate_tests(metafunc):
     elif 'loads' in metafunc.fixturenames:
         metafunc.parametrize('loads', (
             rj.loads,
-            lambda j,**opts: rj.load(io.StringIO(j), **opts),
+            lambda j,**opts: rj.load(io.BytesIO(j.encode('utf-8')
+                                           if isinstance(j, str) else j), **opts),
             lambda j,**opts: rj.Decoder(**opts)(j),
-            lambda j,**opts: rj.Decoder(**opts)(io.StringIO(j)),
+            lambda j,**opts: rj.Decoder(**opts)(io.BytesIO(j.encode('utf-8')
+                                                      if isinstance(j, str) else j)),
         ), ids=('func[string]',
                 'func[stream]',
                 'class[string]',
