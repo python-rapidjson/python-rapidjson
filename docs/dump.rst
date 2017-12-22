@@ -1,0 +1,63 @@
+.. -*- coding: utf-8 -*-
+.. :Project:   python-rapidjson -- dump function documentation
+.. :Author:    Lele Gaifax <lele@metapensiero.it>
+.. :License:   MIT License
+.. :Copyright: © 2017 Lele Gaifax
+..
+
+=================
+ dump() function
+=================
+
+.. module:: rapidjson
+
+.. testsetup::
+
+   import io
+   from rapidjson import dump
+
+.. function:: dump(obj, stream, *, skipkeys=False, ensure_ascii=True, indent=None, \
+                   default=None, sort_keys=False, number_mode=None, datetime_mode=None, \
+                   uuid_mode=None, chunk_size=65536, allow_nan=True)
+
+   Encode given Python `obj` instance into a ``JSON`` stream.
+
+   :param obj: the value to be serialized
+   :param stream: a *file-like* instance (currently only *binary* streams are implemented)
+   :param bool skipkeys: whether skip invalid :class:`dict` keys
+   :param bool ensure_ascii: whether the output should contain only ASCII
+                             characters (currently only ``ensure_ascii=False``
+                             is implemented)
+   :param int indent: indentation width to produce pretty printed JSON
+   :param callable default: a function that gets called for objects that can't
+                            otherwise be serialized
+   :param bool sort_keys: whether dictionary keys should be sorted
+                          alphabetically
+   :param int number_mode: enable particular behaviors in handling numbers
+   :param int datetime_mode: how should :class:`datetime`, :class:`time` and
+                             :class:`date` instances be handled
+   :param int uuid_mode: how should :class:`UUID` instances be handled
+   :param int chunk_size: write the stream in chunks of this size at a time
+   :param bool allow_nan: *compatibility* flag equivalent to ``number_mode=NM_NAN``
+
+   The function has the same behaviour as :func:`dumps()`, except that it requires
+   an additional mandatory parameter, a *file-like* writable `stream` instance:
+
+   .. doctest::
+
+      >>> stream = io.BytesIO()
+      >>> dump('"bar"', stream, ensure_ascii=False)
+      >>> stream.getvalue()
+      b'"\\"bar\\""'
+
+   Support for text streams is currently **not** implemented:
+
+   .. doctest::
+
+      >>> stream = io.StringIO()
+      >>> dump('"bar"', stream, ensure_ascii=False)
+      Traceback (most recent call last):
+        ...
+      NotImplementedError: Text stream not (yet?) supported
+
+   Consult the :func:`dumps()` documentation for details on all other arguments.

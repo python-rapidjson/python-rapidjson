@@ -17,7 +17,7 @@
    from rapidjson import load
 
 .. function:: load(stream, *, object_hook=None, number_mode=None, datetime_mode=None, \
-                   uuid_mode=None, parse_mode=None, chunk_size=102400, allow_nan=True)
+                   uuid_mode=None, parse_mode=None, chunk_size=65536, allow_nan=True)
 
    Decode the given Python file-like `stream` containing a ``JSON`` formatted value
    into Python object.

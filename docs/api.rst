@@ -15,6 +15,7 @@
    :maxdepth: 2
 
    dumps
+   dump
    loads
    load
    encoder

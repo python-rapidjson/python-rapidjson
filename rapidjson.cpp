@@ -79,6 +79,8 @@ static PyObject* default_name = NULL;
 static PyObject* end_array_name = NULL;
 static PyObject* string_name = NULL;
 static PyObject* read_name = NULL;
+static PyObject* write_name = NULL;
+static PyObject* encoding_name = NULL;
 
 static PyObject* minus_inf_string_value = NULL;
 static PyObject* nan_string_value = NULL;
@@ -181,6 +183,11 @@ static PyObject* do_encode(PyObject* value, bool skipInvalidKeys, PyObject* defa
                            bool sortKeys, bool ensureAscii, bool prettyPrint,
                            unsigned indent, NumberMode numberMode,
                            DatetimeMode datetimeMode, UuidMode uuidMode);
+static PyObject* do_stream_encode(PyObject* value, PyObject* stream, size_t chunkSize,
+                                  bool skipInvalidKeys, PyObject* defaultFn,
+                                  bool sortKeys, bool ensureAscii, bool prettyPrint,
+                                  unsigned indent, NumberMode numberMode,
+                                  DatetimeMode datetimeMode, UuidMode uuidMode);
 static PyObject* encoder_call(PyObject* self, PyObject* args, PyObject* kwargs);
 static PyObject* encoder_new(PyTypeObject* type, PyObject* args, PyObject* kwargs);
 
@@ -292,6 +299,84 @@ private:
     size_t pos;
     size_t offset;
     bool eof;
+};
+
+
+class PyOStreamWrapper {
+public:
+    typedef char Ch;
+
+    PyOStreamWrapper(PyObject* stream, size_t size)
+        : stream(stream) {
+        Py_INCREF(stream);
+        buffer = (char*) malloc(size);
+        assert(buffer);
+        bufferEnd = buffer + size;
+        cursor = buffer;
+        isBinary = !PyObject_HasAttr(stream, encoding_name);
+        assert(isBinary); // TODO: UTF-8 strings chunking
+    }
+
+    ~PyOStreamWrapper() {
+        Py_CLEAR(stream);
+        free(buffer);
+    }
+
+    Ch Peek() {
+        assert(false);
+        return 0;
+    }
+
+    Ch Take() {
+        assert(false);
+        return 0;
+    }
+
+    size_t Tell() const {
+        assert(false);
+        return 0;
+    }
+
+    void Flush() {
+        PyObject* b = PyBytes_FromStringAndSize(buffer, (size_t)(cursor - buffer));
+        if (b == NULL) {
+            // TODO: what?!?
+        }
+        else {
+            PyObject* res = PyObject_CallMethodObjArgs(stream, write_name, b, NULL);
+            if (res == NULL) {
+                // TODO: what?!?
+            }
+            else {
+                Py_DECREF(res);
+            }
+            Py_DECREF(b);
+        }
+        cursor = buffer;
+    }
+
+    void Put(Ch c) {
+        if (cursor >= bufferEnd)
+            Flush();
+        *cursor++ = c;
+    }
+
+    Ch* PutBegin() {
+        assert(false);
+        return 0;
+    }
+
+    size_t PutEnd(Ch* begin) {
+        assert(false);
+        return 0;
+    }
+
+private:
+    PyObject* stream;
+    Ch* buffer;
+    Ch* bufferEnd;
+    Ch* cursor;
+    bool isBinary;
 };
 
 
@@ -1278,7 +1363,7 @@ loads(PyObject* self, PyObject* args, PyObject* kwargs)
 
 PyDoc_STRVAR(load_docstring,
              "load(stream, *, object_hook=None, number_mode=None, datetime_mode=None,"
-             " uuid_mode=None, parse_mode=None, chunk_size=102400, allow_nan=True)\n"
+             " uuid_mode=None, parse_mode=None, chunk_size=65536, allow_nan=True)\n"
              "\n"
              "Decode a JSON stream into a Python object.");
 
@@ -1313,7 +1398,7 @@ load(PyObject* self, PyObject* args, PyObject* kwargs)
     PyObject* parseModeObj = NULL;
     ParseMode parseMode = PM_NONE;
     PyObject* chunkSizeObj = NULL;
-    size_t chunkSize = 102400;
+    size_t chunkSize = 65536;
     int allowNan = -1;
 
     if (!PyArg_ParseTupleAndKeywords(args, kwargs, "O|$OOOOOOp:rapidjson.load",
@@ -1677,7 +1762,7 @@ decoder_call(PyObject* self, PyObject* args, PyObject* kwargs)
     };
     PyObject* jsonObject;
     PyObject* chunkSizeObj = NULL;
-    size_t chunkSize = 102400;
+    size_t chunkSize = 65536;
 
     if (!PyArg_ParseTupleAndKeywords(args, kwargs, "O|$O",
                                      (char**) kwlist,
@@ -2449,18 +2534,6 @@ dumps_internal(
 }
 
 
-#define DUMPS_INTERNAL_CALL                             \
-    (dumps_internal(&writer,                            \
-                    value,                              \
-                    skipInvalidKeys,                    \
-                    defaultFn,                          \
-                    sortKeys,                           \
-                    numberMode,                         \
-                    datetimeMode,                       \
-                    uuidMode)                           \
-     ? PyUnicode_FromString(buf.GetString()) : NULL)
-
-
 typedef struct {
     PyObject_HEAD
     bool skipInvalidKeys;
@@ -2475,7 +2548,7 @@ typedef struct {
 
 
 PyDoc_STRVAR(dumps_docstring,
-             "dumps(obj, skipkeys=False, ensure_ascii=True, indent=None, default=None,"
+             "dumps(obj, *, skipkeys=False, ensure_ascii=True, indent=None, default=None,"
              " sort_keys=False, number_mode=None, datetime_mode=None, uuid_mode=None,"
              " allow_nan=True)\n"
              "\n"
@@ -2519,7 +2592,7 @@ dumps(PyObject* self, PyObject* args, PyObject* kwargs)
         NULL
     };
 
-    if (!PyArg_ParseTupleAndKeywords(args, kwargs, "O|ppOOpOOOp:rapidjson.dumps",
+    if (!PyArg_ParseTupleAndKeywords(args, kwargs, "O|$ppOOpOOOp:rapidjson.dumps",
                                      (char**) kwlist,
                                      &value,
                                      &skipKeys,
@@ -2613,6 +2686,169 @@ dumps(PyObject* self, PyObject* args, PyObject* kwargs)
 }
 
 
+PyDoc_STRVAR(dump_docstring,
+             "dump(obj, stream, *, skipkeys=False, ensure_ascii=True, indent=None,"
+             " default=None, sort_keys=False, number_mode=None, datetime_mode=None,"
+             " uuid_mode=None, chunk_size=65536, allow_nan=True)\n"
+             "\n"
+             "Encode a Python object into a JSON stream.");
+
+
+static PyObject*
+dump(PyObject* self, PyObject* args, PyObject* kwargs)
+{
+    /* Converts a Python object to a JSON-encoded stream. */
+
+    PyObject* value;
+    PyObject* stream;
+    int skipKeys = false;
+    int ensureAscii = true;
+    PyObject* indent = NULL;
+    PyObject* defaultFn = NULL;
+    int sortKeys = false;
+    PyObject* numberModeObj = NULL;
+    NumberMode numberMode = NM_NAN;
+    PyObject* datetimeModeObj = NULL;
+    DatetimeMode datetimeMode = DM_NONE;
+    PyObject* uuidModeObj = NULL;
+    UuidMode uuidMode = UM_NONE;
+    bool prettyPrint = false;
+    unsigned indentCharCount = 4;
+    PyObject* chunkSizeObj = NULL;
+    size_t chunkSize = 65536;
+    int allowNan = -1;
+    static char const * kwlist[] = {
+        "obj",
+        "stream",
+        "skipkeys",
+        "ensure_ascii",
+        "indent",
+        "default",
+        "sort_keys",
+        "number_mode",
+        "datetime_mode",
+        "uuid_mode",
+        "chunk_size",
+
+        /* compatibility with stdlib json */
+        "allow_nan",
+
+        NULL
+    };
+
+    if (!PyArg_ParseTupleAndKeywords(args, kwargs, "OO|$ppOOpOOOOp:rapidjson.dump",
+                                     (char**) kwlist,
+                                     &value,
+                                     &stream,
+                                     &skipKeys,
+                                     &ensureAscii,
+                                     &indent,
+                                     &defaultFn,
+                                     &sortKeys,
+                                     &numberModeObj,
+                                     &datetimeModeObj,
+                                     &uuidModeObj,
+                                     &chunkSizeObj,
+                                     &allowNan))
+        return NULL;
+
+    if (defaultFn && !PyCallable_Check(defaultFn)) {
+        if (defaultFn == Py_None)
+            defaultFn = NULL;
+        else {
+            PyErr_SetString(PyExc_TypeError, "default must be a callable");
+            return NULL;
+        }
+    }
+
+    if (indent && indent != Py_None) {
+        prettyPrint = true;
+
+        if (PyLong_Check(indent) && PyLong_AsLong(indent) >= 0) {
+            indentCharCount = PyLong_AsUnsignedLong(indent);
+        }
+        else {
+            PyErr_SetString(PyExc_TypeError, "indent must be a non-negative int");
+            return NULL;
+        }
+    }
+
+    if (numberModeObj) {
+        if (numberModeObj == Py_None)
+            numberMode = NM_NONE;
+        else if (PyLong_Check(numberModeObj)) {
+            int mode = PyLong_AsLong(numberModeObj);
+            if (mode < 0 || mode >= 1<<3) {
+                PyErr_SetString(PyExc_ValueError, "Invalid number_mode");
+                return NULL;
+            }
+            numberMode = (NumberMode) mode;
+        }
+    }
+    if (allowNan != -1) {
+        if (allowNan)
+            numberMode = (NumberMode) (numberMode | NM_NAN);
+        else
+            numberMode = (NumberMode) (numberMode & ~NM_NAN);
+    }
+
+   if (datetimeModeObj) {
+        if (datetimeModeObj == Py_None)
+            datetimeMode = DM_NONE;
+        else if (PyLong_Check(datetimeModeObj)) {
+            int mode = PyLong_AsLong(datetimeModeObj);
+            if (!valid_datetime_mode(mode)) {
+                PyErr_SetString(PyExc_ValueError, "Invalid datetime_mode");
+                return NULL;
+            }
+            datetimeMode = (DatetimeMode) mode;
+        }
+        else {
+            PyErr_SetString(PyExc_TypeError,
+                            "datetime_mode must be a non-negative integer value or None");
+            return NULL;
+        }
+    }
+
+    if (uuidModeObj) {
+        if (uuidModeObj == Py_None)
+            uuidMode = UM_NONE;
+        else if (PyLong_Check(uuidModeObj)) {
+            uuidMode = (UuidMode) PyLong_AsLong(uuidModeObj);
+            if (uuidMode < UM_NONE || uuidMode > UM_HEX) {
+                PyErr_SetString(PyExc_ValueError, "Invalid uuid_mode");
+                return NULL;
+            }
+        }
+        else {
+            PyErr_SetString(PyExc_TypeError, "uuid_mode must be an integer value");
+            return NULL;
+        }
+    }
+
+    if (chunkSizeObj && chunkSizeObj != Py_None) {
+        if (PyLong_Check(chunkSizeObj)) {
+            unsigned long ul = PyLong_AsUnsignedLong(chunkSizeObj);
+            if (ul == 0 || ul > UINT_MAX) {
+                PyErr_SetString(PyExc_ValueError, "Out of range chunk_size");
+                return NULL;
+            }
+            chunkSize = (size_t) ul;
+        }
+        else {
+            PyErr_SetString(PyExc_TypeError,
+                            "chunk_size must be an unsigned integer value or None");
+            return NULL;
+        }
+    }
+
+    return do_stream_encode(value, stream, chunkSize, skipKeys ? true : false,
+                            defaultFn, sortKeys ? true : false,
+                            ensureAscii ? true : false, prettyPrint ? true : false,
+                            indentCharCount, numberMode, datetimeMode, uuidMode);
+}
+
+
 PyDoc_STRVAR(encoder_doc,
              "Encoder(skip_invalid_keys=False, ensure_ascii=True, indent=None,"
              " sort_keys=False, number_mode=None, datetime_mode=None, uuid_mode=None)\n"
@@ -2686,6 +2922,18 @@ static PyTypeObject Encoder_Type = {
 #define Encoder_Check(v) PyObject_TypeCheck(v, &Encoder_Type)
 
 
+#define DUMPS_INTERNAL_CALL                             \
+    (dumps_internal(&writer,                            \
+                    value,                              \
+                    skipInvalidKeys,                    \
+                    defaultFn,                          \
+                    sortKeys,                           \
+                    numberMode,                         \
+                    datetimeMode,                       \
+                    uuidMode)                           \
+     ? PyUnicode_FromString(buf.GetString()) : NULL)
+
+
 static PyObject*
 do_encode(PyObject* value, bool skipInvalidKeys, PyObject* defaultFn, bool sortKeys,
           bool ensureAscii, bool prettyPrint, unsigned indent,
@@ -2718,13 +2966,73 @@ do_encode(PyObject* value, bool skipInvalidKeys, PyObject* defaultFn, bool sortK
 }
 
 
+#define DUMP_INTERNAL_CALL                              \
+    (dumps_internal(&writer,                            \
+                    value,                              \
+                    skipInvalidKeys,                    \
+                    defaultFn,                          \
+                    sortKeys,                           \
+                    numberMode,                         \
+                    datetimeMode,                       \
+                    uuidMode)                           \
+     ? Py_INCREF(Py_None), Py_None : NULL)
+
+
+static PyObject*
+do_stream_encode(PyObject* value, PyObject* stream, size_t chunkSize,
+                 bool skipInvalidKeys, PyObject* defaultFn, bool sortKeys,
+                 bool ensureAscii, bool prettyPrint, unsigned indent,
+                 NumberMode numberMode, DatetimeMode datetimeMode, UuidMode uuidMode)
+{
+    if (PyObject_HasAttr(stream, encoding_name)) {
+        PyErr_SetString(PyExc_NotImplementedError, "Text streams not (yet?) supported");
+        return NULL;
+    }
+
+    PyOStreamWrapper os(stream, chunkSize);
+
+    if (!prettyPrint) {
+        if (ensureAscii) {
+            PyErr_SetString(PyExc_NotImplementedError, "ensure_ascii=True not implemented");
+            return NULL;
+        }
+        else {
+            Writer<PyOStreamWrapper> writer(os);
+            return DUMP_INTERNAL_CALL;
+        }
+    }
+    else if (ensureAscii) {
+        PyErr_SetString(PyExc_NotImplementedError, "ensure_ascii=True not implemented");
+        return NULL;
+    }
+    else {
+        PrettyWriter<PyOStreamWrapper> writer(os);
+        writer.SetIndent(' ', indent);
+        return DUMP_INTERNAL_CALL;
+    }
+}
+
+
 static PyObject*
 encoder_call(PyObject* self, PyObject* args, PyObject* kwargs)
 {
+    static char const * kwlist[] = {
+        "obj",
+        "stream",
+        "chunk_size",
+        NULL
+    };
     PyObject* value;
+    PyObject* stream = NULL;
+    PyObject* chunkSizeObj = NULL;
+    size_t chunkSize = 65536;
     PyObject* defaultFn = NULL;
 
-    if (!PyArg_ParseTuple(args, "O", &value))
+    if (!PyArg_ParseTupleAndKeywords(args, kwargs, "O|$OO",
+                                     (char**) kwlist,
+                                     &value,
+                                     &stream,
+                                     &chunkSizeObj))
         return NULL;
 
     EncoderObject* e = (EncoderObject*) self;
@@ -2733,9 +3041,34 @@ encoder_call(PyObject* self, PyObject* args, PyObject* kwargs)
         defaultFn = PyObject_GetAttr(self, default_name);
     }
 
-    return do_encode(value, e->skipInvalidKeys, defaultFn, e->sortKeys,
-                     e->ensureAscii, e->prettyPrint, e->indent,
-                     e->numberMode, e->datetimeMode, e->uuidMode);
+    if (stream != NULL) {
+        if (!PyObject_HasAttr(stream, write_name)) {
+            PyErr_SetString(PyExc_TypeError, "Expected a writable stream");
+            return NULL;
+        }
+        if (chunkSizeObj && chunkSizeObj != Py_None) {
+            if (PyLong_Check(chunkSizeObj)) {
+                unsigned long ul = PyLong_AsUnsignedLong(chunkSizeObj);
+                if (ul == 0 || ul > UINT_MAX) {
+                    PyErr_SetString(PyExc_ValueError, "Out of range chunk_size");
+                    return NULL;
+                }
+                chunkSize = (size_t) ul;
+            }
+            else {
+                PyErr_SetString(PyExc_TypeError,
+                                "chunk_size must be an unsigned integer value or None");
+                return NULL;
+            }
+        }
+        return do_stream_encode(value, stream, chunkSize, e->skipInvalidKeys, defaultFn,
+                                e->sortKeys, e->ensureAscii, e->prettyPrint, e->indent,
+                                e->numberMode, e->datetimeMode, e->uuidMode);
+    }
+    else
+        return do_encode(value, e->skipInvalidKeys, defaultFn, e->sortKeys,
+                         e->ensureAscii, e->prettyPrint, e->indent,
+                         e->numberMode, e->datetimeMode, e->uuidMode);
 }
 
 
@@ -3047,6 +3380,8 @@ functions[] = {
      load_docstring},
     {"dumps", (PyCFunction) dumps, METH_VARARGS | METH_KEYWORDS,
      dumps_docstring},
+    {"dump", (PyCFunction) dump, METH_VARARGS | METH_KEYWORDS,
+     dump_docstring},
     {NULL, NULL, 0, NULL} /* sentinel */
 };
 
@@ -3176,6 +3511,14 @@ PyInit_rapidjson()
     if (read_name == NULL)
         goto error;
 
+    write_name = PyUnicode_InternFromString("write");
+    if (write_name == NULL)
+        goto error;
+
+    encoding_name = PyUnicode_InternFromString("encoding");
+    if (encoding_name == NULL)
+        goto error;
+
     PyObject* m;
 
     m = PyModule_Create(&module);
@@ -3243,6 +3586,8 @@ error:
     Py_CLEAR(end_array_name);
     Py_CLEAR(string_name);
     Py_CLEAR(read_name);
+    Py_CLEAR(write_name);
+    Py_CLEAR(encoding_name);
 
     return NULL;
 }

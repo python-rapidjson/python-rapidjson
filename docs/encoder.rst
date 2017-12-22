@@ -37,10 +37,16 @@
    :param int uuid_mode: how should :ref:`UUID instances be handled <dumps-uuid-mode>`
 
 
-   .. method:: __call__(value)
+   .. method:: __call__(obj, *, stream=None, chunk_size=65536)
 
-      :param value: the Python value to be encoded
-      :returns: a string with the ``JSON`` encoded `value`
+      :param obj: the value to be encoded
+      :param stream: a *file-like* instance (currently only *binary* streams are
+                     implemented)
+      :param int chunk_size: write the stream in chunks of this size at a time
+      :returns: a string with the ``JSON`` encoded `value`, when `stream` is ``None``
+
+      When `stream` is specified, the encoded result will be written there, possibly in
+      chunks of `chunk_size` bytes at a time. Also, the return value will be ``None``,
 
    .. method:: default(value)
 
