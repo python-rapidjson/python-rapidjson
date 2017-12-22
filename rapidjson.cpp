@@ -78,6 +78,7 @@ static PyObject* end_object_name = NULL;
 static PyObject* default_name = NULL;
 static PyObject* end_array_name = NULL;
 static PyObject* string_name = NULL;
+static PyObject* read_name = NULL;
 
 static PyObject* minus_inf_string_value = NULL;
 static PyObject* nan_string_value = NULL;
@@ -89,6 +90,7 @@ struct HandlerContext {
     const char* key;
     SizeType keyLength;
     bool isObject;
+    bool copiedKey;
 };
 
 
@@ -165,10 +167,12 @@ enum ParseMode {
 //////////////////////////
 
 
-static PyObject* do_decode(PyObject* decoder, const char* jsonStr, Py_ssize_t jsonStrlen,
-                           PyObject* objectHook, NumberMode numberMode,
-                           DatetimeMode datetimeMode, UuidMode uuidMode,
-                           ParseMode parseMode);
+static PyObject* do_decode(PyObject* decoder,
+                           const char* jsonStr, Py_ssize_t jsonStrlen,
+                           PyObject* jsonStream, size_t chunkSize,
+                           PyObject* objectHook,
+                           NumberMode numberMode, DatetimeMode datetimeMode,
+                           UuidMode uuidMode, ParseMode parseMode);
 static PyObject* decoder_call(PyObject* self, PyObject* args, PyObject* kwargs);
 static PyObject* decoder_new(PyTypeObject* type, PyObject* args, PyObject* kwargs);
 
@@ -184,6 +188,104 @@ static PyObject* encoder_new(PyTypeObject* type, PyObject* args, PyObject* kwarg
 static PyObject* validator_call(PyObject* self, PyObject* args, PyObject* kwargs);
 static void validator_dealloc(PyObject* self);
 static PyObject* validator_new(PyTypeObject* type, PyObject* args, PyObject* kwargs);
+
+
+///////////////////////////////////////////////////
+// Stream wrapper around Python file-like object //
+///////////////////////////////////////////////////
+
+
+class PyIStreamWrapper {
+public:
+    typedef char Ch;
+
+    PyIStreamWrapper(PyObject* stream, size_t size)
+        : stream(stream) {
+        Py_INCREF(stream);
+        chunkSize = PyLong_FromUnsignedLong(size);
+        buffer = NULL;
+        chunk = NULL;
+        chunkLen = 0;
+        pos = 0;
+        eof = false;
+    }
+
+    ~PyIStreamWrapper() {
+        Py_CLEAR(stream);
+        Py_CLEAR(chunkSize);
+        Py_CLEAR(chunk);
+    }
+
+    Ch Peek() {
+        if (!eof && pos == chunkLen) {
+            Read();
+        }
+        return eof ? '\0' : buffer[pos];
+    }
+
+    Ch Take() {
+        if (!eof && pos == chunkLen) {
+            Read();
+        }
+        return eof ? '\0' : buffer[pos++];
+    }
+
+    size_t Tell() const {
+        return offset + pos;
+    }
+
+    void Flush() {
+        assert(false);
+    }
+
+    void Put(Ch c) {
+        assert(false);
+    }
+
+    Ch* PutBegin() {
+        assert(false);
+        return 0;
+    }
+
+    size_t PutEnd(Ch* begin) {
+        assert(false);
+        return 0;
+    }
+
+private:
+    void Read() {
+        Py_CLEAR(chunk);
+
+        chunk = PyObject_CallMethodObjArgs(stream, read_name, chunkSize, NULL);
+
+        if (chunk == NULL) {
+            // TODO: understand if/how RapidJSON can handle read errors
+            eof = true;
+        }
+        else {
+            Py_ssize_t len;
+            buffer = PyUnicode_AsUTF8AndSize(chunk, &len);
+
+            if (len == 0) {
+                eof = true;
+            }
+            else {
+                offset += chunkLen;
+                chunkLen = len;
+                pos = 0;
+            }
+        }
+    }
+
+    PyObject* stream;
+    PyObject* chunkSize;
+    PyObject* chunk;
+    Ch* buffer;
+    unsigned int chunkLen;
+    unsigned int pos;
+    bool eof;
+    size_t offset;
+};
 
 
 /////////////
@@ -285,8 +387,17 @@ struct PyHandler {
 
     bool Key(const char* str, SizeType length, bool copy) {
         HandlerContext& current = stack.back();
+
+        if (copy) {
+            char* copied_str = (char*) malloc(length+1);
+            if (copied_str == NULL)
+                return false;
+            memcpy(copied_str, str, length+1);
+            str = copied_str;
+        }
         current.key = str;
         current.keyLength = length;
+        current.copiedKey = copy;
 
         return true;
     }
@@ -318,6 +429,8 @@ struct PyHandler {
         HandlerContext ctx;
         ctx.isObject = true;
         ctx.object = mapping;
+        ctx.key = NULL;
+        ctx.copiedKey = false;
         Py_INCREF(mapping);
 
         stack.push_back(ctx);
@@ -326,7 +439,12 @@ struct PyHandler {
     }
 
     bool EndObject(SizeType member_count) {
-        PyObject* mapping = stack.back().object;
+        const HandlerContext& ctx = stack.back();
+
+        if (ctx.copiedKey)
+            free((void*) ctx.key);
+
+        PyObject* mapping = ctx.object;
         stack.pop_back();
 
         if (objectHook == NULL && decoderEndObject == NULL) {
@@ -401,6 +519,8 @@ struct PyHandler {
         HandlerContext ctx;
         ctx.isObject = false;
         ctx.object = list;
+        ctx.key = NULL;
+        ctx.copiedKey = false;
         Py_INCREF(list);
 
         stack.push_back(ctx);
@@ -409,7 +529,12 @@ struct PyHandler {
     }
 
     bool EndArray(SizeType elementCount) {
-        PyObject* sequence = stack.back().object;
+        const HandlerContext& ctx = stack.back();
+
+        if (ctx.copiedKey)
+            free((void*) ctx.key);
+
+        PyObject* sequence = ctx.object;
         stack.pop_back();
 
         if (decoderEndArray == NULL) {
@@ -979,8 +1104,9 @@ typedef struct {
 } DecoderObject;
 
 
+
 PyDoc_STRVAR(loads_docstring,
-             "loads(s, object_hook=None, number_mode=None, datetime_mode=None,"
+             "loads(string, *, object_hook=None, number_mode=None, datetime_mode=None,"
              " uuid_mode=None, parse_mode=None, allow_nan=True)\n"
              "\n"
              "Decode a JSON string into a Python object.");
@@ -991,19 +1117,8 @@ loads(PyObject* self, PyObject* args, PyObject* kwargs)
 {
     /* Converts a JSON encoded string to a Python object. */
 
-    PyObject* jsonObject;
-    PyObject* objectHook = NULL;
-    PyObject* datetimeModeObj = NULL;
-    DatetimeMode datetimeMode = DM_NONE;
-    PyObject* uuidModeObj = NULL;
-    UuidMode uuidMode = UM_NONE;
-    PyObject* numberModeObj = NULL;
-    NumberMode numberMode = NM_NAN;
-    PyObject* parseModeObj = NULL;
-    ParseMode parseMode = PM_NONE;
-    int allowNan = -1;
     static char const * kwlist[] = {
-        "s",
+        "string",
         "object_hook",
         "number_mode",
         "datetime_mode",
@@ -1015,8 +1130,19 @@ loads(PyObject* self, PyObject* args, PyObject* kwargs)
 
         NULL
     };
+    PyObject* jsonObject;
+    PyObject* objectHook = NULL;
+    PyObject* datetimeModeObj = NULL;
+    DatetimeMode datetimeMode = DM_NONE;
+    PyObject* uuidModeObj = NULL;
+    UuidMode uuidMode = UM_NONE;
+    PyObject* numberModeObj = NULL;
+    NumberMode numberMode = NM_NAN;
+    PyObject* parseModeObj = NULL;
+    ParseMode parseMode = PM_NONE;
+    int allowNan = -1;
 
-    if (!PyArg_ParseTupleAndKeywords(args, kwargs, "O|OOOOOp:rapidjson.loads",
+    if (!PyArg_ParseTupleAndKeywords(args, kwargs, "O|$OOOOOp:rapidjson.loads",
                                      (char **) kwlist,
                                      &jsonObject,
                                      &objectHook,
@@ -1027,6 +1153,24 @@ loads(PyObject* self, PyObject* args, PyObject* kwargs)
                                      &allowNan))
         return NULL;
 
+    Py_ssize_t jsonStrLen;
+    const char* jsonStr;
+
+    if (PyUnicode_Check(jsonObject)) {
+        jsonStr = PyUnicode_AsUTF8AndSize(jsonObject, &jsonStrLen);
+        if (jsonStr == NULL)
+            return NULL;
+    }
+    else if (PyBytes_Check(jsonObject)) {
+        int rc = PyBytes_AsStringAndSize(jsonObject, (char**) &jsonStr, &jsonStrLen);
+        if (rc == -1)
+            return NULL;
+    }
+    else {
+        PyErr_SetString(PyExc_TypeError, "Expected string or UTF-8 encoded bytes");
+        return NULL;
+    }
+
     if (objectHook && !PyCallable_Check(objectHook)) {
         if (objectHook == Py_None)
             objectHook = NULL;
@@ -1034,24 +1178,6 @@ loads(PyObject* self, PyObject* args, PyObject* kwargs)
             PyErr_SetString(PyExc_TypeError, "object_hook is not callable");
             return NULL;
         }
-    }
-
-    Py_ssize_t jsonStrLen;
-    const char* jsonStr;
-
-    if (PyBytes_Check(jsonObject)) {
-        int rc = PyBytes_AsStringAndSize(jsonObject, (char**)&jsonStr, &jsonStrLen);
-        if (rc == -1)
-            return NULL;
-    }
-    else if (PyUnicode_Check(jsonObject)) {
-        jsonStr = PyUnicode_AsUTF8AndSize(jsonObject, &jsonStrLen);
-        if (jsonStr == NULL)
-            return NULL;
-    }
-    else {
-        PyErr_SetString(PyExc_TypeError, "Expected string or utf-8 encoded bytes");
-        return NULL;
     }
 
     if (numberModeObj) {
@@ -1138,7 +1264,178 @@ loads(PyObject* self, PyObject* args, PyObject* kwargs)
         }
     }
 
-    return do_decode(NULL, jsonStr, jsonStrLen, objectHook,
+    return do_decode(NULL, jsonStr, jsonStrLen, NULL, 0, objectHook,
+                     numberMode, datetimeMode, uuidMode, parseMode);
+}
+
+
+PyDoc_STRVAR(load_docstring,
+             "load(stream, *, object_hook=None, number_mode=None, datetime_mode=None,"
+             " uuid_mode=None, parse_mode=None, chunk_size=102400, allow_nan=True)\n"
+             "\n"
+             "Decode a JSON stream into a Python object.");
+
+
+static PyObject*
+load(PyObject* self, PyObject* args, PyObject* kwargs)
+{
+    /* Converts a JSON encoded stream to a Python object. */
+
+    static char const * kwlist[] = {
+        "stream",
+        "object_hook",
+        "number_mode",
+        "datetime_mode",
+        "uuid_mode",
+        "parse_mode",
+        "chunk_size",
+
+        /* compatibility with stdlib json */
+        "allow_nan",
+
+        NULL
+    };
+    PyObject* jsonObject;
+    PyObject* objectHook = NULL;
+    PyObject* datetimeModeObj = NULL;
+    DatetimeMode datetimeMode = DM_NONE;
+    PyObject* uuidModeObj = NULL;
+    UuidMode uuidMode = UM_NONE;
+    PyObject* numberModeObj = NULL;
+    NumberMode numberMode = NM_NAN;
+    PyObject* parseModeObj = NULL;
+    ParseMode parseMode = PM_NONE;
+    PyObject* chunkSizeObj = NULL;
+    size_t chunkSize = 102400;
+    int allowNan = -1;
+
+    if (!PyArg_ParseTupleAndKeywords(args, kwargs, "O|$OOOOOOp:rapidjson.load",
+                                     (char **) kwlist,
+                                     &jsonObject,
+                                     &objectHook,
+                                     &numberModeObj,
+                                     &datetimeModeObj,
+                                     &uuidModeObj,
+                                     &parseModeObj,
+                                     &chunkSizeObj,
+                                     &allowNan))
+        return NULL;
+
+    if (!PyObject_HasAttr(jsonObject, read_name)) {
+        PyErr_SetString(PyExc_TypeError, "Expected file-like object");
+        return NULL;
+    }
+
+    if (objectHook && !PyCallable_Check(objectHook)) {
+        if (objectHook == Py_None)
+            objectHook = NULL;
+        else {
+            PyErr_SetString(PyExc_TypeError, "object_hook is not callable");
+            return NULL;
+        }
+    }
+
+    if (numberModeObj) {
+        if (numberModeObj == Py_None)
+            numberMode = NM_NONE;
+        else if (PyLong_Check(numberModeObj)) {
+            int mode = PyLong_AsLong(numberModeObj);
+            if (mode < 0 || mode >= 1<<3) {
+                PyErr_SetString(PyExc_ValueError, "Invalid number_mode");
+                return NULL;
+            }
+            numberMode = (NumberMode) mode;
+            if (numberMode & NM_DECIMAL && numberMode & NM_NATIVE) {
+                PyErr_SetString(PyExc_ValueError,
+                                "Combining NM_NATIVE with NM_DECIMAL is not supported");
+                return NULL;
+            }
+        }
+    }
+    if (allowNan != -1) {
+        if (allowNan)
+            numberMode = (NumberMode) (numberMode | NM_NAN);
+        else
+            numberMode = (NumberMode) (numberMode & ~NM_NAN);
+    }
+
+    if (datetimeModeObj) {
+        if (datetimeModeObj == Py_None)
+            datetimeMode = DM_NONE;
+        else if (PyLong_Check(datetimeModeObj)) {
+            int mode = PyLong_AsLong(datetimeModeObj);
+            if (!valid_datetime_mode(mode)) {
+                PyErr_SetString(PyExc_ValueError, "Invalid datetime_mode");
+                return NULL;
+            }
+            datetimeMode = (DatetimeMode) mode;
+            if (datetimeMode && datetime_mode_format(datetimeMode) != DM_ISO8601) {
+                PyErr_SetString(PyExc_ValueError,
+                                "Invalid datetime_mode, can deserialize only from"
+                                " ISO8601");
+                return NULL;
+            }
+        }
+        else {
+            PyErr_SetString(PyExc_TypeError,
+                            "datetime_mode must be a non-negative integer value or None");
+            return NULL;
+        }
+    }
+
+    if (uuidModeObj) {
+        if (uuidModeObj == Py_None)
+            uuidMode = UM_NONE;
+        else if (PyLong_Check(uuidModeObj)) {
+            int mode = PyLong_AsLong(uuidModeObj);
+            if (mode < 0 || mode >= 1<<2) {
+                PyErr_SetString(PyExc_ValueError, "Invalid uuid_mode");
+                return NULL;
+            }
+            uuidMode = (UuidMode) mode;
+        }
+        else {
+            PyErr_SetString(PyExc_TypeError,
+                            "uuid_mode must be an integer value or None");
+            return NULL;
+        }
+    }
+
+    if (parseModeObj) {
+        if (parseModeObj == Py_None)
+            parseMode = PM_NONE;
+        else if (PyLong_Check(parseModeObj)) {
+            int mode = PyLong_AsLong(parseModeObj);
+            if (mode < 0 || mode >= 1<<2) {
+                PyErr_SetString(PyExc_ValueError, "Invalid parse_mode");
+                return NULL;
+            }
+            parseMode = (ParseMode) mode;
+        }
+        else {
+            PyErr_SetString(PyExc_TypeError,
+                            "parse_mode must be an integer value or None");
+            return NULL;
+        }
+    }
+
+    if (chunkSizeObj && chunkSizeObj != Py_None) {
+        if (PyLong_Check(chunkSizeObj)) {
+            unsigned long ul = PyLong_AsUnsignedLong(chunkSizeObj);
+            if (ul == 0 || ul > UINT_MAX) {
+                PyErr_SetString(PyExc_ValueError, "Out of range chunk_size");
+                return NULL;
+            }
+            chunkSize = (size_t) ul;
+        }
+        else {
+            PyErr_SetString(PyExc_TypeError,
+                            "chunk_size must be an unsigned integer value or None");
+            return NULL;
+        }
+    }
+
+    return do_decode(NULL, NULL, 0, jsonObject, chunkSize, objectHook,
                      numberMode, datetimeMode, uuidMode, parseMode);
 }
 
@@ -1210,108 +1507,125 @@ static PyTypeObject Decoder_Type = {
 #define Decoder_Check(v) PyObject_TypeCheck(v, &Decoder_Type)
 
 
+#define DECODE(r, f, s, h)                                              \
+    do {                                                                \
+        /* FIXME: isn't there a cleverer way to write the following?    \
+                                                                        \
+           Ideally, one would do something like:                        \
+                                                                        \
+               unsigned flags = kParseInsituFlag;                       \
+                                                                        \
+               if (! (numberMode & NM_NATIVE))                          \
+                   flags |= kParseNumbersAsStringsFlag;                 \
+               if (numberMode & NM_NAN)                                 \
+                   flags |= kParseNanAndInfFlag;                        \
+               if (parseMode & PM_COMMENTS)                             \
+                   flags |= kParseCommentsFlag;                         \
+               if (parseMode & PM_TRAILING_COMMAS)                      \
+                   flags |= kParseTrailingCommasFlag;                   \
+                                                                        \
+               reader.Parse<flags>(ss, handler);                        \
+                                                                        \
+           but C++ does not allow that...                               \
+         */                                                             \
+                                                                        \
+        if (numberMode & NM_NAN)                                        \
+            if (numberMode & NM_NATIVE)                                 \
+                if (parseMode & PM_TRAILING_COMMAS)                     \
+                    if (parseMode & PM_COMMENTS)                        \
+                        r.Parse<f |                                     \
+                                kParseNanAndInfFlag |                   \
+                                kParseCommentsFlag |                    \
+                                kParseTrailingCommasFlag>(s, h);        \
+                    else                                                \
+                        r.Parse<f |                                     \
+                                kParseNanAndInfFlag |                   \
+                                kParseTrailingCommasFlag>(s, h);        \
+                else if (parseMode & PM_COMMENTS)                       \
+                    r.Parse<f |                                         \
+                            kParseNanAndInfFlag |                       \
+                            kParseCommentsFlag>(s, h);                  \
+                else                                                    \
+                    r.Parse<f |                                         \
+                            kParseNanAndInfFlag>(s, h);                 \
+            else if (parseMode & PM_TRAILING_COMMAS)                    \
+                if (parseMode & PM_COMMENTS)                            \
+                    r.Parse<f |                                         \
+                            kParseNumbersAsStringsFlag |                \
+                            kParseNanAndInfFlag |                       \
+                            kParseCommentsFlag |                        \
+                            kParseTrailingCommasFlag>(s, h);            \
+                else                                                    \
+                    r.Parse<f |                                         \
+                            kParseNumbersAsStringsFlag |                \
+                            kParseNanAndInfFlag |                       \
+                            kParseTrailingCommasFlag>(s, h);            \
+            else if (parseMode & PM_COMMENTS)                           \
+                r.Parse<f |                                             \
+                        kParseNumbersAsStringsFlag |                    \
+                        kParseNanAndInfFlag |                           \
+                        kParseCommentsFlag>(s, h);                      \
+            else                                                        \
+                r.Parse<f |                                             \
+                        kParseNumbersAsStringsFlag |                    \
+                        kParseNanAndInfFlag>(s, h);                     \
+        else if (numberMode & NM_NATIVE)                                \
+            if (parseMode & PM_TRAILING_COMMAS)                         \
+                if (parseMode & PM_COMMENTS)                            \
+                    r.Parse<f |                                         \
+                            kParseCommentsFlag |                        \
+                            kParseTrailingCommasFlag>(s, h);            \
+                else                                                    \
+                    r.Parse<f |                                         \
+                            kParseTrailingCommasFlag>(s, h);            \
+            else if (parseMode & PM_COMMENTS)                           \
+                r.Parse<f |                                             \
+                        kParseCommentsFlag>(s, h);                      \
+            else                                                        \
+                r.Parse<f>(s, h);                                       \
+        else if (parseMode & PM_TRAILING_COMMAS)                        \
+            if (parseMode & PM_COMMENTS)                                \
+                r.Parse<f |                                             \
+                        kParseNumbersAsStringsFlag |                    \
+                        kParseCommentsFlag |                            \
+                        kParseNumbersAsStringsFlag>(s, h);              \
+            else                                                        \
+                r.Parse<f |                                             \
+                        kParseNumbersAsStringsFlag |                    \
+                        kParseTrailingCommasFlag>(s, h);                \
+        else                                                            \
+            r.Parse<f | kParseNumbersAsStringsFlag>(s, h);              \
+    } while(0)
+
+
 static PyObject*
 do_decode(PyObject* decoder, const char* jsonStr, Py_ssize_t jsonStrLen,
-          PyObject* objectHook, NumberMode numberMode, DatetimeMode datetimeMode,
-          UuidMode uuidMode, ParseMode parseMode)
+          PyObject* jsonStream, size_t chunkSize, PyObject* objectHook,
+          NumberMode numberMode, DatetimeMode datetimeMode, UuidMode uuidMode,
+          ParseMode parseMode)
 {
-    char* jsonStrCopy = (char*) malloc(sizeof(char) * (jsonStrLen+1));
-
-    if (jsonStrCopy == NULL)
-        return PyErr_NoMemory();
-
-    memcpy(jsonStrCopy, jsonStr, jsonStrLen+1);
-
     PyHandler handler(decoder, objectHook, datetimeMode, uuidMode, numberMode);
     Reader reader;
-    InsituStringStream ss(jsonStrCopy);
 
-    /* FIXME: isn't there a cleverer way to write the following?
+    if (jsonStr != NULL) {
+        char* jsonStrCopy = (char*) malloc(sizeof(char) * (jsonStrLen+1));
 
-       Ideally, one would do something like:
+        if (jsonStrCopy == NULL)
+            return PyErr_NoMemory();
 
-           unsigned flags = kParseInsituFlag;
+        memcpy(jsonStrCopy, jsonStr, jsonStrLen+1);
 
-           if (! (numberMode & NM_NATIVE))
-               flags |= kParseNumbersAsStringsFlag;
-           if (numberMode & NM_NAN)
-               flags |= kParseNanAndInfFlag;
-           if (parseMode & PM_COMMENTS)
-               flags |= kParseCommentsFlag;
-           if (parseMode & PM_TRAILING_COMMAS)
-               flags |= kParseTrailingCommasFlag;
+        InsituStringStream ss(jsonStrCopy);
 
-           reader.Parse<flags>(ss, handler);
+        DECODE(reader, kParseInsituFlag, ss, handler);
 
-       but C++ does not allow that...
-     */
+        free(jsonStrCopy);
+    }
+    else {
+        PyIStreamWrapper sw(jsonStream, chunkSize);
 
-    if (numberMode & NM_NAN)
-        if (numberMode & NM_NATIVE)
-            if (parseMode & PM_TRAILING_COMMAS)
-                if (parseMode & PM_COMMENTS)
-                    reader.Parse<kParseInsituFlag |
-                                 kParseNanAndInfFlag |
-                                 kParseCommentsFlag |
-                                 kParseTrailingCommasFlag>(ss, handler);
-                else
-                    reader.Parse<kParseInsituFlag |
-                                 kParseNanAndInfFlag |
-                                 kParseTrailingCommasFlag>(ss, handler);
-            else if (parseMode & PM_COMMENTS)
-                reader.Parse<kParseInsituFlag |
-                             kParseNanAndInfFlag |
-                             kParseCommentsFlag>(ss, handler);
-            else
-                reader.Parse<kParseInsituFlag |
-                             kParseNanAndInfFlag>(ss, handler);
-        else if (parseMode & PM_TRAILING_COMMAS)
-            if (parseMode & PM_COMMENTS)
-                reader.Parse<kParseInsituFlag |
-                             kParseNumbersAsStringsFlag |
-                             kParseNanAndInfFlag |
-                             kParseCommentsFlag |
-                             kParseTrailingCommasFlag>(ss, handler);
-            else
-                reader.Parse<kParseInsituFlag |
-                             kParseNumbersAsStringsFlag |
-                             kParseNanAndInfFlag |
-                             kParseTrailingCommasFlag>(ss, handler);
-        else if (parseMode & PM_COMMENTS)
-            reader.Parse<kParseInsituFlag |
-                         kParseNumbersAsStringsFlag |
-                         kParseNanAndInfFlag |
-                         kParseCommentsFlag>(ss, handler);
-        else
-            reader.Parse<kParseInsituFlag |
-                         kParseNumbersAsStringsFlag |
-                         kParseNanAndInfFlag>(ss, handler);
-    else if (numberMode & NM_NATIVE)
-        if (parseMode & PM_TRAILING_COMMAS)
-            if (parseMode & PM_COMMENTS)
-                reader.Parse<kParseInsituFlag |
-                             kParseCommentsFlag |
-                             kParseTrailingCommasFlag>(ss, handler);
-            else
-                reader.Parse<kParseInsituFlag |
-                             kParseTrailingCommasFlag>(ss, handler);
-        else if (parseMode & PM_COMMENTS)
-            reader.Parse<kParseInsituFlag |
-                         kParseCommentsFlag>(ss, handler);
-        else
-            reader.Parse<kParseInsituFlag>(ss, handler);
-    else if (parseMode & PM_TRAILING_COMMAS)
-        if (parseMode & PM_COMMENTS)
-            reader.Parse<kParseInsituFlag |
-                         kParseNumbersAsStringsFlag |
-                         kParseCommentsFlag |
-                         kParseNumbersAsStringsFlag>(ss, handler);
-        else
-            reader.Parse<kParseInsituFlag |
-                         kParseNumbersAsStringsFlag |
-                         kParseTrailingCommasFlag>(ss, handler);
-    else
-        reader.Parse<kParseInsituFlag | kParseNumbersAsStringsFlag>(ss, handler);
+        DECODE(reader, kParseNoFlags, sw, handler);
+    }
 
     if (reader.HasParseError()) {
         size_t offset = reader.GetErrorOffset();
@@ -1339,11 +1653,9 @@ do_decode(PyObject* decoder, const char* jsonStr, Py_ssize_t jsonStrLen,
                          offset, GetParseError_En(reader.GetParseErrorCode()));
 
         Py_XDECREF(handler.root);
-        free(jsonStrCopy);
         return NULL;
     }
 
-    free(jsonStrCopy);
     return handler.root;
 }
 
@@ -1351,32 +1663,62 @@ do_decode(PyObject* decoder, const char* jsonStr, Py_ssize_t jsonStrLen,
 static PyObject*
 decoder_call(PyObject* self, PyObject* args, PyObject* kwargs)
 {
+    static char const * kwlist[] = {
+        "json",
+        "chunk_size",
+        NULL
+    };
     PyObject* jsonObject;
+    PyObject* chunkSizeObj = NULL;
+    size_t chunkSize = 102400;
 
-    if (!PyArg_ParseTuple(args, "O", &jsonObject))
+    if (!PyArg_ParseTupleAndKeywords(args, kwargs, "O|$O",
+                                     (char **) kwlist,
+                                     &jsonObject,
+                                     &chunkSizeObj))
         return NULL;
 
     Py_ssize_t jsonStrLen;
     const char* jsonStr;
 
-    if (PyBytes_Check(jsonObject)) {
-        int rc = PyBytes_AsStringAndSize(jsonObject, (char**)&jsonStr, &jsonStrLen);
-        if (rc == -1)
-            return NULL;
-    }
-    else if (PyUnicode_Check(jsonObject)) {
+    if (PyUnicode_Check(jsonObject)) {
         jsonStr = PyUnicode_AsUTF8AndSize(jsonObject, &jsonStrLen);
         if (jsonStr == NULL)
             return NULL;
     }
+    else if (PyBytes_Check(jsonObject)) {
+        int rc = PyBytes_AsStringAndSize(jsonObject, (char**) &jsonStr, &jsonStrLen);
+        if (rc == -1)
+            return NULL;
+    }
+    else if (PyObject_HasAttr(jsonObject, read_name)) {
+        jsonStr = NULL;
+        jsonStrLen = 0;
+    }
     else {
-        PyErr_SetString(PyExc_TypeError, "Expected string or utf-8 encoded bytes");
+        PyErr_SetString(PyExc_TypeError, "Expected string or UTF-8 encoded bytes");
         return NULL;
+    }
+
+    if (chunkSizeObj && chunkSizeObj != Py_None) {
+        if (PyLong_Check(chunkSizeObj)) {
+            unsigned long ul = PyLong_AsUnsignedLong(chunkSizeObj);
+            if (ul == 0 || ul > UINT_MAX) {
+                PyErr_SetString(PyExc_ValueError, "Out of range chunk_size");
+                return NULL;
+            }
+            chunkSize = (size_t) ul;
+        }
+        else {
+            PyErr_SetString(PyExc_TypeError,
+                            "chunk_size must be an unsigned integer value or None");
+            return NULL;
+        }
     }
 
     DecoderObject* d = (DecoderObject*) self;
 
-    return do_decode(self, jsonStr, jsonStrLen, NULL,
+    return do_decode(self, jsonStr, jsonStrLen, jsonObject, chunkSize, NULL,
                      d->numberMode, d->datetimeMode, d->uuidMode, d->parseMode);
 }
 
@@ -2694,6 +3036,8 @@ static PyMethodDef
 functions[] = {
     {"loads", (PyCFunction) loads, METH_VARARGS | METH_KEYWORDS,
      loads_docstring},
+    {"load", (PyCFunction) load, METH_VARARGS | METH_KEYWORDS,
+     load_docstring},
     {"dumps", (PyCFunction) dumps, METH_VARARGS | METH_KEYWORDS,
      dumps_docstring},
     {NULL, NULL, 0, NULL} /* sentinel */
@@ -2821,6 +3165,10 @@ PyInit_rapidjson()
     if (string_name == NULL)
         goto error;
 
+    read_name = PyUnicode_InternFromString("read");
+    if (read_name == NULL)
+        goto error;
+
     PyObject* m;
 
     m = PyModule_Create(&module);
@@ -2887,6 +3235,7 @@ error:
     Py_CLEAR(default_name);
     Py_CLEAR(end_array_name);
     Py_CLEAR(string_name);
+    Py_CLEAR(read_name);
 
     return NULL;
 }

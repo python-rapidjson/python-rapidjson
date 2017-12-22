@@ -16,6 +16,7 @@
 
    dumps
    loads
+   load
    encoder
    decoder
    validator

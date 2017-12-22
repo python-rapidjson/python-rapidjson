@@ -13,6 +13,7 @@
 
 .. testsetup::
 
+   import io
    from rapidjson import (Decoder, Encoder, DM_NONE, DM_ISO8601, DM_UNIX_TIME,
                           DM_ONLY_SECONDS, DM_IGNORE_TZ, DM_NAIVE_IS_UTC, DM_SHIFT_TO_UTC,
                           UM_NONE, UM_CANONICAL, UM_HEX, NM_NATIVE, NM_DECIMAL, NM_NAN,
@@ -31,16 +32,19 @@
                           extensions <loads-parse-mode>`
 
 
-   .. method:: __call__(json)
+   .. method:: __call__(json, chunk_size=102400)
 
-      :param json: either a ``str`` instance or an *UTF-8* ``bytes`` instance, containing
-                   the ``JSON`` to be decoded
+      :param json: either a ``str`` instance, an *UTF-8* ``bytes`` instance or a
+                   *file-like* stream, containing the ``JSON`` to be decoded
+      :param int size: in case of a stream, it will be read in chunks of this size
       :returns: a Python value
 
       .. doctest::
 
          >>> decoder = Decoder()
          >>> decoder('"€ 0.50"')
+         '€ 0.50'
+         >>> decoder(io.StringIO('"€ 0.50"'))
          '€ 0.50'
          >>> decoder(b'"\xe2\x82\xac 0.50"')
          '€ 0.50'

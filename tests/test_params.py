@@ -8,6 +8,7 @@
 
 from calendar import timegm
 from datetime import date, datetime, time
+import io
 import math
 import uuid
 
@@ -550,14 +551,36 @@ def test_invalid_dumps_params(posargs, kwargs, dumps):
 
 
 @pytest.mark.unit
+@pytest.mark.parametrize('cs', (-1, 0, 100**100, 1.23, 'foo'))
+def test_invalid_chunk_size(cs):
+    s = io.StringIO('"foo"')
+    with pytest.raises((ValueError, TypeError)):
+        rj.load(s, chunk_size=cs)
+
+
+@pytest.mark.unit
 def test_explicit_defaults_loads():
     assert rj.loads(
-        s='"foo"',
+        string='"foo"',
         object_hook=None,
         number_mode=None,
         datetime_mode=None,
         uuid_mode=None,
         parse_mode=None,
+        allow_nan=True,
+    ) == "foo"
+
+
+@pytest.mark.unit
+def test_explicit_defaults_load():
+    assert rj.load(
+        stream=io.StringIO('"foo"'),
+        object_hook=None,
+        number_mode=None,
+        datetime_mode=None,
+        uuid_mode=None,
+        parse_mode=None,
+        chunk_size=None,
         allow_nan=True,
     ) == "foo"
 

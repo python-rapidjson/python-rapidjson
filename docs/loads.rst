@@ -18,13 +18,13 @@
                           UM_NONE, UM_CANONICAL, UM_HEX, NM_NATIVE, NM_DECIMAL, NM_NAN,
                           PM_NONE, PM_COMMENTS, PM_TRAILING_COMMAS)
 
-.. function:: loads(s, object_hook=None, number_mode=None, datetime_mode=None, \
+.. function:: loads(string, *, object_hook=None, number_mode=None, datetime_mode=None, \
                     uuid_mode=None, parse_mode=None, allow_nan=True)
 
-   Decode the given Python string `s` containing a ``JSON`` formatted value
+   Decode the given Python string `string` containing a ``JSON`` formatted value
    into Python object.
 
-   :param str s: The JSON string to parse
+   :param str string: The JSON string to parse
    :param callable object_hook: an optional function that will be called with the result
                                 of any object literal decoded (a :class:`dict`) and should
                                 return the value to use instead of the :class:`dict`
