@@ -31,7 +31,7 @@ using namespace rapidjson;
 #ifndef Py_SETREF
 #define Py_SETREF(op, op2)                      \
     do {                                        \
-        PyObject *_py_tmp = (PyObject *)(op);   \
+        PyObject* _py_tmp = (PyObject*)(op);    \
         (op) = (op2);                           \
         Py_DECREF(_py_tmp);                     \
     } while (0)
@@ -1143,7 +1143,7 @@ loads(PyObject* self, PyObject* args, PyObject* kwargs)
     int allowNan = -1;
 
     if (!PyArg_ParseTupleAndKeywords(args, kwargs, "O|$OOOOOp:rapidjson.loads",
-                                     (char **) kwlist,
+                                     (char**) kwlist,
                                      &jsonObject,
                                      &objectHook,
                                      &numberModeObj,
@@ -1310,7 +1310,7 @@ load(PyObject* self, PyObject* args, PyObject* kwargs)
     int allowNan = -1;
 
     if (!PyArg_ParseTupleAndKeywords(args, kwargs, "O|$OOOOOOp:rapidjson.load",
-                                     (char **) kwlist,
+                                     (char**) kwlist,
                                      &jsonObject,
                                      &objectHook,
                                      &numberModeObj,
@@ -1673,7 +1673,7 @@ decoder_call(PyObject* self, PyObject* args, PyObject* kwargs)
     size_t chunkSize = 102400;
 
     if (!PyArg_ParseTupleAndKeywords(args, kwargs, "O|$O",
-                                     (char **) kwlist,
+                                     (char**) kwlist,
                                      &jsonObject,
                                      &chunkSizeObj))
         return NULL;
@@ -1744,7 +1744,7 @@ decoder_new(PyTypeObject* type, PyObject* args, PyObject* kwargs)
     };
 
     if (!PyArg_ParseTupleAndKeywords(args, kwargs, "|OOOO:Decoder",
-                                     (char **) kwlist,
+                                     (char**) kwlist,
                                      &numberModeObj,
                                      &datetimeModeObj,
                                      &uuidModeObj,
@@ -2513,7 +2513,7 @@ dumps(PyObject* self, PyObject* args, PyObject* kwargs)
     };
 
     if (!PyArg_ParseTupleAndKeywords(args, kwargs, "O|ppOOpOOOp:rapidjson.dumps",
-                                     (char **) kwlist,
+                                     (char**) kwlist,
                                      &value,
                                      &skipKeys,
                                      &ensureAscii,
@@ -2761,7 +2761,7 @@ encoder_new(PyTypeObject* type, PyObject* args, PyObject* kwargs)
     };
 
     if (!PyArg_ParseTupleAndKeywords(args, kwargs, "|ppOpOOO:Encoder",
-                                     (char **) kwlist,
+                                     (char**) kwlist,
                                      &skipInvalidKeys,
                                      &ensureAscii,
                                      &indent,
