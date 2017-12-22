@@ -60,4 +60,14 @@
         ...
       NotImplementedError: Text stream not (yet?) supported
 
+   Support for ``ensure_ascii=True`` is **not** implemented as well:
+
+   .. doctest::
+
+      >>> stream = io.StringIO()
+      >>> dump('"bar"', stream)
+      Traceback (most recent call last):
+        ...
+      NotImplementedError: ensure_ascii=True not implemented
+
    Consult the :func:`dumps()` documentation for details on all other arguments.

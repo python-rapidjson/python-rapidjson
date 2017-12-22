@@ -2993,6 +2993,7 @@ do_stream_encode(PyObject* value, PyObject* stream, size_t chunkSize,
 
     if (!prettyPrint) {
         if (ensureAscii) {
+            // FIXME: dunno if it is possible to inject ASCII encoding here
             PyErr_SetString(PyExc_NotImplementedError, "ensure_ascii=True not implemented");
             return NULL;
         }
@@ -3002,6 +3003,7 @@ do_stream_encode(PyObject* value, PyObject* stream, size_t chunkSize,
         }
     }
     else if (ensureAscii) {
+        // FIXME: dunno if it is possible to inject ASCII encoding here
         PyErr_SetString(PyExc_NotImplementedError, "ensure_ascii=True not implemented");
         return NULL;
     }
