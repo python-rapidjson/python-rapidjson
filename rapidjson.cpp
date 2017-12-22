@@ -3268,7 +3268,7 @@ static PyObject* validator_call(PyObject* self, PyObject* args, PyObject* kwargs
             return NULL;
     }
     else {
-        PyErr_SetString(PyExc_TypeError, "Expected string or utf-8 encoded bytes");
+        PyErr_SetString(PyExc_TypeError, "Expected string or UTF-8 encoded bytes");
         return NULL;
     }
 
@@ -3341,7 +3341,7 @@ static PyObject* validator_new(PyTypeObject* type, PyObject* args, PyObject* kwa
             return NULL;
     }
     else {
-        PyErr_SetString(PyExc_TypeError, "Expected string or utf-8 encoded bytes");
+        PyErr_SetString(PyExc_TypeError, "Expected string or UTF-8 encoded bytes");
         return NULL;
     }
 
