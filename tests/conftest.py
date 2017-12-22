@@ -9,6 +9,18 @@ import io
 import rapidjson as rj
 
 
+def streaming_dumps(o, **opts):
+    stream = io.BytesIO()
+    rj.dump(o, stream, ensure_ascii=False, **opts)
+    return stream.getvalue().decode('utf-8')
+
+
+def streaming_encoder(o, **opts):
+    stream = io.BytesIO()
+    rj.Encoder(ensure_ascii=False, **opts)(o, stream=stream)
+    return stream.getvalue().decode('utf-8')
+
+
 def pytest_generate_tests(metafunc):
     if 'dumps' in metafunc.fixturenames and 'loads' in metafunc.fixturenames:
         metafunc.parametrize('dumps,loads', (
@@ -20,9 +32,13 @@ def pytest_generate_tests(metafunc):
     elif 'dumps' in metafunc.fixturenames:
         metafunc.parametrize('dumps', (
             rj.dumps,
-            lambda o,**opts: rj.Encoder(**opts)(o)
+            streaming_dumps,
+            lambda o,**opts: rj.Encoder(**opts)(o),
+            streaming_encoder
         ), ids=('func[string]',
-                'class[string]'))
+                'func[stream]',
+                'class[string]',
+                'class[stream]'))
     elif 'loads' in metafunc.fixturenames:
         metafunc.parametrize('loads', (
             rj.loads,
