@@ -40,8 +40,7 @@
    .. method:: __call__(obj, *, stream=None, chunk_size=65536)
 
       :param obj: the value to be encoded
-      :param stream: a *file-like* instance (currently only *binary* streams are
-                     implemented)
+      :param stream: a *file-like* instance
       :param int chunk_size: write the stream in chunks of this size at a time
       :returns: a string with the ``JSON`` encoded `value`, when `stream` is ``None``
 

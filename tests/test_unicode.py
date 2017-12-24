@@ -6,9 +6,12 @@
 # :Copyright: © 2016, 2017 Lele Gaifax
 #
 
+import io
 import json
 
 import pytest
+
+import rapidjson
 
 
 @pytest.mark.unit
@@ -56,3 +59,30 @@ def test_load_surrogate(j, loads):
 def test_unicode_decode_error(j, loads):
     with pytest.raises(UnicodeDecodeError, match="'utf-8' codec can't decode byte"):
         loads(j)
+
+
+class ChunkedStream(io.StringIO):
+    def __init__(self):
+        super().__init__()
+        self.chunks = []
+
+    def write(self, s):
+        super().write(s)
+        self.chunks.append(s)
+
+
+@pytest.mark.unit
+def test_chunked_stream():
+    stream = ChunkedStream()
+    rapidjson.dump('1234567890', stream, ensure_ascii=False)
+    assert len(stream.chunks) == 1
+
+    stream = ChunkedStream()
+    rapidjson.dump('1234567890', stream, ensure_ascii=False, chunk_size=4)
+    assert len(stream.chunks) == 3
+    assert stream.chunks == ['"123', '4567', '890"']
+
+    stream = ChunkedStream()
+    rapidjson.dump('~𓆙~', stream, ensure_ascii=False, chunk_size=4)
+    assert len(stream.chunks) == 3
+    assert stream.chunks == ['"~', '𓆙', '~"']

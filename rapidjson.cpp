@@ -202,11 +202,11 @@ static PyObject* validator_new(PyTypeObject* type, PyObject* args, PyObject* kwa
 ///////////////////////////////////////////////////
 
 
-class PyIStreamWrapper {
+class PyReadStreamWrapper {
 public:
     typedef char Ch;
 
-    PyIStreamWrapper(PyObject* stream, size_t size)
+    PyReadStreamWrapper(PyObject* stream, size_t size)
         : stream(stream) {
         Py_INCREF(stream);
         chunkSize = PyLong_FromUnsignedLong(size);
@@ -218,7 +218,7 @@ public:
         eof = false;
     }
 
-    ~PyIStreamWrapper() {
+    ~PyReadStreamWrapper() {
         Py_CLEAR(stream);
         Py_CLEAR(chunkSize);
         Py_CLEAR(chunk);
@@ -268,6 +268,7 @@ private:
 
         if (chunk == NULL) {
             // TODO: understand if/how RapidJSON can handle read errors
+            PyErr_WriteUnraisable(Py_None);
             eof = true;
         }
         else {
@@ -302,22 +303,22 @@ private:
 };
 
 
-class PyOStreamWrapper {
+class PyWriteStreamWrapper {
 public:
     typedef char Ch;
 
-    PyOStreamWrapper(PyObject* stream, size_t size)
+    PyWriteStreamWrapper(PyObject* stream, size_t size)
         : stream(stream) {
         Py_INCREF(stream);
         buffer = (char*) malloc(size);
         assert(buffer);
         bufferEnd = buffer + size;
         cursor = buffer;
+        multiByteChar = NULL;
         isBinary = !PyObject_HasAttr(stream, encoding_name);
-        assert(isBinary); // TODO: UTF-8 strings chunking
     }
 
-    ~PyOStreamWrapper() {
+    ~PyWriteStreamWrapper() {
         Py_CLEAR(stream);
         free(buffer);
     }
@@ -338,26 +339,55 @@ public:
     }
 
     void Flush() {
-        PyObject* b = PyBytes_FromStringAndSize(buffer, (size_t)(cursor - buffer));
-        if (b == NULL) {
-            // TODO: what?!?
+        PyObject* c;
+        if (isBinary) {
+            c = PyBytes_FromStringAndSize(buffer, (size_t)(cursor - buffer));
+            cursor = buffer;
         }
         else {
-            PyObject* res = PyObject_CallMethodObjArgs(stream, write_name, b, NULL);
+            if (multiByteChar == NULL) {
+                c = PyUnicode_FromStringAndSize(buffer, (size_t)(cursor - buffer));
+                cursor = buffer;
+            }
+            else {
+                size_t complete = (size_t)(multiByteChar - buffer);
+                c = PyUnicode_FromStringAndSize(buffer, complete);
+                size_t remaining = (size_t)(cursor - multiByteChar);
+                if (RAPIDJSON_LIKELY(remaining < complete))
+                    memcpy(buffer, multiByteChar, remaining);
+                else
+                    std::memmove(buffer, multiByteChar, remaining);
+                cursor = buffer + remaining;
+                multiByteChar = NULL;
+            }
+        }
+        if (c == NULL) {
+            // TODO: is there anything wiser we can do here?
+            // See https://github.com/Tencent/rapidjson/issues/1149
+            PyErr_WriteUnraisable(Py_None);
+        }
+        else {
+            PyObject* res = PyObject_CallMethodObjArgs(stream, write_name, c, NULL);
             if (res == NULL) {
-                // TODO: what?!?
+                // TODO: is there anything wiser we can do here?
+                PyErr_WriteUnraisable(Py_None);
             }
             else {
                 Py_DECREF(res);
             }
-            Py_DECREF(b);
+            Py_DECREF(c);
         }
-        cursor = buffer;
     }
 
     void Put(Ch c) {
-        if (cursor >= bufferEnd)
+        if (cursor == bufferEnd)
             Flush();
+        if (!isBinary) {
+            if ((c & 0x80) == 0)
+                multiByteChar = NULL;
+            else if (c & 0x40)
+                multiByteChar = cursor;
+        }
         *cursor++ = c;
     }
 
@@ -376,6 +406,7 @@ private:
     Ch* buffer;
     Ch* bufferEnd;
     Ch* cursor;
+    Ch* multiByteChar;
     bool isBinary;
 };
 
@@ -1514,8 +1545,9 @@ load(PyObject* self, PyObject* args, PyObject* kwargs)
     if (chunkSizeObj && chunkSizeObj != Py_None) {
         if (PyLong_Check(chunkSizeObj)) {
             unsigned long ul = PyLong_AsUnsignedLong(chunkSizeObj);
-            if (ul == 0 || ul > UINT_MAX) {
-                PyErr_SetString(PyExc_ValueError, "Out of range chunk_size");
+            if (ul < 4 || ul > UINT_MAX) {
+                PyErr_SetString(PyExc_ValueError,
+                                "Invalid chunk_size, must > 4 and < UINT_MAX");
                 return NULL;
             }
             chunkSize = (size_t) ul;
@@ -1714,7 +1746,7 @@ do_decode(PyObject* decoder, const char* jsonStr, Py_ssize_t jsonStrLen,
         free(jsonStrCopy);
     }
     else {
-        PyIStreamWrapper sw(jsonStream, chunkSize);
+        PyReadStreamWrapper sw(jsonStream, chunkSize);
 
         DECODE(reader, kParseNoFlags, sw, handler);
     }
@@ -2984,12 +3016,7 @@ do_stream_encode(PyObject* value, PyObject* stream, size_t chunkSize,
                  bool ensureAscii, bool prettyPrint, unsigned indent,
                  NumberMode numberMode, DatetimeMode datetimeMode, UuidMode uuidMode)
 {
-    if (PyObject_HasAttr(stream, encoding_name)) {
-        PyErr_SetString(PyExc_NotImplementedError, "Text streams not (yet?) supported");
-        return NULL;
-    }
-
-    PyOStreamWrapper os(stream, chunkSize);
+    PyWriteStreamWrapper os(stream, chunkSize);
 
     if (!prettyPrint) {
         if (ensureAscii) {
@@ -2998,7 +3025,7 @@ do_stream_encode(PyObject* value, PyObject* stream, size_t chunkSize,
             return NULL;
         }
         else {
-            Writer<PyOStreamWrapper> writer(os);
+            Writer<PyWriteStreamWrapper> writer(os);
             return DUMP_INTERNAL_CALL;
         }
     }
@@ -3008,7 +3035,7 @@ do_stream_encode(PyObject* value, PyObject* stream, size_t chunkSize,
         return NULL;
     }
     else {
-        PrettyWriter<PyOStreamWrapper> writer(os);
+        PrettyWriter<PyWriteStreamWrapper> writer(os);
         writer.SetIndent(' ', indent);
         return DUMP_INTERNAL_CALL;
     }

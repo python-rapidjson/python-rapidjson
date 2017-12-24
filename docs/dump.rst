@@ -23,7 +23,7 @@
    Encode given Python `obj` instance into a ``JSON`` stream.
 
    :param obj: the value to be serialized
-   :param stream: a *file-like* instance (currently only *binary* streams are implemented)
+   :param stream: a *file-like* instance
    :param bool skipkeys: whether skip invalid :class:`dict` keys
    :param bool ensure_ascii: whether the output should contain only ASCII
                              characters (currently only ``ensure_ascii=False``
@@ -46,21 +46,20 @@
    .. doctest::
 
       >>> stream = io.BytesIO()
-      >>> dump('"bar"', stream, ensure_ascii=False)
+      >>> dump('bar', stream, ensure_ascii=False)
       >>> stream.getvalue()
-      b'"\\"bar\\""'
+      b'"bar"'
 
-   Support for text streams is currently **not** implemented:
+   The target may also be a text stream\ [#]_:
 
    .. doctest::
 
       >>> stream = io.StringIO()
-      >>> dump('"bar"', stream, ensure_ascii=False)
-      Traceback (most recent call last):
-        ...
-      NotImplementedError: Text stream not (yet?) supported
+      >>> dump('¯\_(ツ)_/¯', stream, ensure_ascii=False)
+      >>> stream.getvalue()
+      '"¯\\\\_(ツ)_/¯"'
 
-   Support for ``ensure_ascii=True`` is **not** implemented as well:
+   Support for ``ensure_ascii=True`` is currently **not** implemented:
 
    .. doctest::
 
@@ -71,3 +70,6 @@
       NotImplementedError: ensure_ascii=True not implemented
 
    Consult the :func:`dumps()` documentation for details on all other arguments.
+
+.. [#] A *text stream* is recognized by checking the presence of an ``encoding`` member
+       attribute on the instance.
