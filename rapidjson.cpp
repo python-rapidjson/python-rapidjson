@@ -1547,7 +1547,7 @@ load(PyObject* self, PyObject* args, PyObject* kwargs)
             unsigned long ul = PyLong_AsUnsignedLong(chunkSizeObj);
             if (ul < 4 || ul > UINT_MAX) {
                 PyErr_SetString(PyExc_ValueError,
-                                "Invalid chunk_size, must > 4 and < UINT_MAX");
+                                "Invalid chunk_size, must be between 4 and UINT_MAX");
                 return NULL;
             }
             chunkSize = (size_t) ul;
