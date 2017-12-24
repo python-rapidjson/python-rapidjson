@@ -14,7 +14,7 @@
 .. testsetup::
 
    import io
-   from rapidjson import dump
+   from rapidjson import dump, dumps
 
 .. function:: dump(obj, stream, *, skipkeys=False, ensure_ascii=True, indent=None, \
                    default=None, sort_keys=False, number_mode=None, datetime_mode=None, \
@@ -26,8 +26,7 @@
    :param stream: a *file-like* instance
    :param bool skipkeys: whether skip invalid :class:`dict` keys
    :param bool ensure_ascii: whether the output should contain only ASCII
-                             characters (currently only ``ensure_ascii=False``
-                             is implemented)
+                             characters
    :param int indent: indentation width to produce pretty printed JSON
    :param callable default: a function that gets called for objects that can't
                             otherwise be serialized
@@ -46,7 +45,7 @@
    .. doctest::
 
       >>> stream = io.BytesIO()
-      >>> dump('bar', stream, ensure_ascii=False)
+      >>> dump('bar', stream)
       >>> stream.getvalue()
       b'"bar"'
 
@@ -55,19 +54,9 @@
    .. doctest::
 
       >>> stream = io.StringIO()
-      >>> dump('¯\_(ツ)_/¯', stream, ensure_ascii=False)
-      >>> stream.getvalue()
-      '"¯\\\\_(ツ)_/¯"'
-
-   Support for ``ensure_ascii=True`` is currently **not** implemented:
-
-   .. doctest::
-
-      >>> stream = io.StringIO()
-      >>> dump('"bar"', stream)
-      Traceback (most recent call last):
-        ...
-      NotImplementedError: ensure_ascii=True not implemented
+      >>> dump('¯\_(ツ)_/¯', stream)
+      >>> stream.getvalue() == dumps('¯\_(ツ)_/¯')
+      True
 
    Consult the :func:`dumps()` documentation for details on all other arguments.
 

@@ -411,6 +411,11 @@ private:
 };
 
 
+inline void PutUnsafe(PyWriteStreamWrapper& stream, char c) {
+    stream.Put(c);
+}
+
+
 /////////////
 // Decoder //
 /////////////
@@ -3020,9 +3025,8 @@ do_stream_encode(PyObject* value, PyObject* stream, size_t chunkSize,
 
     if (!prettyPrint) {
         if (ensureAscii) {
-            // FIXME: dunno if it is possible to inject ASCII encoding here
-            PyErr_SetString(PyExc_NotImplementedError, "ensure_ascii=True not implemented");
-            return NULL;
+            Writer<PyWriteStreamWrapper, UTF8<>, ASCII<> > writer(os);
+            return DUMP_INTERNAL_CALL;
         }
         else {
             Writer<PyWriteStreamWrapper> writer(os);
@@ -3030,9 +3034,9 @@ do_stream_encode(PyObject* value, PyObject* stream, size_t chunkSize,
         }
     }
     else if (ensureAscii) {
-        // FIXME: dunno if it is possible to inject ASCII encoding here
-        PyErr_SetString(PyExc_NotImplementedError, "ensure_ascii=True not implemented");
-        return NULL;
+        PrettyWriter<PyWriteStreamWrapper, UTF8<>, ASCII<> > writer(os);
+        writer.SetIndent(' ', indent);
+        return DUMP_INTERNAL_CALL;
     }
     else {
         PrettyWriter<PyWriteStreamWrapper> writer(os);

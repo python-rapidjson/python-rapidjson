@@ -45,8 +45,7 @@
       :returns: a string with the ``JSON`` encoded `value`, when `stream` is ``None``
 
       When `stream` is specified, the encoded result will be written there, possibly in
-      chunks of `chunk_size` bytes at a time, and the return value will be ``None``. Also,
-      currently this variant does **not** implement support for ``ensure_ascii=True``.
+      chunks of `chunk_size` bytes at a time, and the return value will be ``None``.
 
    .. method:: default(value)
 

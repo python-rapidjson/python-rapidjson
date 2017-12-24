@@ -11,13 +11,13 @@ import rapidjson as rj
 
 def streaming_dumps(o, **opts):
     stream = io.BytesIO()
-    rj.dump(o, stream, ensure_ascii=False, **opts)
+    rj.dump(o, stream, **opts)
     return stream.getvalue().decode('utf-8')
 
 
 def streaming_encoder(o, **opts):
     stream = io.BytesIO()
-    rj.Encoder(ensure_ascii=False, **opts)(o, stream=stream)
+    rj.Encoder(**opts)(o, stream=stream)
     return stream.getvalue().decode('utf-8')
 
 
