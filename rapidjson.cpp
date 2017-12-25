@@ -1549,13 +1549,14 @@ load(PyObject* self, PyObject* args, PyObject* kwargs)
 
     if (chunkSizeObj && chunkSizeObj != Py_None) {
         if (PyLong_Check(chunkSizeObj)) {
-            unsigned long ul = PyLong_AsUnsignedLong(chunkSizeObj);
-            if (ul < 4 || ul > UINT_MAX) {
+            Py_ssize_t size = PyNumber_AsSsize_t(chunkSizeObj, PyExc_ValueError);
+            if (PyErr_Occurred() || size < 4 || size > UINT_MAX) {
                 PyErr_SetString(PyExc_ValueError,
-                                "Invalid chunk_size, must be between 4 and UINT_MAX");
+                                "Invalid chunk_size, must be an integer between 4 and"
+                                " UINT_MAX");
                 return NULL;
             }
-            chunkSize = (size_t) ul;
+            chunkSize = (size_t) size;
         }
         else {
             PyErr_SetString(PyExc_TypeError,
@@ -1831,12 +1832,14 @@ decoder_call(PyObject* self, PyObject* args, PyObject* kwargs)
 
     if (chunkSizeObj && chunkSizeObj != Py_None) {
         if (PyLong_Check(chunkSizeObj)) {
-            unsigned long ul = PyLong_AsUnsignedLong(chunkSizeObj);
-            if (ul == 0 || ul > UINT_MAX) {
-                PyErr_SetString(PyExc_ValueError, "Out of range chunk_size");
+            Py_ssize_t size = PyNumber_AsSsize_t(chunkSizeObj, PyExc_ValueError);
+            if (PyErr_Occurred() || size < 4 || size > UINT_MAX) {
+                PyErr_SetString(PyExc_ValueError,
+                                "Invalid chunk_size, must be an integer between 4 and"
+                                " UINT_MAX");
                 return NULL;
             }
-            chunkSize = (size_t) ul;
+            chunkSize = (size_t) size;
         }
         else {
             PyErr_SetString(PyExc_TypeError,
@@ -2865,12 +2868,14 @@ dump(PyObject* self, PyObject* args, PyObject* kwargs)
 
     if (chunkSizeObj && chunkSizeObj != Py_None) {
         if (PyLong_Check(chunkSizeObj)) {
-            unsigned long ul = PyLong_AsUnsignedLong(chunkSizeObj);
-            if (ul == 0 || ul > UINT_MAX) {
-                PyErr_SetString(PyExc_ValueError, "Out of range chunk_size");
+            Py_ssize_t size = PyNumber_AsSsize_t(chunkSizeObj, PyExc_ValueError);
+            if (PyErr_Occurred() || size < 4 || size > UINT_MAX) {
+                PyErr_SetString(PyExc_ValueError,
+                                "Invalid chunk_size, must be an integer between 4 and"
+                                " UINT_MAX");
                 return NULL;
             }
-            chunkSize = (size_t) ul;
+            chunkSize = (size_t) size;
         }
         else {
             PyErr_SetString(PyExc_TypeError,
@@ -3081,12 +3086,14 @@ encoder_call(PyObject* self, PyObject* args, PyObject* kwargs)
         }
         if (chunkSizeObj && chunkSizeObj != Py_None) {
             if (PyLong_Check(chunkSizeObj)) {
-                unsigned long ul = PyLong_AsUnsignedLong(chunkSizeObj);
-                if (ul == 0 || ul > UINT_MAX) {
-                    PyErr_SetString(PyExc_ValueError, "Out of range chunk_size");
+                Py_ssize_t size = PyNumber_AsSsize_t(chunkSizeObj, PyExc_ValueError);
+                if (PyErr_Occurred() || size < 4 || size > UINT_MAX) {
+                    PyErr_SetString(PyExc_ValueError,
+                                    "Invalid chunk_size, must be an integer between 4 and"
+                                    " UINT_MAX");
                     return NULL;
                 }
-                chunkSize = (size_t) ul;
+                chunkSize = (size_t) size;
             }
             else {
                 PyErr_SetString(PyExc_TypeError,
