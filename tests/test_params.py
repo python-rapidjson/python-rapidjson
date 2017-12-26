@@ -551,14 +551,6 @@ def test_invalid_dumps_params(posargs, kwargs, dumps):
 
 
 @pytest.mark.unit
-@pytest.mark.parametrize('cs', (-1, 0, 100**100, 1.23, 'foo'))
-def test_invalid_chunk_size(cs):
-    s = io.StringIO('"foo"')
-    with pytest.raises((ValueError, TypeError)):
-        rj.load(s, chunk_size=cs)
-
-
-@pytest.mark.unit
 def test_explicit_defaults_loads():
     assert rj.loads(
         string='"foo"',
@@ -599,3 +591,22 @@ def test_explicit_defaults_dumps():
         uuid_mode=None,
         allow_nan=True,
     ) == '"foo"'
+
+
+@pytest.mark.unit
+def test_explicit_defaults_dump():
+    stream = io.StringIO()
+    assert rj.dump(
+        obj='foo',
+        stream=stream,
+        skipkeys=False,
+        ensure_ascii=True,
+        indent=None,
+        default=None,
+        sort_keys=False,
+        number_mode=None,
+        datetime_mode=None,
+        uuid_mode=None,
+        allow_nan=True,
+        chunk_size=None) is None
+    assert stream.getvalue() == '"foo"'
