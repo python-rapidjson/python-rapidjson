@@ -14,7 +14,7 @@ import rapidjson as rj
 
 
 @pytest.mark.unit
-@pytest.mark.parametrize('cs', (-1, 0, sys.maxsize, 1.23, 'foo'))
+@pytest.mark.parametrize('cs', (-1, 0, sys.maxsize*10, 1.23, 'foo'))
 def test_invalid_chunk_size(cs):
     s = io.StringIO('"foo"')
     with pytest.raises((ValueError, TypeError)):
