@@ -51,3 +51,29 @@ def test_chunked_stream():
     rj.dump('~𓆙~', stream, chunk_size=4)
     assert len(stream.chunks) == 4
     assert stream.chunks == ['"~\\u', 'D80C', '\\uDD', '99~"']
+
+
+class CattyError(RuntimeError):
+    pass
+
+
+class CattyStream(io.StringIO):
+    def read(self, *args, **kwargs):
+        raise CattyError('No real reason')
+
+    def write(self, *args, **kwargs):
+        raise CattyError('No real reason')
+
+
+@pytest.mark.unit
+def test_underlying_stream_read_error():
+    stream = CattyStream()
+    with pytest.raises(CattyError):
+        rj.load(stream)
+
+
+@pytest.mark.unit
+def test_underlying_stream_write_error():
+    stream = CattyStream()
+    with pytest.raises(CattyError):
+        rj.dump('1234567890', stream)

@@ -267,8 +267,6 @@ private:
         chunk = PyObject_CallMethodObjArgs(stream, read_name, chunkSize, NULL);
 
         if (chunk == NULL) {
-            // TODO: understand if/how RapidJSON can handle read errors
-            PyErr_WriteUnraisable(Py_None);
             eof = true;
         }
         else {
@@ -362,15 +360,12 @@ public:
             }
         }
         if (c == NULL) {
-            // TODO: is there anything wiser we can do here?
-            // See https://github.com/Tencent/rapidjson/issues/1149
-            PyErr_WriteUnraisable(Py_None);
+            // Propagate the error state, it will be catched by dumps_internal()
         }
         else {
             PyObject* res = PyObject_CallMethodObjArgs(stream, write_name, c, NULL);
             if (res == NULL) {
-                // TODO: is there anything wiser we can do here?
-                PyErr_WriteUnraisable(Py_None);
+                // Likewise
             }
             else {
                 Py_DECREF(res);
@@ -1785,6 +1780,11 @@ do_decode(PyObject* decoder, const char* jsonStr, Py_ssize_t jsonStrLen,
         Py_XDECREF(handler.root);
         return NULL;
     }
+    else if (PyErr_Occurred()) {
+        // Catch possible error raised in associated stream operations
+        Py_XDECREF(handler.root);
+        return NULL;
+    }
 
     return handler.root;
 }
@@ -2567,7 +2567,8 @@ dumps_internal(
         return false;
     }
 
-    return true;
+    // Catch possible error raised in associated stream operations
+    return PyErr_Occurred() ? false : true;
 
 #undef RECURSE
 #undef ASSERT_VALID_SIZE
