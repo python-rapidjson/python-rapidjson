@@ -2,7 +2,7 @@
 .. :Project:   python-rapidjson -- Quickstart examples
 .. :Author:    Lele Gaifax <lele@metapensiero.it>
 .. :License:   MIT License
-.. :Copyright: © 2016, 2017 Lele Gaifax
+.. :Copyright: © 2016, 2017, 2018 Lele Gaifax
 ..
 
 =============
