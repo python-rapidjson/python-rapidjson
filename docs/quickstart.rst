@@ -146,9 +146,9 @@ Here are things in the standard ``json`` library that we have decided not to sup
   anyways.
 
 Coercing keys when dumping
-  ``json`` will turn ``True`` into ``'True'`` if you dump it out but when you load it back
-  in it'll still be a string. We want the dump and load to return the exact same objects
-  so we have decided not to do this coercion.
+  ``json`` will stringify a ``True`` dictionary key as ``"true"`` if you dump it out but
+  when you load it back in it'll still be a string. We want the dump and load to return
+  the exact same objects so we have decided not to do this coercion.
 
 
 .. _JSON: http://json.org/
