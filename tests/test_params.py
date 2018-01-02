@@ -578,6 +578,15 @@ def test_explicit_defaults_load():
 
 
 @pytest.mark.unit
+def test_explicit_defaults_decoder():
+    assert rj.Decoder(
+        number_mode=None,
+        datetime_mode=None,
+        uuid_mode=None,
+        parse_mode=None)('"foo"') == "foo"
+
+
+@pytest.mark.unit
 def test_explicit_defaults_dumps():
     assert rj.dumps(
         obj='foo',
@@ -610,3 +619,32 @@ def test_explicit_defaults_dump():
         allow_nan=True,
         chunk_size=None) is None
     assert stream.getvalue() == '"foo"'
+
+
+@pytest.mark.unit
+def test_explicit_defaults_encoder():
+    assert rj.Encoder(
+        skip_invalid_keys=False,
+        ensure_ascii=True,
+        indent=None,
+        sort_keys=False,
+        number_mode=None,
+        datetime_mode=None,
+        uuid_mode=None)({'foo': 'bar'}) == '{"foo":"bar"}'
+
+
+@pytest.mark.unit
+def test_encoder_call():
+    o = {'foo': 'bar'}
+
+    result = rj.Encoder()(o)
+    assert result == '{"foo":"bar"}'
+    assert rj.Encoder()(o, None) == result
+
+    stream = io.StringIO()
+    assert rj.Encoder()(o, stream) is None
+    assert stream.getvalue() == result
+
+    stream = io.StringIO()
+    assert rj.Encoder()(o, stream=stream) is None
+    assert stream.getvalue() == result

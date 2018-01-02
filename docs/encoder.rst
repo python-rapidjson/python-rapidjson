@@ -37,7 +37,7 @@
    :param int uuid_mode: how should :ref:`UUID instances be handled <dumps-uuid-mode>`
 
 
-   .. method:: __call__(obj, *, stream=None, chunk_size=65536)
+   .. method:: __call__(obj, stream=None, *, chunk_size=65536)
 
       :param obj: the value to be encoded
       :param stream: a *file-like* instance

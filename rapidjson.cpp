@@ -3067,7 +3067,7 @@ encoder_call(PyObject* self, PyObject* args, PyObject* kwargs)
     size_t chunkSize = 65536;
     PyObject* defaultFn = NULL;
 
-    if (!PyArg_ParseTupleAndKeywords(args, kwargs, "O|$OO",
+    if (!PyArg_ParseTupleAndKeywords(args, kwargs, "O|O$O",
                                      (char**) kwlist,
                                      &value,
                                      &stream,
@@ -3080,7 +3080,7 @@ encoder_call(PyObject* self, PyObject* args, PyObject* kwargs)
         defaultFn = PyObject_GetAttr(self, default_name);
     }
 
-    if (stream != NULL) {
+    if (stream != NULL && stream != Py_None) {
         if (!PyObject_HasAttr(stream, write_name)) {
             PyErr_SetString(PyExc_TypeError, "Expected a writable stream");
             return NULL;
