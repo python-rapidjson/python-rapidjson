@@ -217,8 +217,8 @@ not to support:
   you nice looking JSON anyways.
 
 Coercing keys when dumping
-  ``json`` will turn ``True`` into ``'True'`` if you dump it out but when you
-  load it back in it'll still be a string. We want the dump and load to return
+  ``json`` will stringify a ``True`` dictionary key as ``"true"`` if you dump it out but
+  when you load it back in it'll still be a string. We want the dump and load to return
   the exact same objects so we have decided not to do this coercion.
 
 .. _RapidJSON: http://rapidjson.org/
