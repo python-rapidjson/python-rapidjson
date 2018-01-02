@@ -11,6 +11,7 @@
 # Since it's not an exact science, it should be taken with a grain of salt.
 
 import datetime
+import io
 import sys
 import uuid
 
@@ -89,8 +90,20 @@ def test_leaks(value, dumps_options, loads_options):
         aspython = rj.loads(asjson, **loads_options)
         del asjson
         del aspython
-        rc1 = sys.gettotalrefcount()
-        assert (rc1 - rc0) < THRESHOLD
+    rc1 = sys.gettotalrefcount()
+    assert (rc1 - rc0) < THRESHOLD
+
+    rc0 = sys.gettotalrefcount()
+    for i in range(1000):
+        stream = io.BytesIO()
+        none = rj.dump(value, stream, **dumps_options)
+        stream.seek(0)
+        aspython = rj.load(stream, **loads_options)
+        del none
+        del aspython
+        del stream
+    rc1 = sys.gettotalrefcount()
+    assert (rc1 - rc0) < THRESHOLD
 
 
 @pytest.mark.skipif(not hasattr(sys, 'gettotalrefcount'), reason='Non-debug Python')
