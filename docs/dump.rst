@@ -58,6 +58,12 @@
       >>> stream.getvalue() == dumps('¯\_(ツ)_/¯')
       True
 
+   .. rubric:: `chunk_size`
+
+   The `chunk_size` argument determines the size of the *buffer* used to feed the
+   *stream*: the greater the value, the fewer calls will be made to its ``write()``
+   method.
+
    Consult the :func:`dumps()` documentation for details on all other arguments.
 
 .. [#] A *text stream* is recognized by checking the presence of an ``encoding`` member

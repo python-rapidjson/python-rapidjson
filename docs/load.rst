@@ -45,4 +45,10 @@
       >>> load(io.BytesIO(b'["string", {"kind": "object"}, 3.14159]'))
       ['string', {'kind': 'object'}, 3.14159]
 
+   .. rubric:: `chunk_size`
+
+   The `chunk_size` argument determines the size of the *buffer* used to load the
+   *stream*: the greater the value, the fewer calls will be made to its ``read()``
+   method.
+
    Consult the :func:`loads()` documentation for details on all other arguments.

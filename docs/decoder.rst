@@ -32,11 +32,11 @@
                           extensions <loads-parse-mode>`
 
 
-   .. method:: __call__(json, chunk_size=65536)
+   .. method:: __call__(json, *, chunk_size=65536)
 
       :param json: either a ``str`` instance, an *UTF-8* ``bytes`` instance or a
                    *file-like* stream, containing the ``JSON`` to be decoded
-      :param int size: in case of a stream, it will be read in chunks of this size
+      :param int chunk_size: in case of a stream, it will be read in chunks of this size
       :returns: a Python value
 
       .. doctest::
