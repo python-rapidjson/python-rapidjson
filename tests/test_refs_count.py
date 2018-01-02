@@ -2,7 +2,7 @@
 # :Project:   python-rapidjson -- Refs leaks tests
 # :Author:    Lele Gaifax <lele@metapensiero.it>
 # :License:   MIT License
-# :Copyright: © 2017 Lele Gaifax
+# :Copyright: © 2017, 2018 Lele Gaifax
 #
 
 # NB: this is a simplicistic test that uses sys.gettotalrefcount(), available

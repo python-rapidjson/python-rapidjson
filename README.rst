@@ -3,7 +3,7 @@
 .. :Author:    Ken Robbins <ken@kenrobbins.com>
 .. :License:   MIT License
 .. :Copyright: © 2015 Ken Robbins
-.. :Copyright: © 2016, 2017 Lele Gaifax
+.. :Copyright: © 2016, 2017, 2018 Lele Gaifax
 ..
 
 ==================
