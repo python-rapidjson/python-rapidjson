@@ -245,7 +245,7 @@ def test_decimal(dumps, loads):
 def test_datetime_mode_dumps(dumps):
     import pytz
 
-    d = datetime.utcnow()
+    d = datetime(2018, 1, 2, 11, 56, 19, 854440)
     dstr = d.isoformat()
 
     with pytest.raises(TypeError):
@@ -291,7 +291,7 @@ def test_datetime_mode_dumps(dumps):
         d, datetime_mode= rj.DM_UNIX_TIME | rj.DM_ONLY_SECONDS
     ) == str(d.timestamp()).split('.')[0]
 
-    d = datetime.now()
+    d = datetime(2018, 1, 2, 12, 56, 19, 854440)
 
     assert dumps(
         d, datetime_mode=rj.DM_ISO8601 | rj.DM_NAIVE_IS_UTC
