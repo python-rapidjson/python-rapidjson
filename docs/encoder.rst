@@ -23,7 +23,8 @@
 
    Class-based :func:`dumps`\ -like functionality.
 
-   :param bool skip_invalid_keys: whether :ref:`skip invalid keys <skip-invalid-keys>`
+   :param bool skip_invalid_keys: whether invalid :class:`dict` keys :ref:`will be skipped`
+                                  <skip-invalid-keys>`
    :param bool ensure_ascii: whether the output should contain :ref:`only ASCII
                              characters <ensure-ascii>`
    :param int indent: indentation width to produce :ref:`pretty printed JSON

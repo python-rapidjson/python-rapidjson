@@ -25,7 +25,7 @@
    Encode given Python `obj` instance into a ``JSON`` string.
 
    :param obj: the value to be serialized
-   :param bool skipkeys: whether skip invalid :class:`dict` keys
+   :param bool skipkeys: whether invalid :class:`dict` keys will be skipped
    :param bool ensure_ascii: whether the output should contain only ASCII
                              characters
    :param int indent: indentation width to produce pretty printed JSON
@@ -50,11 +50,11 @@
 
    .. doctest::
 
-      >>> dumps({(0,): 'empty tuple'})
+      >>> dumps({(0,): 'empty tuple', True: 'a true value'})
       Traceback (most recent call last):
         File "<stdin>", line 1, in <module>
-      TypeError: keys must be a string
-      >>> dumps({(0,): 'empty tuple'}, skipkeys=True)
+      TypeError: keys must be strings
+      >>> dumps({(0,): 'empty tuple', True: 'a true value'}, skipkeys=True)
       '{}'
 
 
