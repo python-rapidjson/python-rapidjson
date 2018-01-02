@@ -59,6 +59,17 @@ Basic usage looks like this:
     '{"bar":"baz","foo":100}'
     >>> rapidjson.loads('{"bar":"baz","foo":100}')
     {'bar': 'baz', 'foo': 100}
+    >>>
+    >>> class Stream:
+    ...   def write(self, data):
+    ...      print("Chunk:", data)
+    ...
+    >>> rapidjson.dump(data, Stream(), chunk_size=5)
+    Chunk: b'{"foo'
+    Chunk: b'":100'
+    Chunk: b',"bar'
+    Chunk: b'":"ba'
+    Chunk: b'z"}'
 
 
 Development

@@ -134,6 +134,19 @@ Python's lists, tuples and iterators get serialized as JSON arrays:
     >>> loads(as_json, number_mode=NM_DECIMAL)
     Decimal('3.1415926535897932384626433832795028841971')
 
+The module exposes also a *stream* interface:
+
+.. doctest::
+
+    >>> from io import StringIO
+    >>> from rapidjson import dump, load
+    >>> stream = StringIO()
+    >>> dump(data, stream)
+    >>> stream.seek(0)
+    0
+    >>> load(stream) == data
+    True
+
 
 Incompatibilities
 -----------------
