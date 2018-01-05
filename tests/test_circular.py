@@ -44,6 +44,7 @@ def test_circular_composite(dumps):
     with pytest.raises(expected_exception):
         dumps(dct2)
 
+
 @pytest.mark.unit
 def test_max_recursion_depth(dumps):
     import sys
