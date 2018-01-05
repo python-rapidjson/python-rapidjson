@@ -1,7 +1,7 @@
 Changes
 -------
 
-0.4.0 (unreleased)
+0.4.0 (2018-01-05)
 ~~~~~~~~~~~~~~~~~~
 
 * Implemented the streaming interface, see `load()`__ and `dump()`__ (`issue #80`__)
