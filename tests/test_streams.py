@@ -7,6 +7,7 @@
 
 import io
 import sys
+import tempfile
 
 import pytest
 
@@ -77,3 +78,13 @@ def test_underlying_stream_write_error():
     stream = CattyStream()
     with pytest.raises(CattyError):
         rj.dump('1234567890', stream)
+
+
+@pytest.mark.unit
+def test_file_object():
+    for stream in tempfile.TemporaryFile(), tempfile.TemporaryFile('w+', encoding='utf-8'):
+        with stream:
+            datum = ['1234567890', 1234, 3.14, '~𓆙~']
+            rj.dump(datum, stream)
+            stream.seek(0)
+            assert rj.load(stream) == datum
