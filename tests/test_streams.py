@@ -2,7 +2,7 @@
 # :Project:   python-rapidjson -- Streaming API related tests
 # :Author:    Lele Gaifax <lele@metapensiero.it>
 # :License:   MIT License
-# :Copyright: © 2017 Lele Gaifax
+# :Copyright: © 2017, 2018 Lele Gaifax
 #
 
 import io
