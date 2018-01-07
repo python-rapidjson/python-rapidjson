@@ -62,14 +62,11 @@ extension_options = {
 cxx = sysconfig.get_config_var('CXX')
 if cxx and 'g++' in cxx:
     # Avoid warning about invalid flag for C++
-    cflags = sysconfig.get_config_var('CFLAGS')
-    if cflags and '-Wstrict-prototypes' in cflags:
-        cflags = cflags.replace('-Wstrict-prototypes', '')
-        sysconfig.get_config_vars()['CFLAGS'] = cflags
-    opt = sysconfig.get_config_var('OPT')
-    if opt and '-Wstrict-prototypes' in opt:
-        opt = opt.replace('-Wstrict-prototypes', '')
-        sysconfig.get_config_vars()['OPT'] = opt
+    for varname in ('CFLAGS', 'OPT'):
+        value = sysconfig.get_config_var(varname)
+        if value and '-Wstrict-prototypes' in value:
+            value = value.replace('-Wstrict-prototypes', '')
+            sysconfig.get_config_vars()[varname] = value
 
     # Add -pedantic, so we get a warning when using non-standard features, and
     # -Wno-long-long to pacify old gcc (or Apple's hybrids) that treat "long
