@@ -9,16 +9,28 @@ import io
 import rapidjson as rj
 
 
-def streaming_dumps(o, **opts):
+def binary_streaming_dumps(o, **opts):
     stream = io.BytesIO()
     rj.dump(o, stream, **opts)
     return stream.getvalue().decode('utf-8')
 
 
-def streaming_encoder(o, **opts):
+def text_streaming_dumps(o, **opts):
+    stream = io.StringIO()
+    rj.dump(o, stream, **opts)
+    return stream.getvalue()
+
+
+def binary_streaming_encoder(o, **opts):
     stream = io.BytesIO()
     rj.Encoder(**opts)(o, stream=stream)
     return stream.getvalue().decode('utf-8')
+
+
+def text_streaming_encoder(o, **opts):
+    stream = io.StringIO()
+    rj.Encoder(**opts)(o, stream=stream)
+    return stream.getvalue()
 
 
 def pytest_generate_tests(metafunc):
@@ -32,22 +44,30 @@ def pytest_generate_tests(metafunc):
     elif 'dumps' in metafunc.fixturenames:
         metafunc.parametrize('dumps', (
             rj.dumps,
-            streaming_dumps,
+            binary_streaming_dumps,
+            text_streaming_dumps,
             lambda o,**opts: rj.Encoder(**opts)(o),
-            streaming_encoder
+            binary_streaming_encoder,
+            text_streaming_encoder,
         ), ids=('func[string]',
-                'func[stream]',
+                'func[bytestream]',
+                'func[textstream]',
                 'class[string]',
-                'class[stream]'))
+                'class[binarystream]',
+                'class[textstream]'))
     elif 'loads' in metafunc.fixturenames:
         metafunc.parametrize('loads', (
             rj.loads,
             lambda j,**opts: rj.load(io.BytesIO(j.encode('utf-8')
                                            if isinstance(j, str) else j), **opts),
+            lambda j,**opts: rj.load(io.StringIO(j), **opts),
             lambda j,**opts: rj.Decoder(**opts)(j),
             lambda j,**opts: rj.Decoder(**opts)(io.BytesIO(j.encode('utf-8')
                                                       if isinstance(j, str) else j)),
+            lambda j,**opts: rj.Decoder(**opts)(io.StringIO(j)),
         ), ids=('func[string]',
-                'func[stream]',
+                'func[bytestream]',
+                'func[textstream]',
                 'class[string]',
-                'class[stream]'))
+                'class[bytestream]',
+                'class[textstream]'))
