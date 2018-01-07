@@ -13,6 +13,18 @@
 Python wrapper around RapidJSON
 ===============================
 
+:Authors: Ken Robbins <ken@kenrobbins.com>; Lele Gaifax <lele@metapensiero.it>
+:License: `MIT License`__
+:Status: |build| |doc|
+
+__ https://raw.githubusercontent.com/python-rapidjson/python-rapidjson/master/LICENSE
+.. |build| image:: https://travis-ci.org/python-rapidjson/python-rapidjson.svg?branch=master
+   :target: https://travis-ci.org/python-rapidjson/python-rapidjson
+   :alt: Build status
+.. |doc| image:: https://readthedocs.org/projects/python-rapidjson/badge/?version=latest
+   :target: https://readthedocs.org/projects/python-rapidjson/builds/
+   :alt: Documentation status
+
 RapidJSON_ is an extremely fast C++ JSON parser and serialization library: this module
 wraps it into a Python 3 extension, exposing its serialization/deserialization (to/from
 either ``bytes``, ``str`` or *file-like* instances) and `JSON Schema`__ validation
@@ -22,14 +34,6 @@ Latest version documentation is automatically rendered by `Read the Docs`__.
 
 __ http://json-schema.org/documentation.html
 __ http://python-rapidjson.readthedocs.io/en/latest/
-
-.. image:: https://travis-ci.org/python-rapidjson/python-rapidjson.svg?branch=master
-   :target: https://travis-ci.org/python-rapidjson/python-rapidjson
-   :alt: Build status
-
-.. image:: https://readthedocs.org/projects/python-rapidjson/badge/?version=latest
-   :target: http://python-rapidjson.readthedocs.io/en/latest/?badge=latest
-   :alt: Documentation status
 
 
 Getting Started
