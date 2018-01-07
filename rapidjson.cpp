@@ -293,7 +293,7 @@ private:
     PyObject* stream;
     PyObject* chunkSize;
     PyObject* chunk;
-    Ch* buffer;
+    const Ch* buffer;
     size_t chunkLen;
     size_t pos;
     size_t offset;
