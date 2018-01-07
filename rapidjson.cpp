@@ -276,8 +276,12 @@ private:
                 len = PyBytes_GET_SIZE(chunk);
                 buffer = PyBytes_AS_STRING(chunk);
             }
-            else
+            else {
                 buffer = PyUnicode_AsUTF8AndSize(chunk, &len);
+                if (buffer == NULL) {
+                    len = 0;
+                }
+            }
 
             if (len == 0) {
                 eof = true;
