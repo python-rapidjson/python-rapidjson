@@ -60,7 +60,7 @@ extension_options = {
 
 
 cxx = sysconfig.get_config_var('CXX')
-if cxx and 'gnu' in cxx:
+if cxx and 'g++' in cxx:
     # Avoid warning about invalid flag for C++
     cflags = sysconfig.get_config_var('CFLAGS')
     if cflags and '-Wstrict-prototypes' in cflags:
