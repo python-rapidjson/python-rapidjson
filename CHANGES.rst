@@ -1,7 +1,7 @@
 Changes
 -------
 
-0.4.1 (unreleased)
+0.4.1 (2018-01-08)
 ~~~~~~~~~~~~~~~~~~
 
 * Fix memory leaks in ``Decoder()`` and ``Encoder()`` classes, related to
