@@ -1,6 +1,15 @@
 Changes
 -------
 
+0.4.1 (unreleased)
+~~~~~~~~~~~~~~~~~~
+
+* Fix memory leaks in ``Decoder()`` and ``Encoder()`` classes, related to
+  bad handling of ``PyObject_GetAttr()`` result value
+
+* Fix compatibility with Python 3.7a
+
+
 0.4.0 (2018-01-05)
 ~~~~~~~~~~~~~~~~~~
 
