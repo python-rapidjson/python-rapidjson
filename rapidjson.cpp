@@ -3066,6 +3066,7 @@ encoder_call(PyObject* self, PyObject* args, PyObject* kwargs)
     PyObject* chunkSizeObj = NULL;
     size_t chunkSize = 65536;
     PyObject* defaultFn = NULL;
+    PyObject* result;
 
     if (!PyArg_ParseTupleAndKeywords(args, kwargs, "O|O$O",
                                      (char**) kwlist,
@@ -3102,14 +3103,20 @@ encoder_call(PyObject* self, PyObject* args, PyObject* kwargs)
                 return NULL;
             }
         }
-        return do_stream_encode(value, stream, chunkSize, e->skipInvalidKeys, defaultFn,
-                                e->sortKeys, e->ensureAscii, e->prettyPrint, e->indent,
-                                e->numberMode, e->datetimeMode, e->uuidMode);
+        result = do_stream_encode(value, stream, chunkSize, e->skipInvalidKeys, defaultFn,
+                                  e->sortKeys, e->ensureAscii, e->prettyPrint, e->indent,
+                                  e->numberMode, e->datetimeMode, e->uuidMode);
     }
-    else
-        return do_encode(value, e->skipInvalidKeys, defaultFn, e->sortKeys,
-                         e->ensureAscii, e->prettyPrint, e->indent,
-                         e->numberMode, e->datetimeMode, e->uuidMode);
+    else {
+        result = do_encode(value, e->skipInvalidKeys, defaultFn, e->sortKeys,
+                           e->ensureAscii, e->prettyPrint, e->indent,
+                           e->numberMode, e->datetimeMode, e->uuidMode);
+    }
+
+    if (defaultFn != NULL)
+        Py_DECREF(defaultFn);
+
+    return result;
 }
 
 

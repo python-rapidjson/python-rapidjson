@@ -136,3 +136,22 @@ def test_decoder_call_leaks():
         del value
     rc1 = sys.gettotalrefcount()
     assert (rc1 - rc0) < THRESHOLD
+
+
+@pytest.mark.skipif(not hasattr(sys, 'gettotalrefcount'), reason='Non-debug Python')
+def test_encoder_call_leaks():
+    class MyEncoder(rj.Encoder):
+        def default(self, obj):
+            return 'Foo'
+
+    class Foo:
+        pass
+
+    encoder = MyEncoder()
+    foo = Foo()
+    rc0 = sys.gettotalrefcount()
+    for i in range(1000):
+        value = encoder(foo)
+        del value
+    rc1 = sys.gettotalrefcount()
+    assert (rc1 - rc0) < THRESHOLD
