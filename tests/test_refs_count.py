@@ -115,3 +115,24 @@ def test_dump_iterator_leaks():
     del value
     rc1 = sys.gettotalrefcount()
     assert (rc1 - rc0) < THRESHOLD
+
+
+@pytest.mark.skipif(not hasattr(sys, 'gettotalrefcount'), reason='Non-debug Python')
+def test_decoder_call_leaks():
+    class MyDecoder(rj.Decoder):
+        def start_object(self):
+            return {}
+        def end_object(self, obj):
+            return obj
+        def end_array(self, array):
+            return array
+        def string(self, string):
+            return string
+
+    decoder = MyDecoder()
+    rc0 = sys.gettotalrefcount()
+    for i in range(1000):
+        value = decoder('["foo", {"foo": "bar"}]')
+        del value
+    rc1 = sys.gettotalrefcount()
+    assert (rc1 - rc0) < THRESHOLD

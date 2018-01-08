@@ -452,19 +452,15 @@ struct PyHandler {
                 assert(!objectHook);
                 if (PyObject_HasAttr(decoder, start_object_name)) {
                     decoderStartObject = PyObject_GetAttr(decoder, start_object_name);
-                    Py_INCREF(decoderStartObject);
                 }
                 if (PyObject_HasAttr(decoder, end_object_name)) {
                     decoderEndObject = PyObject_GetAttr(decoder, end_object_name);
-                    Py_INCREF(decoderEndObject);
                 }
                 if (PyObject_HasAttr(decoder, end_array_name)) {
                     decoderEndArray = PyObject_GetAttr(decoder, end_array_name);
-                    Py_INCREF(decoderEndArray);
                 }
                 if (PyObject_HasAttr(decoder, string_name)) {
                     decoderString = PyObject_GetAttr(decoder, string_name);
-                    Py_INCREF(decoderString);
                 }
             }
         }
