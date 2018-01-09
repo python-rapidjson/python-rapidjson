@@ -863,10 +863,10 @@ struct PyHandler {
         case 16:                    /* 20:02:20.123456Z */
         case 18:                    /* 20:02:20.123-05:00 */
         case 21:                    /* 20:02:20.123456-05:00 */
-            res = (str[2] == ':' && str[5] == ':' &&
-                   isdigit(str[0]) && isdigit(str[1]) &&
-                   isdigit(str[3]) && isdigit(str[4]) &&
-                   isdigit(str[6]) && isdigit(str[7]));
+            res = (str[2] == ':' && str[5] == ':'
+                   && isdigit(str[0]) && isdigit(str[1])
+                   && isdigit(str[3]) && isdigit(str[4])
+                   && isdigit(str[6]) && isdigit(str[7]));
             if (res) {
                 hours = digit(0)*10 + digit(1);
                 mins = digit(3)*10 + digit(4);
@@ -883,12 +883,12 @@ struct PyHandler {
                     length--;
                 }
                 if (res && (length == 14 || length == 18 || length == 21)) {
-                    res = ((str[length-6] == '+' || str[length-6] == '-') &&
-                           isdigit(str[length-5]) &&
-                           isdigit(str[length-4]) &&
-                           str[length-3] == ':' &&
-                           isdigit(str[length-2]) &&
-                           isdigit(str[length-1]));
+                    res = ((str[length-6] == '+' || str[length-6] == '-')
+                           && isdigit(str[length-5])
+                           && isdigit(str[length-4])
+                           && str[length-3] == ':'
+                           && isdigit(str[length-2])
+                           && isdigit(str[length-1]));
                     if (res) {
                         hofs = digit(length-5)*10 + digit(length-4);
                         mofs = digit(length-2)*10 + digit(length-1);
@@ -928,11 +928,11 @@ struct PyHandler {
         case 27:                    /* 1999-02-03T10:20:30.123456Z */
         case 29:                    /* 1999-02-03T10:20:30.123-05:00 */
         case 32:                    /* 1999-02-03T10:20:30.123456-05:00 */
-            res = (str[4] == '-' && str[7] == '-' &&
-                   isdigit(str[0]) && isdigit(str[1]) &&
-                   isdigit(str[2]) && isdigit(str[3]) &&
-                   isdigit(str[5]) && isdigit(str[6]) &&
-                   isdigit(str[8]) && isdigit(str[9]));
+            res = (str[4] == '-' && str[7] == '-'
+                   && isdigit(str[0]) && isdigit(str[1])
+                   && isdigit(str[2]) && isdigit(str[3])
+                   && isdigit(str[5]) && isdigit(str[6])
+                   && isdigit(str[8]) && isdigit(str[9]));
             if (res) {
                 year = digit(0)*1000
                     + digit(1)*100
@@ -943,22 +943,21 @@ struct PyHandler {
             }
             if (res && length > 10) {
                 if (str[10] == ' ' || str[10] == 'T') {
-                    res = (str[13] == ':' && str[16] == ':' &&
-                           isdigit(str[11]) && isdigit(str[12]) &&
-                           isdigit(str[14]) && isdigit(str[15]) &&
-                           isdigit(str[17]) && isdigit(str[18]));
+                    res = (str[13] == ':' && str[16] == ':'
+                           && isdigit(str[11]) && isdigit(str[12])
+                           && isdigit(str[14]) && isdigit(str[15])
+                           && isdigit(str[17]) && isdigit(str[18]));
                     if (res) {
                         hours = digit(11)*10 + digit(12);
                         mins = digit(14)*10 + digit(15);
                         secs = digit(17)*10 + digit(18);
                         if (length == 25 || length == 29 || length == 32) {
-                            res = ((str[length-6] == '+'
-                                    || str[length-6] == '-') &&
-                                   isdigit(str[length-5]) &&
-                                   isdigit(str[length-4]) &&
-                                   str[length-3] == ':' &&
-                                   isdigit(str[length-2]) &&
-                                   isdigit(str[length-1]));
+                            res = ((str[length-6] == '+' || str[length-6] == '-')
+                                   && isdigit(str[length-5])
+                                   && isdigit(str[length-4])
+                                   && str[length-3] == ':'
+                                   && isdigit(str[length-2])
+                                   && isdigit(str[length-1]));
                             if (res) {
                                 hofs = digit(length-5)*10 + digit(length-4);
                                 mofs = digit(length-2)*10 + digit(length-1);
@@ -974,18 +973,18 @@ struct PyHandler {
                             length--;
                         }
                         if (res && length == 23)
-                            res = (str[19] == '.' &&
-                                   isdigit(str[20]) &&
-                                   isdigit(str[21]) &&
-                                   isdigit(str[22]));
+                            res = (str[19] == '.'
+                                   && isdigit(str[20])
+                                   && isdigit(str[21])
+                                   && isdigit(str[22]));
                         else if (res && length == 26)
-                            res = (str[19] == '.' &&
-                                   isdigit(str[20]) &&
-                                   isdigit(str[21]) &&
-                                   isdigit(str[22]) &&
-                                   isdigit(str[23]) &&
-                                   isdigit(str[24]) &&
-                                   isdigit(str[25]));
+                            res = (str[19] == '.'
+                                   && isdigit(str[20])
+                                   && isdigit(str[21])
+                                   && isdigit(str[22])
+                                   && isdigit(str[23])
+                                   && isdigit(str[24])
+                                   && isdigit(str[25]));
                         if (res) {
                             if (length == 10 || length == 19 || length == 20
                                 || length == 25)
