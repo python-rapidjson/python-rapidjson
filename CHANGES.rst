@@ -1,7 +1,7 @@
 Changes
 -------
 
-0.4.2 (unreleased)
+0.4.2 (2018-01-09)
 ~~~~~~~~~~~~~~~~~~
 
 * Fix precision handling of DM_UNIX_TIME timestamps
