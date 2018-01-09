@@ -844,11 +844,14 @@ struct PyHandler {
 
 #define digit(idx) (str[idx] - '0')
 
-    bool IsIso8601(const char* str, SizeType length) {
+    bool IsIso8601(const char* str, SizeType length,
+                   int& year, int& month, int& day,
+                   int& hours, int& mins, int &secs, int& usecs, int& tzoff) {
         bool res;
-        int hours = 0, mins = 0, secs = 0;
-        int year = -1, month = 0, day = 0;
-        int hofs = 0, mofs = 0;
+        int hofs = 0, mofs = 0, tzsign = 1;
+
+        year = -1;
+        month = day = hours = mins = secs = usecs = tzoff = 0;
 
         switch(length) {
         case 8:                     /* 20:02:20 */
@@ -889,6 +892,8 @@ struct PyHandler {
                     if (res) {
                         hofs = digit(length-5)*10 + digit(length-4);
                         mofs = digit(length-2)*10 + digit(length-1);
+                        if (str[length-6] == '-')
+                            tzsign = -1;
                     }
                     length -= 6;
                 }
@@ -896,6 +901,19 @@ struct PyHandler {
                     res = isdigit(str[9]) && isdigit(str[10]) && isdigit(str[11]);
                     if (res && length > 12)
                         res = isdigit(str[12]) && isdigit(str[13]) && isdigit(str[14]);
+                    if (res) {
+                        if (length == 8 || length == 9 || length == 14)
+                            usecs = 0;
+                        else {
+                            usecs = digit(9) * 100000
+                                + digit(10) * 10000
+                                + digit(11) * 1000;
+                            if (length == 15 || length == 16 || length == 21)
+                                usecs += digit(12) * 100
+                                    + digit(13) * 10
+                                    + digit(14);
+                        }
+                    }
                 }
             }
             break;
@@ -944,6 +962,8 @@ struct PyHandler {
                             if (res) {
                                 hofs = digit(length-5)*10 + digit(length-4);
                                 mofs = digit(length-2)*10 + digit(length-1);
+                                if (str[length-6] == '-')
+                                    tzsign = -1;
                             }
                             length -= 6;
                         }
@@ -966,6 +986,20 @@ struct PyHandler {
                                    isdigit(str[23]) &&
                                    isdigit(str[24]) &&
                                    isdigit(str[25]));
+                        if (res) {
+                            if (length == 10 || length == 19 || length == 20
+                                || length == 25)
+                                usecs = 0;
+                            else {
+                                usecs = digit(20)*100000
+                                    + digit(21)*10000
+                                    + digit(22)*1000;
+                                if (length == 26 || length == 27 || length == 32)
+                                    usecs += digit(23)*100
+                                        + digit(24)*10
+                                        + digit(25);
+                            }
+                        }
                     }
                 } else
                     res = false;
@@ -982,14 +1016,17 @@ struct PyHandler {
                     || (month > 0 && day > days_per_month(year, month))
                     || hofs > 23 || mofs > 59))
             res = false;
+        else {
+            tzoff = tzsign * (hofs * 3600 + mofs * 60);
+        }
 
         return res;
     }
 
-    bool HandleIso8601(const char* str, SizeType length) {
+    bool HandleIso8601(const char* str, SizeType length,
+                       int year, int month, int day,
+                       int hours, int mins, int secs, int usecs, int tzoff) {
         PyObject* value;
-        int hours, mins, secs, usecs;
-        int year, month, day;
 
         switch(length) {
         case 8:                     /* 20:02:20 */
@@ -1001,20 +1038,6 @@ struct PyHandler {
         case 16:                    /* 20:02:20.123456Z */
         case 18:                    /* 20:02:20.123-05:00 */
         case 21:                    /* 20:02:20.123456-05:00 */
-            hours = digit(0)*10 + digit(1);
-            mins = digit(3)*10 + digit(4);
-            secs = digit(6)*10 + digit(7);
-            if (length == 8 || length == 9 || length == 14)
-                usecs = 0;
-            else {
-                usecs = digit(9) * 100000
-                    + digit(10) * 10000
-                    + digit(11) * 1000;
-                if (length == 15 || length == 16 || length == 21)
-                    usecs += digit(12) * 100
-                        + digit(13) * 10
-                        + digit(14);
-            }
             if ((length == 8 && datetimeMode & DM_NAIVE_IS_UTC)
                 || length == 9 || length == 13 || length == 16)
                 value = PyDateTimeAPI->Time_FromTime(
@@ -1024,11 +1047,7 @@ struct PyHandler {
                      || length == 8 || length == 12 || length == 15)
                 value = PyTime_FromTime(hours, mins, secs, usecs);
             else /* if (length == 14 || length == 18 || length == 21) */ {
-                int secsoffset = ((digit(length-5)*10 + digit(length-4)) * 3600
-                                  + (digit(length-2)*10 + digit(length-1)) * 60);
-                if (str[length-6] == '-')
-                    secsoffset = -secsoffset;
-                if (datetimeMode & DM_SHIFT_TO_UTC && secsoffset) {
+                if (datetimeMode & DM_SHIFT_TO_UTC && tzoff) {
                     PyErr_Format(PyExc_ValueError,
                                  "Time literal cannot be shifted to UTC: %s", str);
                     value = NULL;
@@ -1039,7 +1058,7 @@ struct PyHandler {
                             PyDateTimeAPI->TimeType);
                     } else {
                         PyObject* offset = PyDateTimeAPI->Delta_FromDelta(
-                            0, secsoffset, 0, 1, PyDateTimeAPI->DeltaType);
+                            0, tzoff, 0, 1, PyDateTimeAPI->DeltaType);
                         if (offset == NULL)
                             value = NULL;
                         else {
@@ -1061,12 +1080,6 @@ struct PyHandler {
             break;
 
         case 10:                    /* 1999-02-03 */
-            year = digit(0)*1000
-                + digit(1)*100
-                + digit(2)*10
-                + digit(3);
-            month = digit(5)*10 + digit(6);
-            day = digit(8)*10 + digit(9);
             value = PyDate_FromDate(year, month, day);
             break;
 
@@ -1079,26 +1092,6 @@ struct PyHandler {
         case 27:                    /* 1999-02-03T10:20:30.123456Z */
         case 29:                    /* 1999-02-03T10:20:30.123-05:00 */
         case 32:                    /* 1999-02-03T10:20:30.123456-05:00 */
-            year = digit(0)*1000
-                + digit(1)*100
-                + digit(2)*10
-                + digit(3);
-            month = digit(5)*10 + digit(6);
-            day = digit(8)*10 + digit(9);
-            hours = digit(11)*10 + digit(12);
-            mins = digit(14)*10 + digit(15);
-            secs = digit(17)*10 + digit(18);
-            if (length == 19 || length == 20 || length == 25)
-                usecs = 0;
-            else {
-                usecs = digit(20)*100000
-                    + digit(21)*10000
-                    + digit(22)*1000;
-                if (length == 26 || length == 27 || length == 32)
-                    usecs += digit(23)*100
-                        + digit(24)*10
-                        + digit(25);
-            }
             if ((length == 19 && datetimeMode & DM_NAIVE_IS_UTC)
                 || length == 20 || length == 24 || length == 27)
                 value = PyDateTimeAPI->DateTime_FromDateAndTime(
@@ -1109,12 +1102,8 @@ struct PyHandler {
                 value = PyDateTime_FromDateAndTime(
                     year, month, day, hours, mins, secs, usecs);
             else /* if (length == 25 || length == 29 || length == 32) */ {
-                int secsoffset = ((digit(length-5)*10 + digit(length-4)) * 3600
-                                  + (digit(length-2)*10 + digit(length-1)) * 60);
-                if (str[length-6] == '-')
-                    secsoffset = -secsoffset;
                 PyObject* offset = PyDateTimeAPI->Delta_FromDelta(
-                    0, secsoffset, 0, 1, PyDateTimeAPI->DeltaType);
+                    0, tzoff, 0, 1, PyDateTimeAPI->DeltaType);
                 if (offset == NULL)
                     value = NULL;
                 else {
@@ -1194,8 +1183,14 @@ struct PyHandler {
     bool String(const char* str, SizeType length, bool copy) {
         PyObject* value;
 
-        if (datetimeMode != DM_NONE && IsIso8601(str, length))
-            return HandleIso8601(str, length);
+        if (datetimeMode != DM_NONE) {
+            int year, month, day, hours, mins, secs, usecs, tzoff;
+
+            if (IsIso8601(str, length, year, month, day,
+                          hours, mins, secs, usecs, tzoff))
+                return HandleIso8601(str, length, year, month, day,
+                                     hours, mins, secs, usecs, tzoff);
+        }
 
         if (uuidMode != UM_NONE && IsUuid(str, length))
             return HandleUuid(str, length);
