@@ -17,7 +17,9 @@ import rapidjson as rj
 @pytest.mark.unit
 @pytest.mark.parametrize(
     'value', (
-        'A', 'cruel\x00world', 1, -1, 2.3,
+        'A', 'cruel\x00world',
+        1, -1,
+        2.3, -36.973846435546875, 1514893636.276703,
         {'foo': 'bar', '\x00': 'issue57', 'issue57': '\x00'},
         [1, 2, 'a', 1.2, {'foo': 'bar'},],
         sys.maxsize, sys.maxsize**2,

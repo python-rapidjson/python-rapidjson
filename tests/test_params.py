@@ -307,6 +307,12 @@ def test_datetime_mode_dumps(dumps):
                           | rj.DM_ONLY_SECONDS)
     ) == str(timegm(d.timetuple()))
 
+    # This value caused a truncation problem when we were using
+    # Writer.SetMaxDecimalPlaces(6) to emit the floating point number
+    d = datetime.fromtimestamp(1514893636.276703)
+
+    assert dumps(d, datetime_mode=rj.DM_UNIX_TIME) == str(d.timestamp())
+
 
 @pytest.mark.unit
 def test_datetime_mode_loads(dumps, loads):

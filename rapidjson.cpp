@@ -2425,10 +2425,16 @@ dumps_internal(
                 if (datetimeMode & DM_ONLY_SECONDS)
                     writer->Int64((int64_t) timestamp);
                 else {
-                    int precision = writer->GetMaxDecimalPlaces();
-                    writer->SetMaxDecimalPlaces(6);
-                    writer->Double(timestamp);
-                    writer->SetMaxDecimalPlaces(precision);
+                    // Writer.SetMaxDecimalPlaces(6) truncates the value,
+                    // so for example 1514893636.276703 would come out as
+                    // 1514893636.276702, because its exact double value is
+                    // 1514893636.2767028808593750000000000...
+                    char tsStr[12 + 1 + 6 + 1];
+                    int size = snprintf(tsStr, 12 + 1 + 6, "%.6f", timestamp);
+                    // Remove trailing 0s
+                    while (tsStr[size-2] != '.' && tsStr[size-1] == '0')
+                        size--;
+                    writer->RawValue(tsStr, size, kNumberType);
                 }
             } else {
                 hour = PyDateTime_TIME_GET_HOUR(dtObject);
@@ -2491,10 +2497,16 @@ dumps_internal(
             if (datetimeMode & DM_ONLY_SECONDS)
                 writer->Int64((int64_t) timestamp);
             else {
-                int precision = writer->GetMaxDecimalPlaces();
-                writer->SetMaxDecimalPlaces(6);
-                writer->Double(timestamp);
-                writer->SetMaxDecimalPlaces(precision);
+                // Writer.SetMaxDecimalPlaces(6) truncates the value,
+                // so for example 1514893636.276703 would come out as
+                // 1514893636.276702, because its exact double value is
+                // 1514893636.2767028808593750000000000...
+                char tsStr[12 + 1 + 6 + 1];
+                int size = snprintf(tsStr, 12 + 1 + 6, "%.6f", timestamp);
+                // Remove trailing 0s
+                while (tsStr[size-2] != '.' && tsStr[size-1] == '0')
+                    size--;
+                writer->RawValue(tsStr, size, kNumberType);
             }
         }
     }
