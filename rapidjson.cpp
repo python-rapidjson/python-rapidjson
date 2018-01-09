@@ -2270,7 +2270,7 @@ dumps_internal(
                                                              utcoffset_name,
                                                              NULL);
 
-            if (!utcOffset)
+            if (utcOffset == NULL)
                 return false;
 
             if (utcOffset == Py_None) {
@@ -2413,7 +2413,7 @@ dumps_internal(
                                                                     timestamp_name,
                                                                     NULL);
 
-                if (!timestampObj) {
+                if (timestampObj == NULL) {
                     Py_XDECREF(asUTC);
                     return false;
                 }
@@ -2471,7 +2471,7 @@ dumps_internal(
                 midnightObj = PyDateTime_FromDateAndTime(year, month, day,
                                                          0, 0, 0, 0);
 
-            if (!midnightObj) {
+            if (midnightObj == NULL) {
                 return false;
             }
 
@@ -2480,7 +2480,7 @@ dumps_internal(
 
             Py_DECREF(midnightObj);
 
-            if (!timestampObj) {
+            if (timestampObj == NULL) {
                 return false;
             }
 
