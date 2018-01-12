@@ -21,10 +21,11 @@
 .. function:: loads(string, *, object_hook=None, number_mode=None, datetime_mode=None, \
                     uuid_mode=None, parse_mode=None, allow_nan=True)
 
-   Decode the given Python string `string` containing a ``JSON`` formatted value
-   into Python object.
+   Decode the given ``JSON`` formatted value into Python object.
 
-   :param str string: The JSON string to parse
+   :param string: The JSON string to parse, either a Unicode :class:`str` instance or a
+                  :class:`bytes` or a :class:`bytearray` instance containing an ``UTF-8``
+                  encoded value
    :param callable object_hook: an optional function that will be called with the result
                                 of any object literal decoded (a :class:`dict`) and should
                                 return the value to use instead of the :class:`dict`

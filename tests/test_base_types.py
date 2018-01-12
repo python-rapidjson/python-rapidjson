@@ -38,7 +38,10 @@ def test_tuple(dumps):
 
 @pytest.mark.unit
 def test_bytes_value(dumps):
-    dumped = dumps(b'cruel\x00world')
+    value = b'cruel\x00world'
+    dumped = dumps(value)
+    assert dumped == r'"cruel\u0000world"'
+    dumped = dumps(bytearray(value))
     assert dumped == r'"cruel\u0000world"'
 
 

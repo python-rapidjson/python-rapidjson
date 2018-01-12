@@ -59,3 +59,10 @@ def test_load_surrogate(j, loads):
 def test_unicode_decode_error(j, loads):
     with pytest.raises(UnicodeDecodeError, match="'utf-8' codec can't decode byte"):
         loads(j)
+
+
+@pytest.mark.unit
+def test_non_utf8_bytes(dumps):
+    value = b'\xff\xf0'
+    with pytest.raises(UnicodeDecodeError, match="'utf-8' codec can't decode byte"):
+        dumps(value)

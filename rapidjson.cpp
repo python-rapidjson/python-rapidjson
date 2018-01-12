@@ -1270,24 +1270,6 @@ loads(PyObject* self, PyObject* args, PyObject* kwargs)
                                      &allowNan))
         return NULL;
 
-    Py_ssize_t jsonStrLen;
-    const char* jsonStr;
-
-    if (PyUnicode_Check(jsonObject)) {
-        jsonStr = PyUnicode_AsUTF8AndSize(jsonObject, &jsonStrLen);
-        if (jsonStr == NULL)
-            return NULL;
-    }
-    else if (PyBytes_Check(jsonObject)) {
-        int rc = PyBytes_AsStringAndSize(jsonObject, (char**) &jsonStr, &jsonStrLen);
-        if (rc == -1)
-            return NULL;
-    }
-    else {
-        PyErr_SetString(PyExc_TypeError, "Expected string or UTF-8 encoded bytes");
-        return NULL;
-    }
-
     if (objectHook && !PyCallable_Check(objectHook)) {
         if (objectHook == Py_None)
             objectHook = NULL;
@@ -1381,8 +1363,38 @@ loads(PyObject* self, PyObject* args, PyObject* kwargs)
         }
     }
 
-    return do_decode(NULL, jsonStr, jsonStrLen, NULL, 0, objectHook,
-                     numberMode, datetimeMode, uuidMode, parseMode);
+    Py_ssize_t jsonStrLen;
+    const char* jsonStr;
+    PyObject* asUnicode = NULL;
+
+    if (PyUnicode_Check(jsonObject)) {
+        jsonStr = PyUnicode_AsUTF8AndSize(jsonObject, &jsonStrLen);
+        if (jsonStr == NULL)
+            return NULL;
+    }
+    else if (PyBytes_Check(jsonObject) || PyByteArray_Check(jsonObject)) {
+        asUnicode = PyUnicode_FromEncodedObject(jsonObject, "utf-8", NULL);
+        if (asUnicode == NULL)
+            return NULL;
+        jsonStr = PyUnicode_AsUTF8AndSize(asUnicode, &jsonStrLen);
+        if (jsonStr == NULL) {
+            Py_DECREF(asUnicode);
+            return NULL;
+        }
+    }
+    else {
+        PyErr_SetString(PyExc_TypeError,
+                        "Expected string or UTF-8 encoded bytes or bytearray");
+        return NULL;
+    }
+
+    PyObject* result = do_decode(NULL, jsonStr, jsonStrLen, NULL, 0, objectHook,
+                                 numberMode, datetimeMode, uuidMode, parseMode);
+
+    if (asUnicode != NULL)
+        Py_DECREF(asUnicode);
+
+    return result;
 }
 
 
@@ -1802,28 +1814,6 @@ decoder_call(PyObject* self, PyObject* args, PyObject* kwargs)
                                      &chunkSizeObj))
         return NULL;
 
-    Py_ssize_t jsonStrLen;
-    const char* jsonStr;
-
-    if (PyUnicode_Check(jsonObject)) {
-        jsonStr = PyUnicode_AsUTF8AndSize(jsonObject, &jsonStrLen);
-        if (jsonStr == NULL)
-            return NULL;
-    }
-    else if (PyBytes_Check(jsonObject)) {
-        int rc = PyBytes_AsStringAndSize(jsonObject, (char**) &jsonStr, &jsonStrLen);
-        if (rc == -1)
-            return NULL;
-    }
-    else if (PyObject_HasAttr(jsonObject, read_name)) {
-        jsonStr = NULL;
-        jsonStrLen = 0;
-    }
-    else {
-        PyErr_SetString(PyExc_TypeError, "Expected string or UTF-8 encoded bytes");
-        return NULL;
-    }
-
     if (chunkSizeObj && chunkSizeObj != Py_None) {
         if (PyLong_Check(chunkSizeObj)) {
             Py_ssize_t size = PyNumber_AsSsize_t(chunkSizeObj, PyExc_ValueError);
@@ -1842,10 +1832,45 @@ decoder_call(PyObject* self, PyObject* args, PyObject* kwargs)
         }
     }
 
+    Py_ssize_t jsonStrLen;
+    const char* jsonStr;
+    PyObject* asUnicode = NULL;
+
+    if (PyUnicode_Check(jsonObject)) {
+        jsonStr = PyUnicode_AsUTF8AndSize(jsonObject, &jsonStrLen);
+        if (jsonStr == NULL)
+            return NULL;
+    }
+    else if (PyBytes_Check(jsonObject) || PyByteArray_Check(jsonObject)) {
+        asUnicode = PyUnicode_FromEncodedObject(jsonObject, "utf-8", NULL);
+        if (asUnicode == NULL)
+            return NULL;
+        jsonStr = PyUnicode_AsUTF8AndSize(asUnicode, &jsonStrLen);
+        if (jsonStr == NULL) {
+            Py_DECREF(asUnicode);
+            return NULL;
+        }
+    }
+    else if (PyObject_HasAttr(jsonObject, read_name)) {
+        jsonStr = NULL;
+        jsonStrLen = 0;
+    }
+    else {
+        PyErr_SetString(PyExc_TypeError,
+                        "Expected string or UTF-8 encoded bytes or bytearray");
+        return NULL;
+    }
+
     DecoderObject* d = (DecoderObject*) self;
 
-    return do_decode(self, jsonStr, jsonStrLen, jsonObject, chunkSize, NULL,
-                     d->numberMode, d->datetimeMode, d->uuidMode, d->parseMode);
+    PyObject* result = do_decode(self, jsonStr, jsonStrLen, jsonObject, chunkSize, NULL,
+                                 d->numberMode, d->datetimeMode, d->uuidMode,
+                                 d->parseMode);
+
+    if (asUnicode != NULL)
+        Py_DECREF(asUnicode);
+
+    return result;
 }
 
 
@@ -2132,15 +2157,6 @@ dumps_internal(
         else
             writer->Double(d);
     }
-    else if (PyBytes_Check(object)) {
-        Py_ssize_t l;
-        char* s;
-
-        if (PyBytes_AsStringAndSize(object, &s, &l) == -1)
-            return false;
-        ASSERT_VALID_SIZE(l);
-        writer->String(s, (SizeType) l);
-    }
     else if (PyUnicode_Check(object)) {
         Py_ssize_t l;
         const char* s = PyUnicode_AsUTF8AndSize(object, &l);
@@ -2148,6 +2164,22 @@ dumps_internal(
             return false;
         ASSERT_VALID_SIZE(l);
         writer->String(s, (SizeType) l);
+    }
+    else if (PyBytes_Check(object) || PyByteArray_Check(object)) {
+        PyObject* unicodeObj = PyUnicode_FromEncodedObject(object, "utf-8", NULL);
+
+        if (unicodeObj == NULL)
+            return false;
+
+        Py_ssize_t l;
+        const char* s = PyUnicode_AsUTF8AndSize(unicodeObj, &l);
+        if (s == NULL) {
+            Py_DECREF(unicodeObj);
+            return false;
+        }
+        ASSERT_VALID_SIZE(l);
+        writer->String(s, (SizeType) l);
+        Py_DECREF(unicodeObj);
     }
     else if (PyList_Check(object)) {
         writer->StartArray();
