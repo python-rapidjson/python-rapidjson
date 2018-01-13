@@ -196,6 +196,30 @@ static PyObject* validator_call(PyObject* self, PyObject* args, PyObject* kwargs
 static void validator_dealloc(PyObject* self);
 static PyObject* validator_new(PyTypeObject* type, PyObject* args, PyObject* kwargs);
 
+/*
+ * Adapted from CPython's 'float_from_string_inner'
+ */
+static PyObject *
+float_from_string(const char *s, Py_ssize_t len)
+{
+    double x;
+    const char *end;
+
+    /* We don't care about overflow or underflow.  If the platform
+     * supports them, infinities and signed zeroes (on underflow) are
+     * fine. */
+    x = PyOS_string_to_double(s, (char **)&end, NULL);
+    if (end != s + len) {
+        return NULL;
+    }
+    else if (x == -1.0 && PyErr_Occurred()) {
+        return NULL;
+    }
+    else {
+        return PyFloat_FromDouble(x);
+    }
+}
+
 
 ///////////////////////////////////////////////////
 // Stream wrapper around Python file-like object //
@@ -812,19 +836,15 @@ struct PyHandler {
         }
 
         if (isFloat) {
-            PyObject* pystr = PyUnicode_FromStringAndSize(str, length);
-
-            if (pystr == NULL) {
-                return false;
-            }
 
             if (numberMode & NM_DECIMAL) {
+                PyObject* pystr = PyUnicode_FromStringAndSize(str, length);
                 value = PyObject_CallFunctionObjArgs(decimal_type, pystr, NULL);
+                Py_DECREF(pystr);
             } else {
-                value = PyFloat_FromString(pystr);
+                value = float_from_string(str, length);
             }
 
-            Py_DECREF(pystr);
         } else {
             std::string zstr(str, length);
 
