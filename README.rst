@@ -237,4 +237,10 @@ Coercing keys when dumping
   when you load it back in it'll still be a string. We want the dump and load to return
   the exact same objects so we have decided not to do this coercion.
 
+Arbitrary encodings
+  ``json.loads()`` accepts an ``encoding`` kwarg determining the encoding of its input,
+  when that is a ``bytes`` or ``bytearray`` instance. Although ``RapidJSON`` is able to
+  cope with several different encodings, we currently supports only the recommended one,
+  ``UTF-8``.
+
 .. _RapidJSON: http://rapidjson.org/
