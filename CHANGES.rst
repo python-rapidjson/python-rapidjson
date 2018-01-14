@@ -1,7 +1,7 @@
 Changes
 -------
 
-0.4.3 (unreleased)
+0.4.3 (2018-01-14)
 ~~~~~~~~~~~~~~~~~~
 
 * Deserialize from ``bytes`` and ``bytearray`` instances, ensuring they
