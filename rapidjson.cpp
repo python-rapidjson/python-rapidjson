@@ -2307,7 +2307,7 @@ dumps_internal(
         PyObject* dtObject = object;
         PyObject* asUTC = NULL;
 
-        const int ISOFORMAT_LEN = 40;
+        const int ISOFORMAT_LEN = 42;
         char isoformat[ISOFORMAT_LEN];
         memset(isoformat, 0, ISOFORMAT_LEN);
 
@@ -2412,6 +2412,7 @@ dumps_internal(
         }
 
         if (datetime_mode_format(datetimeMode) == DM_ISO8601) {
+            int size;
             if (PyDateTime_Check(dtObject)) {
                 year = PyDateTime_GET_YEAR(dtObject);
                 month = PyDateTime_GET_MONTH(dtObject);
@@ -2422,19 +2423,19 @@ dumps_internal(
                 microsec = PyDateTime_DATE_GET_MICROSECOND(dtObject);
 
                 if (microsec > 0) {
-                    snprintf(isoformat,
-                             ISOFORMAT_LEN-1,
-                             "%04u-%02u-%02uT%02u:%02u:%02u.%06u%s",
-                             year, month, day,
-                             hour, min, sec, microsec,
-                             timeZone);
+                    size = snprintf(isoformat,
+                                    ISOFORMAT_LEN-1,
+                                    "\"%04u-%02u-%02uT%02u:%02u:%02u.%06u%s\"",
+                                    year, month, day,
+                                    hour, min, sec, microsec,
+                                    timeZone);
                 } else {
-                    snprintf(isoformat,
-                             ISOFORMAT_LEN-1,
-                             "%04u-%02u-%02uT%02u:%02u:%02u%s",
-                             year, month, day,
-                             hour, min, sec,
-                             timeZone);
+                    size = snprintf(isoformat,
+                                    ISOFORMAT_LEN-1,
+                                    "\"%04u-%02u-%02uT%02u:%02u:%02u%s\"",
+                                    year, month, day,
+                                    hour, min, sec,
+                                    timeZone);
                 }
             } else {
                 hour = PyDateTime_TIME_GET_HOUR(dtObject);
@@ -2443,20 +2444,20 @@ dumps_internal(
                 microsec = PyDateTime_TIME_GET_MICROSECOND(dtObject);
 
                 if (microsec > 0) {
-                    snprintf(isoformat,
-                             ISOFORMAT_LEN-1,
-                             "%02u:%02u:%02u.%06u%s",
-                             hour, min, sec, microsec,
-                             timeZone);
+                    size = snprintf(isoformat,
+                                    ISOFORMAT_LEN-1,
+                                    "\"%02u:%02u:%02u.%06u%s\"",
+                                    hour, min, sec, microsec,
+                                    timeZone);
                 } else {
-                    snprintf(isoformat,
-                             ISOFORMAT_LEN-1,
-                             "%02u:%02u:%02u%s",
-                             hour, min, sec,
-                             timeZone);
+                    size = snprintf(isoformat,
+                                    ISOFORMAT_LEN-1,
+                                    "\"%02u:%02u:%02u%s\"",
+                                    hour, min, sec,
+                                    timeZone);
                 }
             }
-            writer->String(isoformat);
+            writer->RawValue(isoformat, size, kStringType);
         } else /* if (datetimeMode & DM_UNIX_TIME) */ {
             if (PyDateTime_Check(dtObject)) {
                 PyObject* timestampObj = PyObject_CallMethodObjArgs(dtObject,
@@ -2508,12 +2509,13 @@ dumps_internal(
         unsigned int day = PyDateTime_GET_DAY(object);
 
         if (datetime_mode_format(datetimeMode) == DM_ISO8601) {
-            const int ISOFORMAT_LEN = 16;
+            const int ISOFORMAT_LEN = 18;
             char isoformat[ISOFORMAT_LEN];
+            int size;
             memset(isoformat, 0, ISOFORMAT_LEN);
 
-            snprintf(isoformat, ISOFORMAT_LEN-1, "%04u-%02u-%02u", year, month, day);
-            writer->String(isoformat);
+            size = snprintf(isoformat, ISOFORMAT_LEN-1, "\"%04u-%02u-%02u\"", year, month, day);
+            writer->RawValue(isoformat, size, kStringType);
         } else /* datetime_mode_format(datetimeMode) == DM_UNIX_TIME */ {
             // A date object, take its midnight timestamp
             PyObject* midnightObj;
@@ -2562,22 +2564,33 @@ dumps_internal(
     }
     else if (uuidMode != UM_NONE
              && PyObject_TypeCheck(object, (PyTypeObject*) uuid_type)) {
-        PyObject* retval;
+        PyObject* hexval;
         if (uuidMode == UM_CANONICAL)
-            retval = PyObject_Str(object);
+            hexval = PyObject_Str(object);
         else
-            retval = PyObject_GetAttr(object, hex_name);
-        if (retval == NULL)
+            hexval = PyObject_GetAttr(object, hex_name);
+        if (hexval == NULL)
             return false;
 
-        Py_ssize_t l;
-        const char* s = PyUnicode_AsUTF8AndSize(retval, &l);
+        Py_ssize_t size;
+        const char* s = PyUnicode_AsUTF8AndSize(hexval, &size);
         if (s == NULL) {
-            Py_DECREF(retval);
+            Py_DECREF(hexval);
             return false;
         }
-        writer->String(s, (SizeType) l);
-        Py_DECREF(retval);
+        if (RAPIDJSON_UNLIKELY(size != 32 && size != 36)) {
+            PyErr_Format(PyExc_ValueError,
+                         "Bad UUID hex, expected a string of either 32 or 36 chars,"
+                         " got %.200R", hexval);
+            Py_DECREF(hexval);
+            return false;
+        }
+
+        char quoted[39];
+        quoted[0] = quoted[size + 1] = '"';
+        memcpy(quoted + 1, s, size);
+        writer->RawValue(quoted, (SizeType) size + 2, kStringType);
+        Py_DECREF(hexval);
     }
     else if (PyIter_Check(object)) {
         PyObject* iterator = PyObject_GetIter(object);
