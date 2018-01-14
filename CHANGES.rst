@@ -1,6 +1,18 @@
 Changes
 -------
 
+0.4.3 (unreleased)
+~~~~~~~~~~~~~~~~~~
+
+* Deserialize from ``bytes`` and ``bytearray`` instances, ensuring they
+  contain valid UTF-8 data
+
+* Speed up parsing of floating point numbers, avoiding intermediary conversion
+  to a Python string (`PR #94`__)
+
+  __ https://github.com/python-rapidjson/python-rapidjson/pull/94
+
+
 0.4.2 (2018-01-09)
 ~~~~~~~~~~~~~~~~~~
 
