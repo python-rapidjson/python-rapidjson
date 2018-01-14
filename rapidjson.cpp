@@ -844,7 +844,9 @@ struct PyHandler {
                 value = PyObject_CallFunctionObjArgs(decimal_type, pystr, NULL);
                 Py_DECREF(pystr);
             } else {
-                value = float_from_string(str, length);
+                std::string zstr(str, length);
+
+                value = float_from_string(zstr.c_str(), length);
             }
 
         } else {
