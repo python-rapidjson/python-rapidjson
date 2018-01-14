@@ -839,6 +839,8 @@ struct PyHandler {
 
             if (numberMode & NM_DECIMAL) {
                 PyObject* pystr = PyUnicode_FromStringAndSize(str, length);
+                if (pystr == NULL)
+                    return false;
                 value = PyObject_CallFunctionObjArgs(decimal_type, pystr, NULL);
                 Py_DECREF(pystr);
             } else {
