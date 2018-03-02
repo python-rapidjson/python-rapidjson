@@ -2627,15 +2627,24 @@ dumps_internal(
         PyObject* retval = PyObject_CallFunctionObjArgs(defaultFn, object, NULL);
         if (retval == NULL)
             return false;
-        if (Py_EnterRecursiveCall(" while JSONifying default function result")) {
+        if (PyBytes_Check(retval)) {
+            Py_ssize_t l = PyBytes_Size(retval);
+            ASSERT_VALID_SIZE(l);
+            const char* s = PyBytes_AsString(retval);
+            writer->RawValue(s, (SizeType) l, kStringType);
             Py_DECREF(retval);
-            return false;
         }
-        bool r = RECURSE(retval);
-        Py_LeaveRecursiveCall();
-        Py_DECREF(retval);
-        if (!r)
-            return false;
+        else {
+            if (Py_EnterRecursiveCall(" while JSONifying default function result")) {
+                Py_DECREF(retval);
+                return false;
+            }
+            bool r = RECURSE(retval);
+            Py_LeaveRecursiveCall();
+            Py_DECREF(retval);
+            if (!r)
+                return false;
+        }
     }
     else {
         PyErr_Format(PyExc_TypeError, "%R is not JSON serializable", object);
