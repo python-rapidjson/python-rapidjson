@@ -25,3 +25,10 @@ It must be instantiated with a bytestring:
         >>> raw_list = rapidjson.RawJSON('[1, 2,3]')
         >>> rapidjson.dumps({'foo': raw_list})
         '{"foo":[1, 2,3]}'
+
+Rapidjson runs no checks on the preserialized data. This means that it can
+potentially output invalid JSON, if you provide it.
+        >>> import rapidjson
+        >>> raw_list = rapidjson.RawJSON('[1, ')
+        >>> rapidjson.dumps({'foo': raw_list})
+        '{"foo":[1, }'
