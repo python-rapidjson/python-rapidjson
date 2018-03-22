@@ -440,13 +440,13 @@ RawJSON_init(RawJSON *self, PyObject *args, PyObject *kwds)
 
     static char *kwlist[] = {"value", NULL};
 
-    if (! PyArg_ParseTupleAndKeywords(args, kwds, "S", kwlist,
+    if (! PyArg_ParseTupleAndKeywords(args, kwds, "U", kwlist,
                                       &value))
         return -1;
 
-    if (!PyBytes_Check(value)) {
-        PyErr_SetString(PyExc_TypeError, "Only byte strings allowed");
-        return NULL;
+    if (!PyUnicode_Check(value)) {
+        PyErr_SetString(PyExc_TypeError, "Only unicode strings allowed");
+        return -1;
     }
 
     if (value) {
@@ -2725,10 +2725,13 @@ dumps_internal(
         writer->EndArray();
     }
     else if PyObject_TypeCheck(object, &RawJSON_Type) {
-        Py_ssize_t l = PyBytes_Size(((RawJSON*)object)->value);
+        const char* jsonStr;
+        Py_ssize_t l;
+        jsonStr = PyUnicode_AsUTF8AndSize(((RawJSON*)object)->value, &l);
+        if (jsonStr == NULL)
+            return false;
         ASSERT_VALID_SIZE(l);
-        const char* s = PyBytes_AsString(((RawJSON*)object)->value);
-        writer->RawValue(s, (SizeType) l, kStringType);
+        writer->RawValue(jsonStr, (SizeType) l, kStringType);
     }
     else if (defaultFn) {
         PyObject* retval = PyObject_CallFunctionObjArgs(defaultFn, object, NULL);

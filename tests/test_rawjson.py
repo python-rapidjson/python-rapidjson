@@ -13,22 +13,22 @@ import rapidjson as rj
 
 @pytest.mark.unit
 def test_instantiation_positional():
-    value = b'a bytes string'
+    value = 'a string'
     raw = rj.RawJSON(value)
-    assert raw.value == b'a bytes string'
+    assert raw.value == value
 
 
 @pytest.mark.unit
 def test_instantiation_named():
-    value = b'a bytes string'
+    value = 'a string'
     raw = rj.RawJSON(value=value)
-    assert raw.value == b'a bytes string'
+    assert raw.value == value
 
 
 @pytest.mark.unit
 def test_only_bytes_allowed():
     with pytest.raises(TypeError):
-        rj.RawJSON('not a bytes string')
+        rj.RawJSON(b'A bytes string')
     with pytest.raises(TypeError):
         rj.RawJSON({})
     with pytest.raises(TypeError):
@@ -36,4 +36,4 @@ def test_only_bytes_allowed():
 
 
 def test_mix_preserialized():
-    assert rj.dumps({'a': rj.RawJSON(b'{1 : 2}')}) == '{"a":{1 : 2}}'
+    assert rj.dumps({'a': rj.RawJSON('{1 : 2}')}) == '{"a":{1 : 2}}'

@@ -22,6 +22,6 @@ It must be instantiated with a bytestring:
       .. doctest::
 
         >>> import rapidjson
-        >>> raw_list = rapidjson.RawJSON(b'[1, 2,3]')
+        >>> raw_list = rapidjson.RawJSON('[1, 2,3]')
         >>> rapidjson.dumps({'foo': raw_list})
         '{"foo":[1, 2,3]}'
