@@ -33,3 +33,7 @@ def test_only_bytes_allowed():
         rj.RawJSON({})
     with pytest.raises(TypeError):
         rj.RawJSON(None)
+
+
+def test_mix_preserialized():
+    assert rj.dumps({'a': rj.RawJSON(b'{1 : 2}')}) == '{"a":{1 : 2}}'

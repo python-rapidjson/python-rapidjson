@@ -76,6 +76,7 @@ ARRAY_LOAD = {'datetime_mode': rj.DM_ISO8601,
     ( plain_string, NO_OPTION, NO_OPTION ),
     ( bigint, NO_OPTION, NO_OPTION ),
     ( pi, NO_OPTION, NO_OPTION ),
+    ( rj.RawJSON(b' "foo" '), NO_OPTION, NO_OPTION),
     ( right_now, DATETIMES, DATETIMES ),
     ( date, DATETIMES, DATETIMES ),
     ( time, DATETIMES, DATETIMES ),
@@ -138,7 +139,7 @@ def test_decoder_call_leaks():
     assert (rc1 - rc0) < THRESHOLD
 
 
-@pytest.mark.parametrize('value', ['Foo', b'Foo'])
+@pytest.mark.parametrize('value', ['Foo', rj.RawJSON(b'Foo')])
 @pytest.mark.skipif(not hasattr(sys, 'gettotalrefcount'), reason='Non-debug Python')
 def test_encoder_call_leaks(value):
     class MyEncoder(rj.Encoder):
