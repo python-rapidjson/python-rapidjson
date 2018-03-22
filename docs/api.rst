@@ -21,6 +21,7 @@
    encoder
    decoder
    validator
+   rawjson
 
 .. data:: __author__
 

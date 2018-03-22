@@ -54,9 +54,8 @@
       :returns: a *JSON-serializable* value
 
       If implemented, this method is called whenever the serialization machinery finds a
-      Python object that it does not recognize: if possible, the method should returns either a
-      *JSON encodable* version of the `value` or an already encoded bytes object that will be used
-      verbatim, whitespace included:
+      Python object that it does not recognize: if possible, the method should returns a
+      *JSON encodable* version of the `value`, otherwise raise a :exc:`TypeError`:
 
       .. doctest::
 
@@ -80,13 +79,3 @@
          >>> pe = PointEncoder(sort_keys=True)
          >>> pe(point)
          '{"x":1,"y":2}'
-         >>> class PreserializingPointEncoder(Encoder):
-         ...   def default(self, obj):
-         ...     if isinstance(obj, Point):
-         ...       return f'{{"x": {obj.x}, "y": {obj.y}}}'.encode()
-         ...     else:
-         ...       raise ValueError('%r is not JSON serializable' % obj)
-         ...
-         >>> pe = PreserializingPointEncoder(sort_keys=True)
-         >>> pe(point)
-         '{"x": 1, "y": 2}'
