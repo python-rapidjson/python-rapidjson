@@ -10,25 +10,35 @@
  RawJSON class
 ===============
 
-A possible use case is mixing preserialized objects with regular ones.
+.. module:: rapidjson
 
-For instance, you might want to store preserialized records in your database,
-and then be able to use rapidjson to pack them in a serialized list.
+.. testsetup::
 
-The RawJSON class serves this purpose.
+   from rapidjson import RawJSON, dumps
 
-It must be instantiated with a bytestring:
+.. class:: RawJSON(value)
+
+   Preserialized JSON string.
+
+   :param str value: The string that rapidjson should use verbatim when serializing this object
+
+Some applications might decide to store JSON-serialized objects in their database,
+but might need to assemble them in a bigger JSON.
+
+The RawJSON class serves this purpose. When serialized, the string value provided will be used verbatim,
+whitespace included.
 
       .. doctest::
 
-        >>> import rapidjson
-        >>> raw_list = rapidjson.RawJSON('[1, 2,3]')
-        >>> rapidjson.dumps({'foo': raw_list})
+        >>> raw_list = RawJSON('[1, 2,3]')
+        >>> dumps({'foo': raw_list})
         '{"foo":[1, 2,3]}'
 
 Rapidjson runs no checks on the preserialized data. This means that it can
-potentially output invalid JSON, if you provide it.
-        >>> import rapidjson
-        >>> raw_list = rapidjson.RawJSON('[1, ')
-        >>> rapidjson.dumps({'foo': raw_list})
+potentially output invalid JSON, if you provide it:
+
+      .. doctest::
+
+        >>> raw_list = RawJSON('[1, ')
+        >>> dumps({'foo': raw_list})
         '{"foo":[1, }'
