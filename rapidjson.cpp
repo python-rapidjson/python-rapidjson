@@ -471,7 +471,7 @@ PyDoc_STRVAR(rawjson_doc,
              "\n"
              "When rapidjson tries to serialize objects of this class, it will"
              " use their literal `value`. For instance:\n"
-             ">>> rapidjson.dumps(RawJSON(b'{\"already\": \"serialized\"}'))\n"
+             ">>> rapidjson.dumps(RawJSON('{\"already\": \"serialized\"}'))\n"
              "'{\"already\": \"serialized\"}'");
 
 static PyTypeObject RawJSON_Type = {
