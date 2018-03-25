@@ -422,19 +422,20 @@ inline void PutUnsafe(PyWriteStreamWrapper& stream, char c) {
 
 typedef struct {
     PyObject_HEAD
-    PyObject *value;
+    PyObject* value;
 } RawJSON;
+
 
 static void
 RawJSON_dealloc(RawJSON* self)
 {
     Py_XDECREF(self->value);
-    Py_TYPE(self)->tp_free((PyObject*)self);
+    Py_TYPE(self)->tp_free((PyObject*) self);
 }
 
 
 static int
-RawJSON_init(RawJSON *self, PyObject *args, PyObject *kwds)
+RawJSON_init(RawJSON* self, PyObject* args, PyObject* kwds)
 {
     PyObject *value=NULL, *tmp;
 
@@ -459,6 +460,7 @@ RawJSON_init(RawJSON *self, PyObject *args, PyObject *kwds)
     return 0;
 }
 
+
 static PyMemberDef RawJSON_members[] = {
     {"value", T_OBJECT_EX, offsetof(RawJSON, value), 0,
      "Byte string representing a serialized JSON object"},
@@ -474,12 +476,13 @@ PyDoc_STRVAR(rawjson_doc,
              ">>> rapidjson.dumps(RawJSON('{\"already\": \"serialized\"}'))\n"
              "'{\"already\": \"serialized\"}'");
 
+
 static PyTypeObject RawJSON_Type = {
     PyVarObject_HEAD_INIT(NULL, 0)
     "rapidjson.RawJSON",            /* tp_name */
     sizeof(RawJSON),                /* tp_basicsize */
     0,                              /* tp_itemsize */
-    (destructor)RawJSON_dealloc,    /* tp_dealloc */
+    (destructor) RawJSON_dealloc,   /* tp_dealloc */
     0,                              /* tp_print */
     0,                              /* tp_getattr */
     0,                              /* tp_setattr */
@@ -510,7 +513,7 @@ static PyTypeObject RawJSON_Type = {
     0,                              /* tp_descr_get */
     0,                              /* tp_descr_set */
     0,                              /* tp_dictoffset */
-    (initproc)RawJSON_init,         /* tp_init */
+    (initproc) RawJSON_init,        /* tp_init */
     0,                              /* tp_alloc */
     PyType_GenericNew,              /* tp_new */
 };
@@ -1344,7 +1347,6 @@ typedef struct {
     NumberMode numberMode;
     ParseMode parseMode;
 } DecoderObject;
-
 
 
 PyDoc_STRVAR(loads_docstring,
@@ -2727,7 +2729,7 @@ dumps_internal(
     else if PyObject_TypeCheck(object, &RawJSON_Type) {
         const char* jsonStr;
         Py_ssize_t l;
-        jsonStr = PyUnicode_AsUTF8AndSize(((RawJSON*)object)->value, &l);
+        jsonStr = PyUnicode_AsUTF8AndSize(((RawJSON*) object)->value, &l);
         if (jsonStr == NULL)
             return false;
         ASSERT_VALID_SIZE(l);
@@ -3800,7 +3802,7 @@ PyInit_rapidjson()
     if (PyType_Ready(&RawJSON_Type) < 0)
         return NULL;
     Py_INCREF(&RawJSON_Type);
-    PyModule_AddObject(m, "RawJSON", (PyObject *)&RawJSON_Type);
+    PyModule_AddObject(m, "RawJSON", (PyObject*) &RawJSON_Type);
 
     return m;
 
