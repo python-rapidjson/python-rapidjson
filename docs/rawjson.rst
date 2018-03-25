@@ -20,25 +20,26 @@
 
    Preserialized JSON string.
 
-   :param str value: The string that rapidjson should use verbatim when serializing this object
+   :param str value: the string that rapidjson should use verbatim when serializing this
+                     object
 
-Some applications might decide to store JSON-serialized objects in their database,
-but might need to assemble them in a bigger JSON.
+Some applications might decide to store JSON-serialized objects in their database, but
+might need to assemble them in a bigger JSON.
 
-The RawJSON class serves this purpose. When serialized, the string value provided will be used verbatim,
-whitespace included.
+The ``RawJSON`` class serves this purpose. When serialized, the string value provided will
+be used verbatim, whitespace included:
 
-      .. doctest::
+.. doctest::
 
-        >>> raw_list = RawJSON('[1, 2,3]')
-        >>> dumps({'foo': raw_list})
-        '{"foo":[1, 2,3]}'
+    >>> raw_list = RawJSON('[1, 2,3]')
+    >>> dumps({'foo': raw_list})
+    '{"foo":[1, 2,3]}'
 
-Rapidjson runs no checks on the preserialized data. This means that it can
-potentially output invalid JSON, if you provide it:
+.. warning:: ``python-rapidjson`` runs no checks on the preserialized data.
+   This means that it can potentially output invalid JSON, if you provide it:
 
-      .. doctest::
+   .. doctest::
 
-        >>> raw_list = RawJSON('[1, ')
-        >>> dumps({'foo': raw_list})
-        '{"foo":[1, }'
+       >>> raw_list = RawJSON('[1, ')
+       >>> dumps({'foo': raw_list})
+       '{"foo":[1, }'
