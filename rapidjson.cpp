@@ -3646,6 +3646,9 @@ PyInit_rapidjson()
     if (PyType_Ready(&Validator_Type) < 0)
         goto error;
 
+    if (PyType_Ready(&RawJSON_Type) < 0)
+        return NULL;
+
     PyDateTime_IMPORT;
 
     datetimeModule = PyImport_ImportModule("datetime");
@@ -3798,9 +3801,6 @@ PyInit_rapidjson()
     Py_INCREF(&Validator_Type);
     PyModule_AddObject(m, "Validator", (PyObject*) &Validator_Type);
 
-    RawJSON_Type.tp_new = PyType_GenericNew;
-    if (PyType_Ready(&RawJSON_Type) < 0)
-        return NULL;
     Py_INCREF(&RawJSON_Type);
     PyModule_AddObject(m, "RawJSON", (PyObject*) &RawJSON_Type);
 
