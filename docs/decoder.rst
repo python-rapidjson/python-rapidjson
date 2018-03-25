@@ -80,8 +80,8 @@
       :returns: a new value
 
       This is called, if implemented, when a *JSON object* has been completely parsed, and
-      can be used replace it with an arbitrary different value, like what can be done with
-      the ``object_hook`` argument of the :func:`loads` function:
+      can be used to replace it with an arbitrary different value, like what can be done
+      with the ``object_hook`` argument of the :func:`loads` function:
 
       .. doctest::
 
