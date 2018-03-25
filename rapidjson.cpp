@@ -437,25 +437,17 @@ RawJSON_dealloc(RawJSON* self)
 static int
 RawJSON_init(RawJSON* self, PyObject* args, PyObject* kwds)
 {
-    PyObject *value=NULL, *tmp;
+    static char * kwlist[] = {
+        "value",
+        NULL
+    };
+    PyObject* value = NULL;
 
-    static char *kwlist[] = {"value", NULL};
-
-    if (! PyArg_ParseTupleAndKeywords(args, kwds, "U", kwlist,
-                                      &value))
+    if (!PyArg_ParseTupleAndKeywords(args, kwds, "U", kwlist, &value))
         return -1;
 
-    if (!PyUnicode_Check(value)) {
-        PyErr_SetString(PyExc_TypeError, "Only unicode strings allowed");
-        return -1;
-    }
-
-    if (value) {
-        tmp = self->value;
-        Py_INCREF(value);
-        self->value = value;
-        Py_XDECREF(tmp);
-    }
+    self->value = value;
+    Py_INCREF(self->value);
 
     return 0;
 }
