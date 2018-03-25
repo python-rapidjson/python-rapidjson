@@ -470,9 +470,9 @@ static PyMemberDef RawJSON_members[] = {
 
 
 PyDoc_STRVAR(rawjson_doc,
-             "Raw (preserialized) JSON objects\n"
+             "Raw (preserialized) JSON object\n"
              "\n"
-             "When rapidjson tries to serialize objects of this class, it will"
+             "When rapidjson tries to serialize instances of this class, it will"
              " use their literal `value`. For instance:\n"
              ">>> rapidjson.dumps(RawJSON('{\"already\": \"serialized\"}'))\n"
              "'{\"already\": \"serialized\"}'");
