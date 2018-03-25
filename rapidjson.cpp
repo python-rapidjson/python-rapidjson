@@ -462,8 +462,9 @@ RawJSON_init(RawJSON* self, PyObject* args, PyObject* kwds)
 
 
 static PyMemberDef RawJSON_members[] = {
-    {"value", T_OBJECT_EX, offsetof(RawJSON, value), 0,
-     "Byte string representing a serialized JSON object"},
+    {"value",
+     T_OBJECT_EX, offsetof(RawJSON, value), READONLY,
+     "string representing a serialized JSON object"},
     {NULL}  /* Sentinel */
 };
 
