@@ -33,11 +33,11 @@ env:
       # Note: TWINE_PASSWORD is set in Travis settings
 
 install:
-  - if [ $TRAVIS_OS_NAME = osx ]; then brew install python3; fi
+  - if [ $TRAVIS_OS_NAME = osx ]; then brew upgrade python; fi
   - pip3 install -r requirements-test.txt
 
 script:
-  - pip3 install . && pytest tests
+  - pip3 install . && pytest tests && cd docs; make doctest; cd -
   - |
     pip3 install cibuildwheel==0.6.0
     cibuildwheel --output-dir wheelhouse
