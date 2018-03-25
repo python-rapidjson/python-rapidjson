@@ -1,6 +1,15 @@
 Changes
 -------
 
+0.5.0 (unreleased)
+~~~~~~~~~~~~~~~~~~
+
+* New ``RawJSON`` class, allowing inclusion of *pre-serialized* content (`PR #95`__),
+  thanks to Silvio Tomatis
+
+  __ https://github.com/python-rapidjson/python-rapidjson/pull/95
+
+
 0.4.3 (2018-01-14)
 ~~~~~~~~~~~~~~~~~~
 
