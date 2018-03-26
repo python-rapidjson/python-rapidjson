@@ -294,9 +294,9 @@
 
    .. doctest::
 
-      >>> mode = DM_UNIX_TIME
+      >>> mode = DM_UNIX_TIME | DM_NAIVE_IS_UTC
       >>> dumps([now, now.date(), now.time()], datetime_mode=mode)
-      '[1472409071.084418,1472335200.0,73871.084418]'
+      '[1472409071.084418,1472342400.0,73871.084418]'
       >>> unixtime = float(dumps(now, datetime_mode=mode))
       >>> datetime.fromtimestamp(unixtime, here) == now
       True
@@ -306,9 +306,9 @@
 
    .. doctest::
 
-      >>> mode = DM_UNIX_TIME | DM_ONLY_SECONDS
+      >>> mode = DM_UNIX_TIME | DM_NAIVE_IS_UTC | DM_ONLY_SECONDS
       >>> dumps([now, now.date(), now.time()], datetime_mode=mode)
-      '[1472409071,1472335200,73871]'
+      '[1472409071,1472342400,73871]'
 
    It can be used combined with :data:`DM_SHIFT_TO_UTC` to obtain the timestamp of the
    corresponding UTC_ time:
