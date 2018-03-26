@@ -441,13 +441,17 @@ RawJSON_init(RawJSON* self, PyObject* args, PyObject* kwds)
         "value",
         NULL
     };
-    PyObject* value = NULL;
+    PyObject* value = NULL, *tmp;
 
     if (!PyArg_ParseTupleAndKeywords(args, kwds, "U", kwlist, &value))
         return -1;
 
-    self->value = value;
-    Py_INCREF(self->value);
+    if (value) {
+        tmp = self->value;
+        Py_INCREF(value);
+        self->value = value;
+        Py_XDECREF(tmp);
+    }
 
     return 0;
 }
