@@ -434,12 +434,12 @@ RawJSON_dealloc(RawJSON* self)
 }
 
 
-static PyObject *
-RawJSON_new(PyTypeObject *type, PyObject *args, PyObject *kwds)
+static PyObject*
+RawJSON_new(PyTypeObject* type, PyObject* args, PyObject* kwds)
 {
-    PyObject * self;
+    PyObject* self;
     self = type->tp_alloc(type, 0);
-    static char * kwlist[] = {
+    static char* kwlist[] = {
         "value",
         NULL
     };
@@ -448,7 +448,7 @@ RawJSON_new(PyTypeObject *type, PyObject *args, PyObject *kwds)
     if (!PyArg_ParseTupleAndKeywords(args, kwds, "U", kwlist, &value))
         return NULL;
 
-    ((RawJSON*)self)->value = value;
+    ((RawJSON*) self)->value = value;
 
     Py_INCREF(value);
 
