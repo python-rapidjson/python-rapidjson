@@ -58,6 +58,9 @@ script:
   - pushd docs
   - make doctest -e PYTHON=$(which python3)
   - popd
+  # cibuildwheel's docker might get confused and throw an ImportMismatchError,
+  # so we remove bytecode files before running it.
+  - find . -name __pycache__ -exec rm -rf {} +
   - |
     pip3 install cibuildwheel==0.6.0
     cibuildwheel --output-dir wheelhouse
