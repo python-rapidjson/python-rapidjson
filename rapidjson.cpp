@@ -434,28 +434,26 @@ RawJSON_dealloc(RawJSON* self)
 }
 
 
-static int
-RawJSON_init(RawJSON* self, PyObject* args, PyObject* kwds)
+static PyObject *
+RawJSON_new(PyTypeObject *type, PyObject *args, PyObject *kwds)
 {
+    PyObject * self;
+    self = type->tp_alloc(type, 0);
     static char * kwlist[] = {
         "value",
         NULL
     };
-    PyObject* value = NULL, *tmp;
+    PyObject* value = NULL;
 
     if (!PyArg_ParseTupleAndKeywords(args, kwds, "U", kwlist, &value))
-        return -1;
+        return NULL;
 
-    if (value) {
-        tmp = self->value;
-        Py_INCREF(value);
-        self->value = value;
-        Py_XDECREF(tmp);
-    }
+    ((RawJSON*)self)->value = value;
 
-    return 0;
+    Py_INCREF(value);
+
+    return self;
 }
-
 
 static PyMemberDef RawJSON_members[] = {
     {"value",
@@ -510,9 +508,9 @@ static PyTypeObject RawJSON_Type = {
     0,                              /* tp_descr_get */
     0,                              /* tp_descr_set */
     0,                              /* tp_dictoffset */
-    (initproc) RawJSON_init,        /* tp_init */
+    0,                              /* tp_init */
     0,                              /* tp_alloc */
-    PyType_GenericNew,              /* tp_new */
+    RawJSON_new,                    /* tp_new */
 };
 
 
