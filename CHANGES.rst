@@ -1,7 +1,7 @@
 Changes
 -------
 
-0.5.1 (unreleased)
+0.5.1 (2018-03-31)
 ~~~~~~~~~~~~~~~~~~
 
 * Minor tweaks to CI and PyPI deploy configuration
