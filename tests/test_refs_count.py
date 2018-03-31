@@ -160,3 +160,25 @@ def test_encoder_call_leaks(value):
         del value
     rc1 = sys.gettotalrefcount()
     assert (rc1 - rc0) < THRESHOLD
+
+
+@pytest.mark.skipif(not hasattr(sys, 'gettotalrefcount'), reason='Non-debug Python')
+def test_rawjson_constructor():
+    raw_json = rj.RawJSON('["foo", "bar"]')
+    rc0 = sys.gettotalrefcount()
+    for i in range(1000):
+        value = '"foobar"'
+        raw_json.__init__(value)
+        del value
+    rc1 = sys.gettotalrefcount()
+    assert (rc1 - rc0) < THRESHOLD
+
+
+@pytest.mark.skipif(not hasattr(sys, 'gettotalrefcount'), reason='Non-debug Python')
+def test_rawjson_new():
+    rc0 = sys.gettotalrefcount()
+    for i in range(1000):
+        raw_json = rj.RawJSON('["foo", "bar"]')
+        del raw_json
+    rc1 = sys.gettotalrefcount()
+    assert (rc1 - rc0) < THRESHOLD
