@@ -1,6 +1,12 @@
 Changes
 -------
 
+0.5.2 (unreleased)
+~~~~~~~~~~~~~~~~~~
+
+* Tiny tweak to restore macOS build on Travis CI
+
+
 0.5.1 (2018-03-31)
 ~~~~~~~~~~~~~~~~~~
 
