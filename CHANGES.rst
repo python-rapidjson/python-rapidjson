@@ -1,7 +1,7 @@
 Changes
 -------
 
-0.5.0 (unreleased)
+0.5.0 (2018-03-31)
 ~~~~~~~~~~~~~~~~~~
 
 * New ``RawJSON`` class, allowing inclusion of *pre-serialized* content (`PR #95`__ and
