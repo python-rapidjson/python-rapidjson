@@ -62,7 +62,7 @@ script:
   # so we remove bytecode files before running it.
   - find . -name __pycache__ -exec rm -rf {} +
   - |
-    pip3 install cibuildwheel==0.6.0
+    pip3 install cibuildwheel==0.7.0
     cibuildwheel --output-dir wheelhouse
     if [[ $TRAVIS_TAG ]]; then
       pip3 install twine
