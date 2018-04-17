@@ -240,7 +240,7 @@ Coercing keys when dumping
 Arbitrary encodings
   ``json.loads()`` accepts an ``encoding`` kwarg determining the encoding of its input,
   when that is a ``bytes`` or ``bytearray`` instance. Although ``RapidJSON`` is able to
-  cope with several different encodings, we currently supports only the recommended one,
+  cope with several different encodings, we currently support only the recommended one,
   ``UTF-8``.
 
 .. _RapidJSON: http://rapidjson.org/
