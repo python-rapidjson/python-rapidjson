@@ -3,7 +3,7 @@ include LICENSE MANIFEST.in *.cfg *.ini *.py *.rst *.txt
 include python-rapidjson/*.cpp python-rapidjson/*.h
 include benchmarks/*.py tests/*.py
 
-exclude .gitmodules .travis.yml appveyor.yml
+exclude .gitmodules .travis.yml .appveyor.yml
 
 recursive-include docs Makefile *.png *.rst *.bat *.sh *.css *.py
 prune docs/_build
