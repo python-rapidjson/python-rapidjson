@@ -17,6 +17,7 @@ environment:
 install: "git submodule update --init --recursive"
 
 build_script:
+  - "%PYTHON% -m pip install --upgrade pip"
   - "%PYTHON% -m pip install cibuildwheel==0.7.0"
   - "%PYTHON% -m cibuildwheel --output-dir wheelhouse"
   - ps: >-
