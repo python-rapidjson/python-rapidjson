@@ -25,11 +25,8 @@ matrix:
       python: "3.6"
       services:
         - docker
-    - sudo: required
-      language: python
+    - language: python
       python: "3.4"
-      services:
-        - docker
       env: RUN_DEBUG_PYTHON=true
     - os: osx
       osx_image: xcode8.3
