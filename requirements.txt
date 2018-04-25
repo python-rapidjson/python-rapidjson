@@ -9,4 +9,3 @@ yajl==0.3.5
 
 metapensiero.tool.bump-version==1.3
 readme-renderer==17.2
-sphinx==1.6.6
