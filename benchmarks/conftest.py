@@ -2,7 +2,7 @@
 # :Project:   python-rapidjson -- Benchmarks specific pytest configuration
 # :Author:    Lele Gaifax <lele@metapensiero.it>
 # :License:   MIT License
-# :Copyright: © 2016, 2017 Lele Gaifax
+# :Copyright: © 2016, 2017, 2018 Lele Gaifax
 #
 
 from collections import namedtuple
@@ -60,6 +60,15 @@ numbers_contenders = [
               partial(rj.loads, number_mode=rj.NM_NATIVE)),
 ]
 
+string_contenders = [
+    Contender('rapidjson utf8',
+              partial(rj.dumps, ensure_ascii=False),
+              rj.loads),
+    Contender('rapidjson ascii',
+              partial(rj.dumps, ensure_ascii=True),
+              rj.loads),
+]
+
 try:
     import yajl
 except ImportError:
@@ -77,6 +86,14 @@ else:
     contenders.append(Contender('simplejson',
                                 simplejson.dumps,
                                 simplejson.loads))
+    string_contenders.extend([
+        Contender('simplejson utf8',
+                  partial(simplejson.dumps, ensure_ascii=False),
+                  simplejson.loads),
+        Contender('simplejson ascii',
+                  partial(simplejson.dumps, ensure_ascii=True),
+                  simplejson.loads),
+    ])
 
 try:
     import json
@@ -86,6 +103,14 @@ else:
     contenders.append(Contender('stdlib json',
                                 json.dumps,
                                 json.loads))
+    string_contenders.extend([
+        Contender('stdlib json utf8',
+                  partial(json.dumps, ensure_ascii=False),
+                  json.loads),
+        Contender('stdlib json ascii',
+                  partial(json.dumps, ensure_ascii=True),
+                  json.loads),
+    ])
 
 try:
     import ujson
@@ -95,6 +120,14 @@ else:
     contenders.append(Contender('ujson',
                                 ujson.dumps,
                                 partial(ujson.loads, precise_float=True)))
+    string_contenders.extend([
+        Contender('ujson utf8',
+                  partial(ujson.dumps, ensure_ascii=False),
+                  ujson.loads),
+        Contender('ujson ascii',
+                  partial(ujson.dumps, ensure_ascii=True),
+                  ujson.loads),
+    ])
 
 
 def pytest_generate_tests(metafunc):
@@ -112,3 +145,11 @@ def pytest_generate_tests(metafunc):
 
     if 'numbers_contender' in metafunc.fixturenames:
         metafunc.parametrize('numbers_contender', numbers_contenders, ids=attrgetter('name'))
+
+    if 'string_contender' in metafunc.fixturenames:
+        if metafunc.config.option.compare_other_engines:
+            metafunc.parametrize('string_contender', string_contenders, ids=attrgetter('name'))
+        else:
+            metafunc.parametrize('string_contender',
+                                 [c for c in string_contenders if 'rapidjson' in c[0]],
+                                 ids=attrgetter('name'))

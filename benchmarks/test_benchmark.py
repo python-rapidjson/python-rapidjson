@@ -3,7 +3,7 @@
 # :Author:    John Anderson <sontek@gmail.com>
 # :License:   MIT License
 # :Copyright: © 2015 John Anderson
-# :Copyright: © 2015, 2016, 2017 Lele Gaifax
+# :Copyright: © 2015, 2016, 2017, 2018 Lele Gaifax
 #
 
 import datetime
@@ -51,6 +51,8 @@ booleans = []
 datetimes = []
 list_dicts = []
 dict_lists = {}
+russian_string = "привет, мир!" * 1000
+italian_string = "Ciao, mondo!" * 1000
 
 complex_object = [
     [user, friends],  [user, friends],  [user, friends],
@@ -128,3 +130,31 @@ def test_dumps_numbers(numbers_contender, data, benchmark):
 def test_loads_numbers(numbers_contender, data, benchmark):
     data = numbers_contender.dumps(data)
     benchmark(numbers_contender.loads, data)
+
+
+# Special case 3: ensure_ascii
+
+@pytest.mark.benchmark(group='serialize')
+@pytest.mark.parametrize('data', [italian_string], ids=['Long ASCII string'])
+def test_dumps_long_plain_ascii(string_contender, data, benchmark):
+    benchmark(string_contender.dumps, data)
+
+
+@pytest.mark.benchmark(group='deserialize')
+@pytest.mark.parametrize('data', [italian_string], ids=['Long ASCII string'])
+def test_loads_long_plain_ascii(string_contender, data, benchmark):
+    data = string_contender.dumps(data)
+    benchmark(string_contender.loads, data)
+
+
+@pytest.mark.benchmark(group='serialize')
+@pytest.mark.parametrize('data', [russian_string], ids=['Long Unicode string'])
+def test_dumps_long_unicode(string_contender, data, benchmark):
+    benchmark(string_contender.dumps, data)
+
+
+@pytest.mark.benchmark(group='deserialize')
+@pytest.mark.parametrize('data', [russian_string], ids=['Long Unicode string'])
+def test_loads_long_unicode(string_contender, data, benchmark):
+    data = string_contender.dumps(data)
+    benchmark(string_contender.loads, data)
