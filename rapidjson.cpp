@@ -2276,8 +2276,25 @@ dumps_internal(
             else
                 writer->RawValue("Infinity", 8, kNumberType);
         }
-        else
-            writer->Double(d);
+        else {
+            // The RJ dtoa() produces "strange" results for particular values, see #101:
+            // use Python's repr() to emit a raw value instead of writer->Double(d)
+
+            PyObject *dr = PyObject_Repr(object);
+
+            if (dr == NULL)
+                return false;
+
+            Py_ssize_t l;
+            const char* rs = PyUnicode_AsUTF8AndSize(dr, &l);
+            if (rs == NULL) {
+                Py_DECREF(dr);
+                return false;
+            }
+
+            writer->RawValue(rs, l, kNumberType);
+            Py_DECREF(dr);
+        }
     }
     else if (PyUnicode_Check(object)) {
         Py_ssize_t l;

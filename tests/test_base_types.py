@@ -31,6 +31,13 @@ def test_base_values(value, dumps, loads):
 
 
 @pytest.mark.unit
+def test_float(dumps):
+    value = 0.1 + 0.2
+    dumped = dumps(value)
+    assert dumped == '0.30000000000000004'
+
+
+@pytest.mark.unit
 def test_tuple(dumps):
     obj = [1, 2, 'a', 1.2, {'foo': 'bar'},]
     assert dumps(obj) == dumps(tuple(obj))
