@@ -45,3 +45,26 @@ def test_invalid(schema, json, details):
     with pytest.raises(ValueError) as error:
         validate(json)
     assert error.value.args == details
+
+
+# See: https://spacetelescope.github.io/understanding-json-schema/reference/object.html#pattern-properties
+@pytest.mark.parametrize('schema', [
+    rj.dumps({
+        "type": "object",
+        "patternProperties": {
+            "^S_": { "type": "string" },
+            "^I_": { "type": "integer" }
+        },
+        "additionalProperties": False
+    }),
+])
+@pytest.mark.parametrize('json', [
+     '{"I_0": 23}',
+     '{"S_1": "the quick brown fox jumps over the lazy dog"}',
+     pytest.param('{"I_2": "A string"}', marks=pytest.mark.xfail),
+     pytest.param('{"keyword": "value"}', marks=pytest.mark.xfail),
+])
+@pytest.mark.unit
+def test_additional_and_pattern_properties_valid(schema, json):
+    validate = rj.Validator(schema)
+    validate(json)
