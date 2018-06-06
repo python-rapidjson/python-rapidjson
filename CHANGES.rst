@@ -1,6 +1,25 @@
 Changes
 -------
 
+0.6.0 (unreleased)
+~~~~~~~~~~~~~~~~~~
+
+* Add a new comparison table involving ``ensure_ascii`` (`issue #98`__)
+
+  __ https://github.com/python-rapidjson/python-rapidjson/issues/98
+
+* Use Python's ``repr()`` to emit float values instead of rapidjson's ``dtoa()`` (`issue
+  #101`__)
+
+  __ https://github.com/python-rapidjson/python-rapidjson/issues/101
+
+* Use a newer (although unreleased) version of rapidjson to fix an `issue`__ with
+  JSONSchema validation (`PR #103`__), thanks to Anthony Miyaguchi
+
+  __ https://github.com/Tencent/rapidjson/issues/825
+  __ https://github.com/python-rapidjson/python-rapidjson/pull/103
+
+
 0.5.2 (2018-03-31)
 ~~~~~~~~~~~~~~~~~~
 
