@@ -5,18 +5,12 @@
 # :Copyright: © 2017, 2018 Lele Gaifax
 #
 
-# Note that due to a strange issue with Travis CI, the Python 3.6 wheels are
-# actually built via Gitlab CI, on the repository
-# https://gitlab.com/metapensiero/python-rapidjson.
-#
 # Here we execute the Python 3.6 tests; Python 3.4 and 3.5 tests are run by
 # cibuildwheel, inside the manylinux1 Docker image.
-
+#
 # We also run tests for memory leaks (which require a debug build of python)
 # using python3.4. Specifically we install python3.4-dbg, the only python3
 # runtime with debug support present on the travis-ci platform at the moment.
-#
-# See https://mail.python.org/pipermail/wheel-builders/2017-August/000285.html
 
 matrix:
   include:
@@ -35,7 +29,7 @@ env:
   global:
     - CIBW_TEST_REQUIRES="pytest pytest-benchmark pytz"
     - CIBW_TEST_COMMAND="py.test {project}/tests"
-    - CIBW_SKIP="cp2* cp33* cp36-manylinux1*"
+    - CIBW_SKIP="cp2* cp33*"
     - TWINE_USERNAME=lelit
       # Note: TWINE_PASSWORD is set in Travis settings
 
