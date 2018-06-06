@@ -1,6 +1,12 @@
 Changes
 -------
 
+0.6.1 (unreleased)
+~~~~~~~~~~~~~~~~~~
+
+* Nothing new, attempt to build Python 3.6 binary wheels on Travis CI
+
+
 0.6.0 (2018-06-06)
 ~~~~~~~~~~~~~~~~~~
 
