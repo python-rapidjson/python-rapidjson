@@ -3633,18 +3633,33 @@ functions[] = {
 };
 
 
+static void
+module_free(void* m)
+{
+    Py_CLEAR(decimal_type);
+    Py_CLEAR(timezone_type);
+    Py_CLEAR(timezone_utc);
+    Py_CLEAR(uuid_type);
+}
+
+
 static PyModuleDef module = {
-    PyModuleDef_HEAD_INIT,
-    "rapidjson",
+    PyModuleDef_HEAD_INIT,      /* m_base */
+    "rapidjson",                /* m_name */
     PyDoc_STR("Fast, simple JSON encoder and decoder. Based on RapidJSON C++ library."),
-    -1,
-    functions
+    -1,                         /* m_size */
+    functions,                  /* m_methods */
+    NULL,                       /* m_slots */
+    NULL,                       /* m_traverse */
+    NULL,                       /* m_clear */
+    (freefunc) module_free      /* m_free */
 };
 
 
 PyMODINIT_FUNC
 PyInit_rapidjson()
 {
+    PyObject* m = NULL;
     PyObject* datetimeModule;
     PyObject* decimalModule;
     PyObject* uuidModule;
@@ -3769,78 +3784,59 @@ PyInit_rapidjson()
     if (encoding_name == NULL)
         goto error;
 
-    PyObject* m;
-
     m = PyModule_Create(&module);
-    if (m == NULL) {
-        return NULL;
-    }
-
-    PyModule_AddIntConstant(m, "DM_NONE", DM_NONE);
-    PyModule_AddIntConstant(m, "DM_ISO8601", DM_ISO8601);
-    PyModule_AddIntConstant(m, "DM_UNIX_TIME", DM_UNIX_TIME);
-    PyModule_AddIntConstant(m, "DM_ONLY_SECONDS", DM_ONLY_SECONDS);
-    PyModule_AddIntConstant(m, "DM_IGNORE_TZ", DM_IGNORE_TZ);
-    PyModule_AddIntConstant(m, "DM_NAIVE_IS_UTC", DM_NAIVE_IS_UTC);
-    PyModule_AddIntConstant(m, "DM_SHIFT_TO_UTC", DM_SHIFT_TO_UTC);
-
-    PyModule_AddIntConstant(m, "UM_NONE", UM_NONE);
-    PyModule_AddIntConstant(m, "UM_HEX", UM_HEX);
-    PyModule_AddIntConstant(m, "UM_CANONICAL", UM_CANONICAL);
-
-    PyModule_AddIntConstant(m, "NM_NONE", NM_NONE);
-    PyModule_AddIntConstant(m, "NM_NAN", NM_NAN);
-    PyModule_AddIntConstant(m, "NM_DECIMAL", NM_DECIMAL);
-    PyModule_AddIntConstant(m, "NM_NATIVE", NM_NATIVE);
-
-    PyModule_AddIntConstant(m, "PM_NONE", PM_NONE);
-    PyModule_AddIntConstant(m, "PM_COMMENTS", PM_COMMENTS);
-    PyModule_AddIntConstant(m, "PM_TRAILING_COMMAS", PM_TRAILING_COMMAS);
+    if (m == NULL)
+        goto error;
 
 #define STRINGIFY(x) XSTRINGIFY(x)
 #define XSTRINGIFY(x) #x
 
-    PyModule_AddStringConstant(m, "__version__", STRINGIFY(PYTHON_RAPIDJSON_VERSION));
-    PyModule_AddStringConstant(m, "__author__", "Ken Robbins <ken@kenrobbins.com>");
-    PyModule_AddStringConstant(m, "__rapidjson_version__", RAPIDJSON_VERSION_STRING);
+    if (PyModule_AddIntConstant(m, "DM_NONE", DM_NONE)
+        || PyModule_AddIntConstant(m, "DM_ISO8601", DM_ISO8601)
+        || PyModule_AddIntConstant(m, "DM_UNIX_TIME", DM_UNIX_TIME)
+        || PyModule_AddIntConstant(m, "DM_ONLY_SECONDS", DM_ONLY_SECONDS)
+        || PyModule_AddIntConstant(m, "DM_IGNORE_TZ", DM_IGNORE_TZ)
+        || PyModule_AddIntConstant(m, "DM_NAIVE_IS_UTC", DM_NAIVE_IS_UTC)
+        || PyModule_AddIntConstant(m, "DM_SHIFT_TO_UTC", DM_SHIFT_TO_UTC)
+
+        || PyModule_AddIntConstant(m, "UM_NONE", UM_NONE)
+        || PyModule_AddIntConstant(m, "UM_HEX", UM_HEX)
+        || PyModule_AddIntConstant(m, "UM_CANONICAL", UM_CANONICAL)
+
+        || PyModule_AddIntConstant(m, "NM_NONE", NM_NONE)
+        || PyModule_AddIntConstant(m, "NM_NAN", NM_NAN)
+        || PyModule_AddIntConstant(m, "NM_DECIMAL", NM_DECIMAL)
+        || PyModule_AddIntConstant(m, "NM_NATIVE", NM_NATIVE)
+
+        || PyModule_AddIntConstant(m, "PM_NONE", PM_NONE)
+        || PyModule_AddIntConstant(m, "PM_COMMENTS", PM_COMMENTS)
+        || PyModule_AddIntConstant(m, "PM_TRAILING_COMMAS", PM_TRAILING_COMMAS)
+
+        || PyModule_AddStringConstant(m, "__version__", STRINGIFY(PYTHON_RAPIDJSON_VERSION))
+        || PyModule_AddStringConstant(m, "__author__", "Ken Robbins <ken@kenrobbins.com>")
+        || PyModule_AddStringConstant(m, "__rapidjson_version__", RAPIDJSON_VERSION_STRING))
+        goto error;
 
     Py_INCREF(&Decoder_Type);
-    PyModule_AddObject(m, "Decoder", (PyObject*) &Decoder_Type);
+    if (PyModule_AddObject(m, "Decoder", (PyObject*) &Decoder_Type))
+        goto error;
 
     Py_INCREF(&Encoder_Type);
-    PyModule_AddObject(m, "Encoder", (PyObject*) &Encoder_Type);
+    if (PyModule_AddObject(m, "Encoder", (PyObject*) &Encoder_Type))
+        goto error;
 
     Py_INCREF(&Validator_Type);
-    PyModule_AddObject(m, "Validator", (PyObject*) &Validator_Type);
+    if (PyModule_AddObject(m, "Validator", (PyObject*) &Validator_Type))
+        goto error;
 
     Py_INCREF(&RawJSON_Type);
-    PyModule_AddObject(m, "RawJSON", (PyObject*) &RawJSON_Type);
+    if (PyModule_AddObject(m, "RawJSON", (PyObject*) &RawJSON_Type))
+        goto error;
 
     return m;
 
 error:
-    Py_CLEAR(astimezone_name);
-    Py_CLEAR(hex_name);
-    Py_CLEAR(timestamp_name);
-    Py_CLEAR(total_seconds_name);
-    Py_CLEAR(utcoffset_name);
-    Py_CLEAR(is_infinite_name);
-    Py_CLEAR(is_nan_name);
-    Py_CLEAR(minus_inf_string_value);
-    Py_CLEAR(nan_string_value);
-    Py_CLEAR(plus_inf_string_value);
-    Py_CLEAR(decimal_type);
-    Py_CLEAR(timezone_type);
-    Py_CLEAR(timezone_utc);
-    Py_CLEAR(uuid_type);
-    Py_CLEAR(start_object_name);
-    Py_CLEAR(end_object_name);
-    Py_CLEAR(default_name);
-    Py_CLEAR(end_array_name);
-    Py_CLEAR(string_name);
-    Py_CLEAR(read_name);
-    Py_CLEAR(write_name);
-    Py_CLEAR(encoding_name);
-
+    Py_CLEAR(m);
+    module_free(NULL);
     return NULL;
 }
