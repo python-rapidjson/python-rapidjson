@@ -1,6 +1,12 @@
 Changes
 -------
 
+0.6.2 (unreleased)
+~~~~~~~~~~~~~~~~~~
+
+* Use a more specific ValidationError, to differentiate from invalid JSON
+
+
 0.6.1 (2018-06-06)
 ~~~~~~~~~~~~~~~~~~
 
