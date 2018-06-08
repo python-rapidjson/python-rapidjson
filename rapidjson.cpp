@@ -3837,8 +3837,10 @@ PyInit_rapidjson()
 
     validation_error = PyErr_NewException("rapidjson.ValidationError",
                                           PyExc_ValueError, NULL);
-    if (validation_error == NULL
-        || PyModule_AddObject(m, "ValidationError", validation_error))
+    if (validation_error == NULL)
+        goto error;
+    Py_INCREF(validation_error);
+    if (PyModule_AddObject(m, "ValidationError", validation_error))
         goto error;
 
     return m;
