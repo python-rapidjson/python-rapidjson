@@ -2,7 +2,7 @@
 .. :Project:   python-rapidjson -- API documentation
 .. :Author:    Lele Gaifax <lele@metapensiero.it>
 .. :License:   MIT License
-.. :Copyright: © 2016, 2017 Lele Gaifax
+.. :Copyright: © 2016, 2017, 2018 Lele Gaifax
 ..
 
 ===============================
@@ -144,6 +144,17 @@
 
    In this `parse_mode`, the parser allows and ignores trailing commas at the end of
    *arrays* and *objects*.
+
+
+.. rubric:: Exceptions
+
+.. exception:: ValidationError
+
+   Exception raised by :class:`Validator` objects, a subclass of :exc:`ValueError`.
+
+   Its `args` attribute is a tuple with three string values, respectively the *schema
+   keyword* that generated the failure, its *JSON pointer* and a *JSON pointer* to the
+   error location in the (invalid) document.
 
 
 .. _ISO 8601: https://en.wikipedia.org/wiki/ISO_8601

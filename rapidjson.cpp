@@ -57,6 +57,7 @@ static PyObject* decimal_type = NULL;
 static PyObject* timezone_type = NULL;
 static PyObject* timezone_utc = NULL;
 static PyObject* uuid_type = NULL;
+static PyObject* validation_error = NULL;
 
 
 /* These are the names of oftenly used methods or literal values, interned in the module
@@ -3547,7 +3548,7 @@ static PyObject* validator_call(PyObject* self, PyObject* args, PyObject* kwargs
         validator.GetInvalidDocumentPointer().StringifyUriFragment(dptr);
         Py_END_ALLOW_THREADS
 
-        PyErr_SetObject(PyExc_ValueError,
+        PyErr_SetObject(validation_error,
                         Py_BuildValue("sss", validator.GetInvalidSchemaKeyword(),
                                       sptr.GetString(), dptr.GetString()));
         sptr.Clear();
@@ -3640,6 +3641,7 @@ module_free(void* m)
     Py_CLEAR(timezone_type);
     Py_CLEAR(timezone_utc);
     Py_CLEAR(uuid_type);
+    Py_CLEAR(validation_error);
 }
 
 
@@ -3831,6 +3833,12 @@ PyInit_rapidjson()
 
     Py_INCREF(&RawJSON_Type);
     if (PyModule_AddObject(m, "RawJSON", (PyObject*) &RawJSON_Type))
+        goto error;
+
+    validation_error = PyErr_NewException("rapidjson.ValidationError",
+                                          PyExc_ValueError, NULL);
+    if (validation_error == NULL
+        || PyModule_AddObject(m, "ValidationError", validation_error))
         goto error;
 
     return m;
