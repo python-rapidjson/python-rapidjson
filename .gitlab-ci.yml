@@ -2,7 +2,7 @@
 # :Project:   python-rapidjson -- Gitlab CI configuration
 # :Author:    Lele Gaifax <lele@metapensiero.it>
 # :License:   MIT License
-# :Copyright: © 2017 Lele Gaifax
+# :Copyright: © 2017, 2018 Lele Gaifax
 #
 
 # When the master branch is tagged, build the Python 3.6 wheels and upload
@@ -29,6 +29,6 @@ build:
   script:
     - git submodule update --init --recursive
     - python3 -m venv env
-    - env/bin/pip install cibuildwheel==0.6.0 twine
+    - env/bin/pip install cibuildwheel==0.9.1 twine
     - env/bin/cibuildwheel
     - env/bin/twine upload wheelhouse/*.whl
