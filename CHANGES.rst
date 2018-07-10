@@ -1,6 +1,12 @@
 Changes
 -------
 
+0.6.3 (unreleased)
+~~~~~~~~~~~~~~~~~~
+
+* No visible changes, but now PyPI carries binary wheels for Python 3.7.
+
+
 0.6.2 (2018-06-08)
 ~~~~~~~~~~~~~~~~~~
 
