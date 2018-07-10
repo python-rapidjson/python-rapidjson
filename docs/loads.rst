@@ -153,11 +153,11 @@
       >>> loads('"2016-01-02T01:02:03+01:00"')
       '2016-01-02T01:02:03+01:00'
       >>> loads('"2016-01-02T01:02:03+01:00"', datetime_mode=DM_ISO8601)
-      datetime.datetime(2016, 1, 2, 1, 2, 3, tzinfo=...delta(0, 3600)))
+      datetime.datetime(2016, 1, 2, 1, 2, 3, tzinfo=...delta(...3600)))
       >>> loads('"2016-01-02"', datetime_mode=DM_ISO8601)
       datetime.date(2016, 1, 2)
       >>> loads('"01:02:03+01:00"', datetime_mode=DM_ISO8601)
-      datetime.time(1, 2, 3, tzinfo=...delta(0, 3600)))
+      datetime.time(1, 2, 3, tzinfo=...delta(...3600)))
 
    It can be combined with :data:`DM_SHIFT_TO_UTC` to *always* obtain values in the UTC_
    timezone:
@@ -193,7 +193,7 @@
       >>> loads('"2016-01-02T01:02:03"', datetime_mode=mode)
       datetime.datetime(2016, 1, 2, 1, 2, 3, tzinfo=...utc)
       >>> loads('"2016-01-02T01:02:03+01:00"', datetime_mode=mode)
-      datetime.datetime(2016, 1, 2, 1, 2, 3, tzinfo=...delta(0, 3600)))
+      datetime.datetime(2016, 1, 2, 1, 2, 3, tzinfo=...delta(...3600)))
       >>> loads('"01:02:03"', datetime_mode=mode)
       datetime.time(1, 2, 3, tzinfo=...utc)
 
