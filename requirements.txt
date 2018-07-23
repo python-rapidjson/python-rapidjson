@@ -1,11 +1,19 @@
--r requirements-test.txt
+# -*- coding: utf-8; mode: conf-unix -*-
+# :Project:   python-rapidjson -- Development requirements
+# :Author:    Lele Gaifax <lele@metapensiero.it>
+# :License:   MIT License
+# :Copyright: © 2017, 2018 Lele Gaifax
+#
 
+# Needed by make release
+metapensiero.tool.bump-version==1.3
+readme-renderer==21.0
+
+# Needed by make benchmarks-*
 pytest-benchmark==3.1.1
+pytest==3.6.3
 
 # Keep in sync with benchmarks/tablize.py versions
-simplejson==3.13.2
+simplejson==3.16.0
 ujson==1.35
 yajl==0.3.5
-
-metapensiero.tool.bump-version==1.3
-readme-renderer==17.2
