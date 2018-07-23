@@ -7,6 +7,7 @@
 #
 
 import datetime
+import pathlib
 import random
 import sys
 
@@ -158,3 +159,18 @@ def test_dumps_long_unicode(string_contender, data, benchmark):
 def test_loads_long_unicode(string_contender, data, benchmark):
     data = string_contender.dumps(data)
     benchmark(string_contender.loads, data)
+
+
+samples = list((pathlib.Path(__file__).parent / 'json').glob('*.json'))
+
+@pytest.mark.benchmark(group='serialize')
+@pytest.mark.parametrize('sample', samples, ids=[s.name for s in samples])
+def test_dumps_sample(contender, sample, benchmark):
+    data = contender.loads(sample.read_text())
+    benchmark(contender.dumps, data)
+
+
+@pytest.mark.benchmark(group='deserialize')
+@pytest.mark.parametrize('sample', samples, ids=[s.name for s in samples])
+def test_loads_sample(contender, sample, benchmark):
+    benchmark(contender.loads, sample.read_text())
