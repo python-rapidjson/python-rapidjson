@@ -28,7 +28,10 @@ def pytest_benchmark_group_stats(config, benchmarks, group_by):
 
 def pytest_benchmark_update_json(config, benchmarks, output_json):
     for benchmark in output_json['benchmarks']:
-        benchmark['params'].pop('data')
+        if 'data' in benchmark['params']:
+            benchmark['params'].pop('data')
+        if 'data' in benchmark['stats']:
+            benchmark['stats'].pop('data')
 
 
 def pytest_addoption(parser):
