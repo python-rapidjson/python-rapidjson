@@ -13,9 +13,9 @@
 Python wrapper around RapidJSON
 ===============================
 
- :Authors: Ken Robbins <ken@kenrobbins.com>; Lele Gaifax <lele@metapensiero.it>
- :License: `MIT License`__
- :Status: |build| |doc|
+:Authors: Ken Robbins <ken@kenrobbins.com>; Lele Gaifax <lele@metapensiero.it>
+:License: `MIT License`__
+:Status: |build| |doc|
 
 __ https://raw.githubusercontent.com/python-rapidjson/python-rapidjson/master/LICENSE
 .. |build| image:: https://travis-ci.org/python-rapidjson/python-rapidjson.svg?branch=master
