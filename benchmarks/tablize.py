@@ -124,7 +124,7 @@ def dumps_and_loads(benchmarks):
         '.. [3] ``rapidjson.dumps(number_mode=NM_NATIVE)``',
         '.. [4] ``rapidjson.Encoder(number_mode=NM_NATIVE)``',
         '.. [5] `ujson 1.35 <https://pypi.org/pypi/ujson/1.35>`__',
-        '.. [6] `simplejson 3.13.2 <https://pypi.org/pypi/simplejson/3.13.2>`__',
+        '.. [6] `simplejson 3.16.0 <https://pypi.org/pypi/simplejson/3.16.0>`__',
         '.. [7] Python %d.%d.%d standard library ``json``' % sys.version_info[:3],
         '.. [8] `yajl 0.3.5 <https://pypi.org/pypi/yajl/0.3.5>`__',
         '.. [9] ``rapidjson.loads()``',
@@ -133,7 +133,16 @@ def dumps_and_loads(benchmarks):
         '.. [12] ``rapidjson.Decoder(number_mode=NM_NATIVE)``']
 
     comparison = Comparison(contenders, benchmarks)
+
+    print()
+    print('Serialization')
+    print('~~~~~~~~~~~~~')
+    print()
     comparison.tabulate('serialize', s_headers)
+
+    print()
+    print('Deserialization')
+    print('~~~~~~~~~~~~~~~')
     print()
     comparison.tabulate('deserialize', d_headers)
     return footnotes
@@ -157,6 +166,11 @@ def ascii_vs_utf8(benchmarks):
         footnotes.append('.. [%d] ``%s.dumps(ensure_ascii=False)``' % (i, e[0]))
 
     comparison = Comparison(contenders, benchmarks)
+
+    print()
+    print('ASCII vs UTF-8 Serialization')
+    print('~~~~~~~~~~~~~~~~~~~~~~~~~~~~')
+    print()
     comparison.tabulate('serialize', s_headers)
     return footnotes
 
@@ -175,7 +189,6 @@ def main():
     footnotes = []
 
     footnotes.extend(dumps_and_loads(benchmarks))
-    print()
     footnotes.extend(ascii_vs_utf8(benchmarks))
 
     print()

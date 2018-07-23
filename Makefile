@@ -86,7 +86,7 @@ help::
 .PHONY: benchmarks-tables
 benchmarks-tables: PYTEST_OPTIONS = --compare-other-engines --benchmark-json=comparison.json
 benchmarks-tables: benchmarks
-	$(PYTHON) benchmarks/tablize.py
+	$(PYTHON) benchmarks/tablize.py | tee docs/benchmarks-tables.rst
 
 include Makefile.virtualenv
 include Makefile.release
