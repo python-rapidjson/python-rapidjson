@@ -74,7 +74,7 @@
          ...     if isinstance(obj, Point):
          ...       return {'x': obj.x, 'y': obj.y}
          ...     else:
-         ...       raise ValueError('%r is not JSON serializable' % obj)
+         ...       raise TypeError('%r is not JSON serializable' % obj)
          ...
          >>> pe = PointEncoder(sort_keys=True)
          >>> pe(point)
