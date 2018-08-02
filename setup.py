@@ -3,7 +3,7 @@
 # :Author:    Ken Robbins <ken@kenrobbins.com>
 # :License:   MIT License
 # :Copyright: © 2015 Ken Robbins
-# :Copyright: © 2016, 2017 Lele Gaifax
+# :Copyright: © 2016, 2017, 2018 Lele Gaifax
 #
 
 import os.path
@@ -29,11 +29,19 @@ if sys.version_info < (3,):
 
 ROOT_PATH = os.path.abspath(os.path.dirname(__file__))
 
-if not os.path.isdir(os.path.join(ROOT_PATH, 'rapidjson', 'include')):
-    raise RuntimeError("RapidJSON sources not found: if you cloned the git repository,"
-                       " you should initialize the rapidjson submodule as explained in"
-                       " the README.rst; in all other cases you may want to report the"
-                       " issue.")
+rj_include_dir = './rapidjson/include'
+
+for idx, arg in enumerate(sys.argv[:]):
+    if arg.startswith('--rj-include-dir='):
+        sys.argv.pop(idx)
+        rj_include_dir = arg.split('=', 1)[1]
+        break
+else:
+    if not os.path.isdir(os.path.join(ROOT_PATH, 'rapidjson', 'include')):
+        raise RuntimeError("RapidJSON sources not found: if you cloned the git"
+                           " repository, you should initialize the rapidjson submodule"
+                           " as explained in the README.rst; in all other cases you may"
+                           " want to report the issue.")
 
 with open('version.txt', encoding='utf-8') as f:
     VERSION = f.read()
@@ -43,14 +51,6 @@ with open('README.rst', encoding='utf-8') as f:
 
 with open('CHANGES.rst', encoding='utf-8') as f:
     CHANGES = f.read()
-
-rj_include_dir = './rapidjson/include'
-
-for idx, arg in enumerate(sys.argv[:]):
-    if arg.startswith('--rj-include-dir='):
-        sys.argv.pop(idx)
-        rj_include_dir = arg.split('=', 1)[1]
-        break
 
 extension_options = {
     'sources': ['./rapidjson.cpp'],
