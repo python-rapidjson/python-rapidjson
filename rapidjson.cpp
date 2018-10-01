@@ -1840,7 +1840,6 @@ static PyTypeObject Decoder_Type = {
         else if (parseMode & PM_TRAILING_COMMAS)                        \
             if (parseMode & PM_COMMENTS)                                \
                 r.Parse<f |                                             \
-                        kParseNumbersAsStringsFlag |                    \
                         kParseCommentsFlag |                            \
                         kParseNumbersAsStringsFlag>(s, h);              \
             else                                                        \
