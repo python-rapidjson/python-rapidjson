@@ -22,7 +22,7 @@ import rapidjson as rj
         2.3, -36.973846435546875, 1514893636.276703,
         {'foo': 'bar', '\x00': 'issue57', 'issue57': '\x00'},
         [1, 2, 'a', 1.2, {'foo': 'bar'},],
-        sys.maxsize, sys.maxsize**2,
+        sys.maxsize, sys.maxsize**2, 10**1000,
 ))
 def test_base_values(value, dumps, loads):
     dumped = dumps(value)
