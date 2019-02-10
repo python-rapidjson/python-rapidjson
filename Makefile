@@ -2,7 +2,7 @@
 # :Project:   python-rapidjson -- Development Makefile
 # :Author:    Lele Gaifax <lele@metapensiero.it>
 # :License:   MIT License
-# :Copyright: © 2017, 2018 Lele Gaifax
+# :Copyright: © 2017, 2018, 2019 Lele Gaifax
 #
 
 export TOPDIR := $(CURDIR)
@@ -28,6 +28,7 @@ help::
 help::
 	@printf "build\n\tbuild the module\n"
 
+.PHONY: build
 build: virtualenv
 	$(PYTHON) setup.py build_ext --inplace
 
@@ -38,6 +39,7 @@ help::
 clean:
 	$(MAKE) -C docs clean
 	rm -f *.so
+	rm -rf build
 
 help::
 	@printf "distclean\n\tremove anything superfluous\n"
