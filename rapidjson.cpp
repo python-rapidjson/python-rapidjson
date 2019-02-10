@@ -1357,7 +1357,7 @@ loads(PyObject* self, PyObject* args, PyObject* kwargs)
 {
     /* Converts a JSON encoded string to a Python object. */
 
-    static char const * kwlist[] = {
+    static char const* kwlist[] = {
         "string",
         "object_hook",
         "number_mode",
@@ -1533,7 +1533,7 @@ load(PyObject* self, PyObject* args, PyObject* kwargs)
 {
     /* Converts a JSON encoded stream to a Python object. */
 
-    static char const * kwlist[] = {
+    static char const* kwlist[] = {
         "stream",
         "object_hook",
         "number_mode",
@@ -1921,7 +1921,7 @@ do_decode(PyObject* decoder, const char* jsonStr, Py_ssize_t jsonStrLen,
 static PyObject*
 decoder_call(PyObject* self, PyObject* args, PyObject* kwargs)
 {
-    static char const * kwlist[] = {
+    static char const* kwlist[] = {
         "json",
         "chunk_size",
         NULL
@@ -2008,7 +2008,7 @@ decoder_new(PyTypeObject* type, PyObject* args, PyObject* kwargs)
     NumberMode numberMode = NM_NAN;
     PyObject* parseModeObj = NULL;
     ParseMode parseMode = PM_NONE;
-    static char const * kwlist[] = {
+    static char const* kwlist[] = {
         "number_mode",
         "datetime_mode",
         "uuid_mode",
@@ -2280,7 +2280,7 @@ dumps_internal(
             // The RJ dtoa() produces "strange" results for particular values, see #101:
             // use Python's repr() to emit a raw value instead of writer->Double(d)
 
-            PyObject *dr = PyObject_Repr(object);
+            PyObject* dr = PyObject_Repr(object);
 
             if (dr == NULL)
                 return false;
@@ -2815,7 +2815,7 @@ dumps(PyObject* self, PyObject* args, PyObject* kwargs)
     bool prettyPrint = false;
     unsigned indentCharCount = 4;
     int allowNan = -1;
-    static char const * kwlist[] = {
+    static char const* kwlist[] = {
         "obj",
         "skipkeys",
         "ensure_ascii",
@@ -2957,7 +2957,7 @@ dump(PyObject* self, PyObject* args, PyObject* kwargs)
     PyObject* chunkSizeObj = NULL;
     size_t chunkSize = 65536;
     int allowNan = -1;
-    static char const * kwlist[] = {
+    static char const* kwlist[] = {
         "obj",
         "stream",
         "skipkeys",
@@ -3254,7 +3254,7 @@ do_stream_encode(PyObject* value, PyObject* stream, size_t chunkSize,
 static PyObject*
 encoder_call(PyObject* self, PyObject* args, PyObject* kwargs)
 {
-    static char const * kwlist[] = {
+    static char const* kwlist[] = {
         "obj",
         "stream",
         "chunk_size",
@@ -3336,7 +3336,7 @@ encoder_new(PyTypeObject* type, PyObject* args, PyObject* kwargs)
     unsigned indentCharCount = 4;
     bool prettyPrint = false;
 
-    static char const * kwlist[] = {
+    static char const* kwlist[] = {
         "skip_invalid_keys",
         "ensure_ascii",
         "indent",
