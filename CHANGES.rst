@@ -1,7 +1,7 @@
 Changes
 -------
 
-0.7.0 (unreleased)
+0.7.0 (2019-02-11)
 ~~~~~~~~~~~~~~~~~~
 
 * Raise correct exception in code samples (`PR #109`__), thanks to Thomas Dähling
