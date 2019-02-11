@@ -1,6 +1,32 @@
 Changes
 -------
 
+0.7.0 (unreleased)
+~~~~~~~~~~~~~~~~~~
+
+* Raise correct exception in code samples (`PR #109`__), thanks to Thomas Dähling
+
+  __ https://github.com/python-rapidjson/python-rapidjson/pull/109
+
+* Fix compilation with system-wide install of rapidjson (`issue #110`__)
+
+  __ https://github.com/python-rapidjson/python-rapidjson/issues/110
+
+* Use current master version of rapidjson, that includes a `fix`__ for its `issue #1368`__
+  and `issue #1336`__, and cures several compilation warnings as well (`issue #112`__ and
+  `issue #107`__)
+
+  __ https://github.com/Tencent/rapidjson/commit/f5e5d47fac0f654749c4d6267015005b74643dff
+  __ https://github.com/Tencent/rapidjson/issues/1368
+  __ https://github.com/Tencent/rapidjson/issues/1336
+  __ https://github.com/python-rapidjson/python-rapidjson/issues/112
+  __ https://github.com/python-rapidjson/python-rapidjson/issues/107
+
+* Fix memory leak when using ``object_hook`` (`issue #115`__)
+
+  __ https://github.com/python-rapidjson/python-rapidjson/issues/115
+
+
 0.6.3 (2018-07-11)
 ~~~~~~~~~~~~~~~~~~
 
