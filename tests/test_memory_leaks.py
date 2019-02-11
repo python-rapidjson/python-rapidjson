@@ -33,7 +33,7 @@ def test_memory_leaks():
 
     data = []
     for i in range(1, 100):
-        data.append({"name": f"a{i}", "timestamp": datetime.timedelta(seconds=i)})
+        data.append({"name": "a%d" % i, "timestamp": datetime.timedelta(seconds=i)})
 
     snapshot1 = tracemalloc.take_snapshot().filter_traces((
         tracemalloc.Filter(True, __file__),))
