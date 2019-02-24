@@ -3,7 +3,7 @@
 # :Author:    Ken Robbins <ken@kenrobbins.com>
 # :License:   MIT License
 # :Copyright: © 2015 Ken Robbins
-# :Copyright: © 2016, 2017, 2018 Lele Gaifax
+# :Copyright: © 2016, 2017, 2018, 2019 Lele Gaifax
 #
 
 import os.path
@@ -101,6 +101,7 @@ setup(
         'Programming Language :: Python :: 3.4',
         'Programming Language :: Python :: 3.5',
         'Programming Language :: Python :: 3.6',
+        'Programming Language :: Python :: 3.7',
         'Programming Language :: Python',
     ],
     ext_modules=[Extension('rapidjson', **extension_options)],
