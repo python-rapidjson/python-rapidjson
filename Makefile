@@ -66,7 +66,7 @@ PYTEST = $(VENVDIR)/bin/pytest $(PYTEST_OPTIONS)
 .PHONY: check
 check: build
 	$(PYTEST) tests/
-	$(MAKE) -C docs SPHINXBUILD=$(SPHINXBUILD) doctest
+	LANG=C $(MAKE) -C docs SPHINXBUILD=$(SPHINXBUILD) doctest
 
 help::
 	@printf "benchmarks\n\trun the benchmarks\n"
