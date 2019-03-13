@@ -2,7 +2,7 @@
 .. :Project:   python-rapidjson -- dump function documentation
 .. :Author:    Lele Gaifax <lele@metapensiero.it>
 .. :License:   MIT License
-.. :Copyright: © 2017, 2018 Lele Gaifax
+.. :Copyright: © 2017, 2018, 2019 Lele Gaifax
 ..
 
 =================
@@ -54,8 +54,8 @@
    .. doctest::
 
       >>> stream = io.StringIO()
-      >>> dump('¯\_(ツ)_/¯', stream)
-      >>> stream.getvalue() == dumps('¯\_(ツ)_/¯')
+      >>> dump(r'¯\_(ツ)_/¯', stream)
+      >>> stream.getvalue() == dumps(r'¯\_(ツ)_/¯')
       True
 
    .. rubric:: `chunk_size`
