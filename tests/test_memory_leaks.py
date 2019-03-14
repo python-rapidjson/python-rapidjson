@@ -6,6 +6,7 @@
 # :Copyright: © 2019 Lele Gaifax
 #
 
+import io
 import datetime
 import gc
 import tracemalloc
@@ -41,6 +42,29 @@ def test_object_hook_and_default():
     for _ in range(1000):
         a = rj.dumps(data, default=default)
         rj.loads(a, object_hook=object_hook)
+
+    gc.collect()
+
+    snapshot2 = tracemalloc.take_snapshot().filter_traces((
+        tracemalloc.Filter(True, __file__),))
+
+    top_stats = snapshot2.compare_to(snapshot1, 'lineno')
+    tracemalloc.stop()
+
+    top_stats
+    for stat in top_stats[:10]:
+        assert stat.count_diff < 3
+
+
+def test_load():
+    tracemalloc.start()
+
+    snapshot1 = tracemalloc.take_snapshot().filter_traces((
+        tracemalloc.Filter(True, __file__),))
+
+    for _ in range(10):
+        content = io.StringIO('[' + ','.join('{"foo": "bar"}' for _ in range(1000)) + ']')
+        rj.load(content)
 
     gc.collect()
 
