@@ -2,7 +2,7 @@
 .. :Project:   python-rapidjson -- API documentation
 .. :Author:    Lele Gaifax <lele@metapensiero.it>
 .. :License:   MIT License
-.. :Copyright: © 2016, 2017, 2018 Lele Gaifax
+.. :Copyright: © 2016, 2017, 2018, 2019 Lele Gaifax
 ..
 
 ===============================
@@ -147,6 +147,11 @@
 
 
 .. rubric:: Exceptions
+
+.. exception:: JSONDecodeError
+
+   A subclass of :exc:`ValueError`, raised when trying to parse an invalid ``JSON``,
+   either by :class:`Validator` objects or by :func:`loads` function.
 
 .. exception:: ValidationError
 

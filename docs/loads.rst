@@ -2,7 +2,7 @@
 .. :Project:   python-rapidjson -- loads function documentation
 .. :Author:    Lele Gaifax <lele@metapensiero.it>
 .. :License:   MIT License
-.. :Copyright: © 2016, 2017, 2018 Lele Gaifax
+.. :Copyright: © 2016, 2017, 2018, 2019 Lele Gaifax
 ..
 
 ==================
@@ -36,7 +36,8 @@
    :param int parse_mode: whether the parser should allow non-standard JSON extensions
    :param bool allow_nan: *compatibility* flag equivalent to ``number_mode=NM_NAN``
    :returns: An equivalent Python object.
-
+   :raises ValueError: if an invalid argument is given
+   :raises JSONDecodeError: if `string` is not a valid ``JSON`` value
 
    .. rubric:: `object_hook`
 

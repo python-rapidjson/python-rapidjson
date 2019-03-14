@@ -2,7 +2,7 @@
 # :Project:   python-rapidjson -- Validator class tests
 # :Author:    Lele Gaifax <lele@metapensiero.it>
 # :License:   MIT License
-# :Copyright: © 2017 Lele Gaifax
+# :Copyright: © 2017, 2019 Lele Gaifax
 #
 
 import pytest
@@ -12,15 +12,15 @@ import rapidjson as rj
 
 @pytest.mark.unit
 def test_invalid_schema():
-    pytest.raises(ValueError, rj.Validator, '')
-    pytest.raises(ValueError, rj.Validator, '"')
+    pytest.raises(rj.JSONDecodeError, rj.Validator, '')
+    pytest.raises(rj.JSONDecodeError, rj.Validator, '"')
 
 
 @pytest.mark.unit
 def test_invalid_json():
     validate = rj.Validator('""')
-    pytest.raises(ValueError, validate, '')
-    pytest.raises(ValueError, validate, '"')
+    pytest.raises(rj.JSONDecodeError, validate, '')
+    pytest.raises(rj.JSONDecodeError, validate, '"')
 
 
 @pytest.mark.parametrize('schema,json', (

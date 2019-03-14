@@ -3,7 +3,7 @@
 # :Author:    John Anderson <sontek@gmail.com>
 # :License:   MIT License
 # :Copyright: © 2015 John Anderson
-# :Copyright: © 2016, 2017, 2018 Lele Gaifax
+# :Copyright: © 2016, 2017, 2018, 2019 Lele Gaifax
 #
 
 import random
@@ -191,6 +191,11 @@ def test_iterables(dumps):
         yield 3
 
     assert dumps(gen()) == '[1,2,3]'
+
+
+@pytest.mark.unit
+def test_decode_error(loads):
+    pytest.raises(rj.JSONDecodeError, loads, '{')
 
 
 # TODO: Figure out what we want to do here

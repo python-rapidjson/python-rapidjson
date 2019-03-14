@@ -58,6 +58,7 @@ static PyObject* timezone_type = NULL;
 static PyObject* timezone_utc = NULL;
 static PyObject* uuid_type = NULL;
 static PyObject* validation_error = NULL;
+static PyObject* decode_error = NULL;
 
 
 /* These are the names of oftenly used methods or literal values, interned in the module
@@ -1905,7 +1906,7 @@ do_decode(PyObject* decoder, const char* jsonStr, Py_ssize_t jsonStrLen,
                 PyErr_Restore(etype, evalue, etraceback);
         }
         else
-            PyErr_Format(PyExc_ValueError, "Parse error at offset %zu: %s",
+            PyErr_Format(decode_error, "Parse error at offset %zu: %s",
                          offset, GetParseError_En(reader.GetParseErrorCode()));
 
         Py_XDECREF(handler.root);
@@ -3530,7 +3531,7 @@ static PyObject* validator_call(PyObject* self, PyObject* args, PyObject* kwargs
     Py_END_ALLOW_THREADS
 
     if (error) {
-        PyErr_SetString(PyExc_ValueError, "Invalid JSON");
+        PyErr_SetString(decode_error, "Invalid JSON");
         return NULL;
     }
 
@@ -3603,7 +3604,7 @@ static PyObject* validator_new(PyTypeObject* type, PyObject* args, PyObject* kwa
     Py_END_ALLOW_THREADS
 
     if (error) {
-        PyErr_SetString(PyExc_ValueError, "Invalid JSON");
+        PyErr_SetString(decode_error, "Invalid JSON");
         return NULL;
     }
 
@@ -3644,6 +3645,7 @@ module_free(void* m)
     Py_CLEAR(timezone_utc);
     Py_CLEAR(uuid_type);
     Py_CLEAR(validation_error);
+    Py_CLEAR(decode_error);
 }
 
 
@@ -3843,6 +3845,14 @@ PyInit_rapidjson()
         goto error;
     Py_INCREF(validation_error);
     if (PyModule_AddObject(m, "ValidationError", validation_error))
+        goto error;
+
+    decode_error = PyErr_NewException("rapidjson.JSONDecodeError",
+                                      PyExc_ValueError, NULL);
+    if (decode_error == NULL)
+        goto error;
+    Py_INCREF(decode_error);
+    if (PyModule_AddObject(m, "JSONDecodeError", decode_error))
         goto error;
 
     return m;

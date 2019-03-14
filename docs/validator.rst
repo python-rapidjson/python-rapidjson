@@ -2,7 +2,7 @@
 .. :Project:   python-rapidjson -- Validator class documentation
 .. :Author:    Lele Gaifax <lele@metapensiero.it>
 .. :License:   MIT License
-.. :Copyright: © 2017, 2018 Lele Gaifax
+.. :Copyright: © 2017, 2018, 2019 Lele Gaifax
 ..
 
 =================
@@ -19,6 +19,7 @@
 
    :param json_schema: the `JSON schema`__, specified as a ``str`` instance or an *UTF-8*
                        ``bytes`` instance
+   :raises JSONDecodeError: if `json_schema` is not a valid ``JSON`` value
 
    __ http://json-schema.org/documentation.html
 
@@ -26,6 +27,7 @@
 
       :param json: the ``JSON`` value, specified as a ``str`` instance or an *UTF-8*
                    ``bytes`` instance, that will be validated
+      :raises JSONDecodeError: if `json` is not a valid ``JSON`` value
 
       The given `json` value will be validated accordingly to the *schema*: a
       :exc:`ValidationError` will be raised if the validation fails, and the exception

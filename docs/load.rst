@@ -2,7 +2,7 @@
 .. :Project:   python-rapidjson -- load function documentation
 .. :Author:    Lele Gaifax <lele@metapensiero.it>
 .. :License:   MIT License
-.. :Copyright: © 2017, 2018 Lele Gaifax
+.. :Copyright: © 2017, 2018, 2019 Lele Gaifax
 ..
 
 =================
@@ -34,6 +34,8 @@
    :param int chunk_size: read the stream in chunks of this size at a time
    :param bool allow_nan: *compatibility* flag equivalent to ``number_mode=NM_NAN``
    :returns: An equivalent Python object.
+   :raises ValueError: if an invalid argument is given
+   :raises JSONDecodeError: if `string` is not a valid ``JSON`` value
 
    The function has the same behaviour as :func:`loads()`, except for the kind of the
    first argument that is expected to be file-like object instead of a string:
