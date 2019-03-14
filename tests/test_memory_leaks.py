@@ -28,7 +28,7 @@ def default(obj):
         return obj
 
 
-def test_memory_leaks():
+def test_object_hook_and_default():
     tracemalloc.start()
 
     data = []
