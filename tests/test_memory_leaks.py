@@ -51,7 +51,6 @@ def test_object_hook_and_default():
     top_stats = snapshot2.compare_to(snapshot1, 'lineno')
     tracemalloc.stop()
 
-    top_stats
     for stat in top_stats[:10]:
         assert stat.count_diff < 3
 
@@ -74,6 +73,5 @@ def test_load():
     top_stats = snapshot2.compare_to(snapshot1, 'lineno')
     tracemalloc.stop()
 
-    top_stats
     for stat in top_stats[:10]:
         assert stat.count_diff < 3
