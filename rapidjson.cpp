@@ -609,7 +609,7 @@ struct PyHandler {
                 }
 
                 int rc;
-                if (PyDict_Check(current.object))
+                if (PyDict_CheckExact(current.object))
                     // If it's a standard dictionary, this is +20% faster
                     rc = PyDict_SetItem(current.object, key, value);
                 else
