@@ -86,11 +86,11 @@
       >>> loads('[NaN, Infinity]', number_mode=NM_NATIVE)
       Traceback (most recent call last):
         File "<stdin>", line 1, in <module>
-      ValueError: … Out of range float values are not JSON compliant
+      rapidjson.JSONDecodeError: … Out of range float values are not JSON compliant
       >>> loads('[NaN, Infinity]', allow_nan=False)
       Traceback (most recent call last):
         File "<stdin>", line 1, in <module>
-      ValueError: … Out of range float values are not JSON compliant
+      rapidjson.JSONDecodeError: … Out of range float values are not JSON compliant
 
    Normally all floating point literals present in the JSON structure will be loaded as
    Python :class:`float` instances, with :data:`NM_DECIMAL` they will be returned as
@@ -257,11 +257,11 @@
       >>> loads('"foo" // one line of explanation')
       Traceback (most recent call last):
         File "<stdin>", line 1, in <module>
-      ValueError: Parse error at offset 6: The document root must not be followed by other values.
+      rapidjson.JSONDecodeError: Parse error at offset 6: The document root must not be followed by other values.
       >>> loads('"bar" /* detailed explanation */')
       Traceback (most recent call last):
         File "<stdin>", line 1, in <module>
-      ValueError: Parse error at offset 6: The document root must not be followed by other values.
+      rapidjson.JSONDecodeError: Parse error at offset 6: The document root must not be followed by other values.
       >>> loads('"foo" // one line of explanation', parse_mode=PM_COMMENTS)
       'foo'
       >>> loads('"bar" /* detailed explanation */', parse_mode=PM_COMMENTS)
@@ -274,7 +274,7 @@
       >>> loads('[1,]')
       Traceback (most recent call last):
         File "<stdin>", line 1, in <module>
-      ValueError: Parse error at offset 3: Invalid value.
+      rapidjson.JSONDecodeError: Parse error at offset 3: Invalid value.
       >>> loads('[1,]', parse_mode=PM_TRAILING_COMMAS)
       [1]
       >>> loads('{"one": 1,}', parse_mode=PM_TRAILING_COMMAS)
@@ -287,7 +287,7 @@
       >>> loads('[1, /* 2, */ 3,]')
       Traceback (most recent call last):
         ...
-      ValueError: Parse error at offset 4: Invalid value.
+      rapidjson.JSONDecodeError: Parse error at offset 4: Invalid value.
       >>> loads('[1, /* 2, */ 3,]', parse_mode=PM_COMMENTS | PM_TRAILING_COMMAS)
       [1, 3]
 

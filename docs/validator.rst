@@ -67,11 +67,11 @@
          ...
          ('type', '#/items', '#/0')
 
-      When `json` is not a valid JSON document, a :exc:`ValueError` is raised instead:
+      When `json` is not a valid JSON document, a :exc:`JSONDecodeError` is raised instead:
 
       .. doctest::
 
          >>> validate('x')
          Traceback (most recent call last):
            File "<stdin>", line 1, in <module>
-         ValueError: Invalid JSON
+         rapidjson.JSONDecodeError: Invalid JSON
