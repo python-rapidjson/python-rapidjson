@@ -2241,7 +2241,11 @@ dumps_internal(
                 writer->Uint64(ui);
             }
         } else {
-            PyObject* intStrObj = PyObject_Str(object);
+            // Mimic stdlib json: subclasses of int may override __str__, but we still
+            // want to encode them as integers in JSON; one example within the standard
+            // library is IntEnum
+
+            PyObject* intStrObj = PyLong_Type.tp_str(object);
             if (intStrObj == NULL)
                 return false;
 
