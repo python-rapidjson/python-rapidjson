@@ -84,6 +84,7 @@ setup(
     version=VERSION,
     description='Python wrapper around rapidjson',
     long_description=LONG_DESCRIPTION + '\n\n' + CHANGES,
+    long_description_content_type='text/x-rst',
     license='MIT License',
     keywords='json rapidjson',
     author='Ken Robbins',

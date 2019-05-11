@@ -2,13 +2,15 @@
 # :Project:   python-rapidjson -- Release specific targets
 # :Author:    Lele Gaifax <lele@metapensiero.it>
 # :License:   MIT License
-# :Copyright: © 2017 Lele Gaifax
+# :Copyright: © 2017, 2019 Lele Gaifax
 #
 
 BUMP_FIELD := minor
 BUMPER = $(VENVDIR)/bin/bump_version -f $(BUMP_FIELD)
 VERSION_TXT := version.txt
 VERSION = $(shell cat $(VERSION_TXT))
+PACKAGE_NAME = $(shell $(PYTHON) setup.py --name)
+TWINE := $(BINDIR)twine
 
 help::
 	@printf "\nRelease management\n"
@@ -52,7 +54,8 @@ tag-release: assert-master-branch check-release-date check-long-description-mark
 
 .PHONY: check-long-description-markup
 check-long-description-markup:
-	@$(PYTHON) setup.py check -r -s
+	@$(PYTHON) setup.py --quiet sdist
+	@$(TWINE) check dist/$(PACKAGE_NAME)-$(VERSION).tar.gz
 
 .PHONY: check-release-date
 check-release-date:
@@ -64,7 +67,8 @@ help::
 
 .PHONY: pypi-upload
 pypi-upload: assert-master-branch assert-clean-tree
-	$(PYTHON) setup.py sdist upload
+	@$(PYTHON) setup.py sdist
+	@$(TWINE) upload dist/$(PACKAGE_NAME)-$(VERSION).tar.gz
 
 help::
 	@printf "publish\n\tUpload to PyPI, push changes and tags to the remote repo\n"
