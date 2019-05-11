@@ -590,6 +590,12 @@ struct PyHandler {
         }
 
     ~PyHandler() {
+        while (!stack.empty()) {
+            const HandlerContext& ctx = stack.back();
+            if (ctx.copiedKey)
+                free((void*) ctx.key);
+            stack.pop_back();
+        }
         Py_CLEAR(decoderStartObject);
         Py_CLEAR(decoderEndObject);
         Py_CLEAR(decoderEndArray);
