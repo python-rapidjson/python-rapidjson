@@ -62,9 +62,11 @@ def test_load():
         tracemalloc.Filter(True, __file__),))
 
     for _ in range(10):
-        content = io.StringIO('[' + ','.join('{"foo": "bar"}' for _ in range(1000)) + ']')
-        rj.load(content)
+        content = io.StringIO('[' + ','.join('{"foo": "bar"}' for _ in range(100)) + ']')
+        rj.load(content, chunk_size=50)
 
+    del content
+    del _
     gc.collect()
 
     snapshot2 = tracemalloc.take_snapshot().filter_traces((
