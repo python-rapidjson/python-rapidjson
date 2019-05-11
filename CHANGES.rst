@@ -1,7 +1,7 @@
 Changes
 -------
 
-0.7.1 (unreleased)
+0.7.1 (2019-05-11)
 ~~~~~~~~~~~~~~~~~~
 
 * Raise a more specific exception on loading errors, ``JSONDecodeError``, instead of
