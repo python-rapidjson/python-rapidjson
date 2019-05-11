@@ -1,6 +1,29 @@
 Changes
 -------
 
+0.7.1 (unreleased)
+~~~~~~~~~~~~~~~~~~
+
+* Raise a more specific exception on loading errors, ``JSONDecodeError``, instead of
+  generic ``ValueError`` (`issue #118`__)
+
+  __ https://github.com/python-rapidjson/python-rapidjson/issues/118
+
+* Fix optimization path when using ``OrderedDict``\ s (`issue #119`__)
+
+  __ https://github.com/python-rapidjson/python-rapidjson/issues/119
+
+* Fix serialization of ``IntEnum``\ s (`issue #121`__)
+
+  __ https://github.com/python-rapidjson/python-rapidjson/issues/121
+
+* I spent *quite a lot* of time investigating on the memory leak when loading from a
+  stream (`issue #117`__): as I was not able to fully replicate the problem, I cannot be
+  sure I solved the problem... sorry!
+
+  __ https://github.com/python-rapidjson/python-rapidjson/issues/117
+
+
 0.7.0 (2019-02-11)
 ~~~~~~~~~~~~~~~~~~
 
