@@ -641,13 +641,24 @@ struct PyHandler {
     bool Key(const char* str, SizeType length, bool copy) {
         HandlerContext& current = stack.back();
 
+        // This happens when operating in stream mode and kParseInsituFlag is not set: we
+        // must copy the incoming string in the context, and destroy the duplicate when
+        // the context gets reused for the next dictionary key
+
+        if (current.key && current.copiedKey) {
+            free((void*) current.key);
+            current.key = NULL;
+        }
+
         if (copy) {
             char* copied_str = (char*) malloc(length+1);
             if (copied_str == NULL)
                 return false;
             memcpy(copied_str, str, length+1);
             str = copied_str;
+            assert(!current.key);
         }
+
         current.key = str;
         current.keyLength = length;
         current.copiedKey = copy;
