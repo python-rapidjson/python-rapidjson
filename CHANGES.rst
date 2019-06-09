@@ -1,7 +1,7 @@
 Changes
 -------
 
-0.7.2 (unreleased)
+0.7.2 (2019-06-09)
 ~~~~~~~~~~~~~~~~~~
 
 * Hopefully fix the memory leak when loading from a stream (`issue #117`__)
