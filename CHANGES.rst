@@ -1,6 +1,14 @@
 Changes
 -------
 
+0.7.2 (unreleased)
+~~~~~~~~~~~~~~~~~~
+
+* Hopefully fix the memory leak when loading from a stream (`issue #117`__)
+
+  __ https://github.com/python-rapidjson/python-rapidjson/issues/117
+
+
 0.7.1 (2019-05-11)
 ~~~~~~~~~~~~~~~~~~
 
