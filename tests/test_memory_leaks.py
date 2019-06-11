@@ -62,7 +62,8 @@ def test_load():
         tracemalloc.Filter(True, __file__),))
 
     for _ in range(10):
-        content = io.StringIO('[' + ','.join('{"foo": "bar"}' for _ in range(100)) + ']')
+        dct = '{' + ','.join('"foo%d":"bar%d"' % (i, i) for i in range(100)) + '}'
+        content = io.StringIO('[' + ','.join(dct for _ in range(100)) + ']')
         rj.load(content, chunk_size=50)
 
     del content
