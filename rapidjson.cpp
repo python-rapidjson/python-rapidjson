@@ -314,7 +314,7 @@ public:
     PyWriteStreamWrapper(PyObject* stream, size_t size)
         : stream(stream) {
         Py_INCREF(stream);
-        buffer = (char*) malloc(size);
+        buffer = (char*) PyMem_Malloc(size);
         assert(buffer);
         bufferEnd = buffer + size;
         cursor = buffer;
@@ -324,7 +324,7 @@ public:
 
     ~PyWriteStreamWrapper() {
         Py_CLEAR(stream);
-        free(buffer);
+        PyMem_Free(buffer);
     }
 
     Ch Peek() {
@@ -593,7 +593,7 @@ struct PyHandler {
         while (!stack.empty()) {
             const HandlerContext& ctx = stack.back();
             if (ctx.copiedKey)
-                free((void*) ctx.key);
+                PyMem_Free((void*) ctx.key);
             stack.pop_back();
         }
         Py_CLEAR(decoderStartObject);
@@ -646,12 +646,12 @@ struct PyHandler {
         // the context gets reused for the next dictionary key
 
         if (current.key && current.copiedKey) {
-            free((void*) current.key);
+            PyMem_Free((void*) current.key);
             current.key = NULL;
         }
 
         if (copy) {
-            char* copied_str = (char*) malloc(length+1);
+            char* copied_str = (char*) PyMem_Malloc(length+1);
             if (copied_str == NULL)
                 return false;
             memcpy(copied_str, str, length+1);
@@ -706,7 +706,7 @@ struct PyHandler {
         const HandlerContext& ctx = stack.back();
 
         if (ctx.copiedKey)
-            free((void*) ctx.key);
+            PyMem_Free((void*) ctx.key);
 
         PyObject* mapping = ctx.object;
         stack.pop_back();
@@ -800,7 +800,7 @@ struct PyHandler {
         const HandlerContext& ctx = stack.back();
 
         if (ctx.copiedKey)
-            free((void*) ctx.key);
+            PyMem_Free((void*) ctx.key);
 
         PyObject* sequence = ctx.object;
         stack.pop_back();
@@ -1882,7 +1882,7 @@ do_decode(PyObject* decoder, const char* jsonStr, Py_ssize_t jsonStrLen,
     Reader reader;
 
     if (jsonStr != NULL) {
-        char* jsonStrCopy = (char*) malloc(sizeof(char) * (jsonStrLen+1));
+        char* jsonStrCopy = (char*) PyMem_Malloc(sizeof(char) * (jsonStrLen+1));
 
         if (jsonStrCopy == NULL)
             return PyErr_NoMemory();
@@ -1893,7 +1893,7 @@ do_decode(PyObject* decoder, const char* jsonStr, Py_ssize_t jsonStrLen,
 
         DECODE(reader, kParseInsituFlag, ss, handler);
 
-        free(jsonStrCopy);
+        PyMem_Free(jsonStrCopy);
     }
     else {
         PyReadStreamWrapper sw(jsonStream, chunkSize);
