@@ -2,7 +2,7 @@
 .. :Project:   python-rapidjson -- dumps function documentation
 .. :Author:    Lele Gaifax <lele@metapensiero.it>
 .. :License:   MIT License
-.. :Copyright: © 2016, 2017, 2018 Lele Gaifax
+.. :Copyright: © 2016, 2017, 2018, 2019 Lele Gaifax
 ..
 
 ==================
@@ -13,14 +13,14 @@
 
 .. testsetup::
 
-   from rapidjson import (dumps, loads, DM_NONE, DM_ISO8601, DM_UNIX_TIME,
-                          DM_ONLY_SECONDS, DM_IGNORE_TZ, DM_NAIVE_IS_UTC, DM_SHIFT_TO_UTC,
-                          UM_NONE, UM_CANONICAL, UM_HEX, NM_NATIVE, NM_DECIMAL, NM_NAN,
-                          PM_NONE, PM_COMMENTS, PM_TRAILING_COMMAS)
+   from rapidjson import (dumps, loads, BM_NONE, BM_UTF8, DM_NONE, DM_ISO8601,
+                          DM_UNIX_TIME, DM_ONLY_SECONDS, DM_IGNORE_TZ, DM_NAIVE_IS_UTC,
+                          DM_SHIFT_TO_UTC, UM_NONE, UM_CANONICAL, UM_HEX, NM_NATIVE,
+                          NM_DECIMAL, NM_NAN, PM_NONE, PM_COMMENTS, PM_TRAILING_COMMAS)
 
 .. function:: dumps(obj, *, skipkeys=False, ensure_ascii=True, indent=None, \
                     default=None, sort_keys=False, number_mode=None, datetime_mode=None, \
-                    uuid_mode=None, allow_nan=True)
+                    uuid_mode=None, bytes_mode=BM_UTF8, allow_nan=True)
 
    Encode given Python `obj` instance into a ``JSON`` string.
 
@@ -37,6 +37,7 @@
    :param int datetime_mode: how should :class:`datetime`, :class:`time` and
                              :class:`date` instances be handled
    :param int uuid_mode: how should :class:`UUID` instances be handled
+   :param int bytes_mode: how should :class:`bytes` instances be handled
    :param bool allow_nan: *compatibility* flag equivalent to ``number_mode=NM_NAN``
    :returns: A Python :class:`str` instance.
 
@@ -347,6 +348,36 @@
       '"be576345-65b5-4fc2-92c5-94e2f82e38fd"'
       >>> dumps(random_uuid, uuid_mode=UM_HEX) # doctest: +SKIP
       '"be57634565b54fc292c594e2f82e38fd"'
+
+
+   .. _dumps-bytes-mode:
+   .. rubric:: `bytes_mode`
+
+   By default all :class:`bytes` instances are assumed to be ``UTF-8`` encoded strings,
+   and acted on accordingly:
+
+   .. doctest::
+
+      >>> ascii_string = 'ciao'
+      >>> bytes_string = b'cio\xc3\xa8'
+      >>> unicode_string = 'cioè'
+      >>> dumps([ascii_string, bytes_string, unicode_string])
+      '["ciao","cio\\u00E8","cio\\u00E8"]'
+
+   Sometime you may prefer a different approach, explicitly disabling that behavior using
+   the :data:`BM_NONE` mode:
+
+   .. doctest::
+
+      >>> dumps([ascii_string, bytes_string, unicode_string],
+      ...       bytes_mode=BM_NONE)
+      Traceback (most recent call last):
+        File "<stdin>", line 1, in <module>
+      TypeError: b'cio\xc3\xa8' is not JSON serializable
+      >>> my_bytes_handler = lambda b: b.decode('UTF-8').upper()
+      >>> dumps([ascii_string, bytes_string, unicode_string],
+      ...       bytes_mode=BM_NONE, default=my_bytes_handler)
+      '["ciao","CIO\\u00C8","cio\\u00E8"]'
 
 
 .. _ISO 8601: https://en.wikipedia.org/wiki/ISO_8601

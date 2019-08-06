@@ -159,6 +159,12 @@ enum NumberMode {
 };
 
 
+enum BytesMode {
+    BM_NONE = 0,
+    BM_UTF8 = 1<<0     // try to convert to UTF-8
+};
+
+
 enum ParseMode {
     PM_NONE = 0,
     PM_COMMENTS = 1<<0,       // Allow one-line // ... and multi-line /* ... */ comments
@@ -184,12 +190,14 @@ static PyObject* decoder_new(PyTypeObject* type, PyObject* args, PyObject* kwarg
 static PyObject* do_encode(PyObject* value, bool skipInvalidKeys, PyObject* defaultFn,
                            bool sortKeys, bool ensureAscii, bool prettyPrint,
                            unsigned indent, NumberMode numberMode,
-                           DatetimeMode datetimeMode, UuidMode uuidMode);
+                           DatetimeMode datetimeMode, UuidMode uuidMode,
+                           BytesMode bytesMode);
 static PyObject* do_stream_encode(PyObject* value, PyObject* stream, size_t chunkSize,
                                   bool skipInvalidKeys, PyObject* defaultFn,
                                   bool sortKeys, bool ensureAscii, bool prettyPrint,
                                   unsigned indent, NumberMode numberMode,
-                                  DatetimeMode datetimeMode, UuidMode uuidMode);
+                                  DatetimeMode datetimeMode, UuidMode uuidMode,
+                                  BytesMode bytesMode);
 static PyObject* encoder_call(PyObject* self, PyObject* args, PyObject* kwargs);
 static PyObject* encoder_new(PyTypeObject* type, PyObject* args, PyObject* kwargs);
 
@@ -2173,12 +2181,13 @@ dumps_internal(
     bool sortKeys,
     NumberMode numberMode,
     DatetimeMode datetimeMode,
-    UuidMode uuidMode)
+    UuidMode uuidMode,
+    BytesMode bytesMode)
 {
     int is_decimal;
 
 #define RECURSE(v) dumps_internal(writer, v, skipKeys, defaultFn, sortKeys, \
-                                  numberMode, datetimeMode, uuidMode)
+                                  numberMode, datetimeMode, uuidMode, bytesMode)
 
 #define ASSERT_VALID_SIZE(l) do {                                       \
     if (l < 0 || l > UINT_MAX) {                                        \
@@ -2329,7 +2338,8 @@ dumps_internal(
         ASSERT_VALID_SIZE(l);
         writer->String(s, (SizeType) l);
     }
-    else if (PyBytes_Check(object) || PyByteArray_Check(object)) {
+    else if (bytesMode == BM_UTF8
+             && (PyBytes_Check(object) || PyByteArray_Check(object))) {
         PyObject* unicodeObj = PyUnicode_FromEncodedObject(object, "utf-8", NULL);
 
         if (unicodeObj == NULL)
@@ -2809,13 +2819,14 @@ typedef struct {
     DatetimeMode datetimeMode;
     UuidMode uuidMode;
     NumberMode numberMode;
+    BytesMode bytesMode;
 } EncoderObject;
 
 
 PyDoc_STRVAR(dumps_docstring,
              "dumps(obj, *, skipkeys=False, ensure_ascii=True, indent=None, default=None,"
              " sort_keys=False, number_mode=None, datetime_mode=None, uuid_mode=None,"
-             " allow_nan=True)\n"
+             " bytes_mode=BM_UTF8, allow_nan=True)\n"
              "\n"
              "Encode a Python object into a JSON string.");
 
@@ -2837,6 +2848,8 @@ dumps(PyObject* self, PyObject* args, PyObject* kwargs)
     DatetimeMode datetimeMode = DM_NONE;
     PyObject* uuidModeObj = NULL;
     UuidMode uuidMode = UM_NONE;
+    PyObject* bytesModeObj = NULL;
+    BytesMode bytesMode = BM_UTF8;
     bool prettyPrint = false;
     unsigned indentCharCount = 4;
     int allowNan = -1;
@@ -2850,6 +2863,7 @@ dumps(PyObject* self, PyObject* args, PyObject* kwargs)
         "number_mode",
         "datetime_mode",
         "uuid_mode",
+        "bytes_mode",
 
         /* compatibility with stdlib json */
         "allow_nan",
@@ -2857,7 +2871,7 @@ dumps(PyObject* self, PyObject* args, PyObject* kwargs)
         NULL
     };
 
-    if (!PyArg_ParseTupleAndKeywords(args, kwargs, "O|$ppOOpOOOp:rapidjson.dumps",
+    if (!PyArg_ParseTupleAndKeywords(args, kwargs, "O|$ppOOpOOOOp:rapidjson.dumps",
                                      (char**) kwlist,
                                      &value,
                                      &skipKeys,
@@ -2868,6 +2882,7 @@ dumps(PyObject* self, PyObject* args, PyObject* kwargs)
                                      &numberModeObj,
                                      &datetimeModeObj,
                                      &uuidModeObj,
+                                     &bytesModeObj,
                                      &allowNan))
         return NULL;
 
@@ -2945,16 +2960,32 @@ dumps(PyObject* self, PyObject* args, PyObject* kwargs)
         }
     }
 
+    if (bytesModeObj) {
+        if (bytesModeObj == Py_None)
+            bytesMode = BM_NONE;
+        else if (PyLong_Check(bytesModeObj)) {
+            bytesMode = (BytesMode) PyLong_AsLong(bytesModeObj);
+            if (bytesMode < BM_NONE || bytesMode > BM_UTF8) {
+                PyErr_SetString(PyExc_ValueError, "Invalid bytes_mode");
+                return NULL;
+            }
+        }
+        else {
+            PyErr_SetString(PyExc_TypeError, "bytes_mode must be an integer value");
+            return NULL;
+        }
+    }
+
     return do_encode(value, skipKeys ? true : false, defaultFn, sortKeys ? true : false,
                      ensureAscii ? true : false, prettyPrint ? true : false,
-                     indentCharCount, numberMode, datetimeMode, uuidMode);
+                     indentCharCount, numberMode, datetimeMode, uuidMode, bytesMode);
 }
 
 
 PyDoc_STRVAR(dump_docstring,
              "dump(obj, stream, *, skipkeys=False, ensure_ascii=True, indent=None,"
              " default=None, sort_keys=False, number_mode=None, datetime_mode=None,"
-             " uuid_mode=None, chunk_size=65536, allow_nan=True)\n"
+             " uuid_mode=None, bytes_mode=BM_UTF8, chunk_size=65536, allow_nan=True)\n"
              "\n"
              "Encode a Python object into a JSON stream.");
 
@@ -2977,6 +3008,8 @@ dump(PyObject* self, PyObject* args, PyObject* kwargs)
     DatetimeMode datetimeMode = DM_NONE;
     PyObject* uuidModeObj = NULL;
     UuidMode uuidMode = UM_NONE;
+    PyObject* bytesModeObj = NULL;
+    BytesMode bytesMode = BM_UTF8;
     bool prettyPrint = false;
     unsigned indentCharCount = 4;
     PyObject* chunkSizeObj = NULL;
@@ -2993,6 +3026,7 @@ dump(PyObject* self, PyObject* args, PyObject* kwargs)
         "number_mode",
         "datetime_mode",
         "uuid_mode",
+        "bytes_mode",
         "chunk_size",
 
         /* compatibility with stdlib json */
@@ -3001,7 +3035,7 @@ dump(PyObject* self, PyObject* args, PyObject* kwargs)
         NULL
     };
 
-    if (!PyArg_ParseTupleAndKeywords(args, kwargs, "OO|$ppOOpOOOOp:rapidjson.dump",
+    if (!PyArg_ParseTupleAndKeywords(args, kwargs, "OO|$ppOOpOOOOOp:rapidjson.dump",
                                      (char**) kwlist,
                                      &value,
                                      &stream,
@@ -3013,6 +3047,7 @@ dump(PyObject* self, PyObject* args, PyObject* kwargs)
                                      &numberModeObj,
                                      &datetimeModeObj,
                                      &uuidModeObj,
+                                     &bytesModeObj,
                                      &chunkSizeObj,
                                      &allowNan))
         return NULL;
@@ -3091,6 +3126,22 @@ dump(PyObject* self, PyObject* args, PyObject* kwargs)
         }
     }
 
+    if (bytesModeObj) {
+        if (bytesModeObj == Py_None)
+            bytesMode = BM_NONE;
+        else if (PyLong_Check(bytesModeObj)) {
+            bytesMode = (BytesMode) PyLong_AsLong(bytesModeObj);
+            if (bytesMode < BM_NONE || bytesMode > BM_UTF8) {
+                PyErr_SetString(PyExc_ValueError, "Invalid bytes_mode");
+                return NULL;
+            }
+        }
+        else {
+            PyErr_SetString(PyExc_TypeError, "bytes_mode must be an integer value");
+            return NULL;
+        }
+    }
+
     if (chunkSizeObj && chunkSizeObj != Py_None) {
         if (PyLong_Check(chunkSizeObj)) {
             Py_ssize_t size = PyNumber_AsSsize_t(chunkSizeObj, PyExc_ValueError);
@@ -3112,14 +3163,15 @@ dump(PyObject* self, PyObject* args, PyObject* kwargs)
     return do_stream_encode(value, stream, chunkSize, skipKeys ? true : false,
                             defaultFn, sortKeys ? true : false,
                             ensureAscii ? true : false, prettyPrint ? true : false,
-                            indentCharCount, numberMode, datetimeMode, uuidMode);
+                            indentCharCount, numberMode, datetimeMode, uuidMode,
+                            bytesMode);
 }
 
 
 PyDoc_STRVAR(encoder_doc,
              "Encoder(skip_invalid_keys=False, ensure_ascii=True, indent=None,"
-             " sort_keys=False, number_mode=None, datetime_mode=None, uuid_mode=None)\n"
-             "\n"
+             " sort_keys=False, number_mode=None, datetime_mode=None, uuid_mode=None,"
+             " bytes_mode=None)\n\n"
              "Create and return a new Encoder instance.");
 
 
@@ -3138,6 +3190,8 @@ static PyMemberDef encoder_members[] = {
      T_UINT, offsetof(EncoderObject, uuidMode), READONLY, "uuid_mode"},
     {"number_mode",
      T_UINT, offsetof(EncoderObject, numberMode), READONLY, "number_mode"},
+    {"bytes_mode",
+     T_UINT, offsetof(EncoderObject, bytesMode), READONLY, "bytes_mode"},
     {NULL}
 };
 
@@ -3197,14 +3251,16 @@ static PyTypeObject Encoder_Type = {
                     sortKeys,                           \
                     numberMode,                         \
                     datetimeMode,                       \
-                    uuidMode)                           \
+                    uuidMode,                           \
+                    bytesMode)                          \
      ? PyUnicode_FromString(buf.GetString()) : NULL)
 
 
 static PyObject*
 do_encode(PyObject* value, bool skipInvalidKeys, PyObject* defaultFn, bool sortKeys,
           bool ensureAscii, bool prettyPrint, unsigned indent,
-          NumberMode numberMode, DatetimeMode datetimeMode, UuidMode uuidMode)
+          NumberMode numberMode, DatetimeMode datetimeMode, UuidMode uuidMode,
+          BytesMode bytesMode)
 {
     if (!prettyPrint) {
         if (ensureAscii) {
@@ -3241,7 +3297,8 @@ do_encode(PyObject* value, bool skipInvalidKeys, PyObject* defaultFn, bool sortK
                     sortKeys,                           \
                     numberMode,                         \
                     datetimeMode,                       \
-                    uuidMode)                           \
+                    uuidMode,                           \
+                    bytesMode)                          \
      ? Py_INCREF(Py_None), Py_None : NULL)
 
 
@@ -3249,7 +3306,8 @@ static PyObject*
 do_stream_encode(PyObject* value, PyObject* stream, size_t chunkSize,
                  bool skipInvalidKeys, PyObject* defaultFn, bool sortKeys,
                  bool ensureAscii, bool prettyPrint, unsigned indent,
-                 NumberMode numberMode, DatetimeMode datetimeMode, UuidMode uuidMode)
+                 NumberMode numberMode, DatetimeMode datetimeMode, UuidMode uuidMode,
+                 BytesMode bytesMode)
 {
     PyWriteStreamWrapper os(stream, chunkSize);
 
@@ -3329,12 +3387,13 @@ encoder_call(PyObject* self, PyObject* args, PyObject* kwargs)
         }
         result = do_stream_encode(value, stream, chunkSize, e->skipInvalidKeys, defaultFn,
                                   e->sortKeys, e->ensureAscii, e->prettyPrint, e->indent,
-                                  e->numberMode, e->datetimeMode, e->uuidMode);
+                                  e->numberMode, e->datetimeMode, e->uuidMode,
+                                  e->bytesMode);
     }
     else {
         result = do_encode(value, e->skipInvalidKeys, defaultFn, e->sortKeys,
                            e->ensureAscii, e->prettyPrint, e->indent,
-                           e->numberMode, e->datetimeMode, e->uuidMode);
+                           e->numberMode, e->datetimeMode, e->uuidMode, e->bytesMode);
     }
 
     if (defaultFn != NULL)
@@ -3358,6 +3417,8 @@ encoder_new(PyTypeObject* type, PyObject* args, PyObject* kwargs)
     DatetimeMode datetimeMode = DM_NONE;
     PyObject* uuidModeObj = NULL;
     UuidMode uuidMode = UM_NONE;
+    PyObject* bytesModeObj = NULL;
+    BytesMode bytesMode = BM_UTF8;
     unsigned indentCharCount = 4;
     bool prettyPrint = false;
 
@@ -3369,10 +3430,11 @@ encoder_new(PyTypeObject* type, PyObject* args, PyObject* kwargs)
         "number_mode",
         "datetime_mode",
         "uuid_mode",
+        "bytes_mode",
         NULL
     };
 
-    if (!PyArg_ParseTupleAndKeywords(args, kwargs, "|ppOpOOO:Encoder",
+    if (!PyArg_ParseTupleAndKeywords(args, kwargs, "|ppOpOOOO:Encoder",
                                      (char**) kwlist,
                                      &skipInvalidKeys,
                                      &ensureAscii,
@@ -3380,7 +3442,8 @@ encoder_new(PyTypeObject* type, PyObject* args, PyObject* kwargs)
                                      &sortKeys,
                                      &numberModeObj,
                                      &datetimeModeObj,
-                                     &uuidModeObj))
+                                     &uuidModeObj,
+                                     &bytesModeObj))
         return NULL;
 
     if (indent && indent != Py_None) {
@@ -3442,6 +3505,22 @@ encoder_new(PyTypeObject* type, PyObject* args, PyObject* kwargs)
         }
     }
 
+    if (bytesModeObj) {
+        if (bytesModeObj == Py_None)
+            bytesMode = BM_NONE;
+        else if (PyLong_Check(bytesModeObj)) {
+            bytesMode = (BytesMode) PyLong_AsLong(bytesModeObj);
+            if (bytesMode < BM_NONE || bytesMode > BM_UTF8) {
+                PyErr_SetString(PyExc_ValueError, "Invalid bytes_mode");
+                return NULL;
+            }
+        }
+        else {
+            PyErr_SetString(PyExc_TypeError, "bytes_mode must be an integer value");
+            return NULL;
+        }
+    }
+
     e = (EncoderObject*) type->tp_alloc(type, 0);
     if (e == NULL)
         return NULL;
@@ -3454,6 +3533,7 @@ encoder_new(PyTypeObject* type, PyObject* args, PyObject* kwargs)
     e->datetimeMode = datetimeMode;
     e->uuidMode = uuidMode;
     e->numberMode = numberMode;
+    e->bytesMode = bytesMode;
 
     return (PyObject*) e;
 }
@@ -3838,6 +3918,9 @@ PyInit_rapidjson()
         || PyModule_AddIntConstant(m, "PM_NONE", PM_NONE)
         || PyModule_AddIntConstant(m, "PM_COMMENTS", PM_COMMENTS)
         || PyModule_AddIntConstant(m, "PM_TRAILING_COMMAS", PM_TRAILING_COMMAS)
+
+        || PyModule_AddIntConstant(m, "BM_NONE", BM_NONE)
+        || PyModule_AddIntConstant(m, "BM_UTF8", BM_UTF8)
 
         || PyModule_AddStringConstant(m, "__version__", STRINGIFY(PYTHON_RAPIDJSON_VERSION))
         || PyModule_AddStringConstant(m, "__author__", "Ken Robbins <ken@kenrobbins.com>")
