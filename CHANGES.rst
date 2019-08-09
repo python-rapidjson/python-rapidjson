@@ -1,7 +1,7 @@
 Changes
 -------
 
-0.8.0 (unreleased)
+0.8.0 (2019-08-09)
 ~~~~~~~~~~~~~~~~~~
 
 * New serialization option ``bytes_mode`` to control how bytes instances gets encoded
