@@ -1,6 +1,15 @@
 Changes
 -------
 
+0.8.0 (unreleased)
+~~~~~~~~~~~~~~~~~~
+
+* New serialization option ``bytes_mode`` to control how bytes instances gets encoded
+  (`issue #122`__)
+
+  __ https://github.com/python-rapidjson/python-rapidjson/issues/122
+
+
 0.7.2 (2019-06-09)
 ~~~~~~~~~~~~~~~~~~
 
