@@ -19,7 +19,8 @@
                           NM_DECIMAL, NM_NAN, PM_NONE, PM_COMMENTS, PM_TRAILING_COMMAS)
 
 .. function:: dumps(obj, *, skipkeys=False, ensure_ascii=True, indent=None, \
-                    default=None, sort_keys=False, number_mode=None, datetime_mode=None, \
+                    default=None, sort_keys=False, single_line_array=False, \
+                    number_mode=None, datetime_mode=None, \
                     uuid_mode=None, bytes_mode=BM_UTF8, allow_nan=True)
 
    Encode given Python `obj` instance into a ``JSON`` string.
@@ -33,6 +34,7 @@
                             otherwise be serialized
    :param bool sort_keys: whether dictionary keys should be sorted
                           alphabetically
+   :param bool single_line_array: whether to print array in a single line, in pretty mode.
    :param int number_mode: enable particular behaviors in handling numbers
    :param int datetime_mode: how should :class:`datetime`, :class:`time` and
                              :class:`date` instances be handled
@@ -105,6 +107,11 @@
           "three": 3
         }
       ]
+      >>> print(dumps({'a': 1, 'b': [2, 3])], indent=2, single_line_array=True))
+      {
+        "a": 1,
+        "b": [2, 3]
+      }
 
 
    .. rubric:: `default`

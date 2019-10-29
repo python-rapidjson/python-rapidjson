@@ -19,7 +19,7 @@
                           NM_DECIMAL, NM_NAN, PM_NONE, PM_COMMENTS, PM_TRAILING_COMMAS)
 
 .. class:: Encoder(skip_invalid_keys=False, ensure_ascii=True, indent=None, \
-                   sort_keys=False, number_mode=None, datetime_mode=None, \
+                   sort_keys=False, single_line_array=False, \
                    uuid_mode=None, bytes_mode=BM_UTF8)
 
    Class-based :func:`dumps`\ -like functionality.
@@ -32,6 +32,8 @@
                       <pretty-print>`
    :param bool sort_keys: whether dictionary keys should be :ref:`sorted
                           alphabetically <sort-keys>`
+   :param bool single_line_array: whether to print array in a single line, in :ref:`pretty mode
+                                  <pretty-print>`.
    :param int number_mode: enable particular :ref:`behaviors in handling numbers
                            <dumps-number-mode>`
    :param int datetime_mode: how should :ref:`datetime, time and date instances be handled

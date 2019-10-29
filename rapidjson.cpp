@@ -189,13 +189,13 @@ static PyObject* decoder_new(PyTypeObject* type, PyObject* args, PyObject* kwarg
 
 static PyObject* do_encode(PyObject* value, bool skipInvalidKeys, PyObject* defaultFn,
                            bool sortKeys, bool ensureAscii, bool prettyPrint,
-                           unsigned indent, NumberMode numberMode,
+                           unsigned indent, bool singleLineArray, NumberMode numberMode,
                            DatetimeMode datetimeMode, UuidMode uuidMode,
                            BytesMode bytesMode);
 static PyObject* do_stream_encode(PyObject* value, PyObject* stream, size_t chunkSize,
                                   bool skipInvalidKeys, PyObject* defaultFn,
                                   bool sortKeys, bool ensureAscii, bool prettyPrint,
-                                  unsigned indent, NumberMode numberMode,
+                                  unsigned indent, bool singleLineArray, NumberMode numberMode,
                                   DatetimeMode datetimeMode, UuidMode uuidMode,
                                   BytesMode bytesMode);
 static PyObject* encoder_call(PyObject* self, PyObject* args, PyObject* kwargs);
@@ -2816,6 +2816,7 @@ typedef struct {
     bool prettyPrint;
     unsigned indent;
     bool sortKeys;
+    bool singleLineArray;
     DatetimeMode datetimeMode;
     UuidMode uuidMode;
     NumberMode numberMode;
@@ -2825,7 +2826,8 @@ typedef struct {
 
 PyDoc_STRVAR(dumps_docstring,
              "dumps(obj, *, skipkeys=False, ensure_ascii=True, indent=None, default=None,"
-             " sort_keys=False, number_mode=None, datetime_mode=None, uuid_mode=None,"
+             " sort_keys=False, single_line_array=False,"
+             " number_mode=None, datetime_mode=None, uuid_mode=None,"
              " bytes_mode=BM_UTF8, allow_nan=True)\n"
              "\n"
              "Encode a Python object into a JSON string.");
@@ -2842,6 +2844,7 @@ dumps(PyObject* self, PyObject* args, PyObject* kwargs)
     PyObject* indent = NULL;
     PyObject* defaultFn = NULL;
     int sortKeys = false;
+    bool singleLineArray = false;
     PyObject* numberModeObj = NULL;
     NumberMode numberMode = NM_NAN;
     PyObject* datetimeModeObj = NULL;
@@ -2860,6 +2863,7 @@ dumps(PyObject* self, PyObject* args, PyObject* kwargs)
         "indent",
         "default",
         "sort_keys",
+        "single_line_array",
         "number_mode",
         "datetime_mode",
         "uuid_mode",
@@ -2871,7 +2875,7 @@ dumps(PyObject* self, PyObject* args, PyObject* kwargs)
         NULL
     };
 
-    if (!PyArg_ParseTupleAndKeywords(args, kwargs, "O|$ppOOpOOOOp:rapidjson.dumps",
+    if (!PyArg_ParseTupleAndKeywords(args, kwargs, "O|$ppOOppOOOOp:rapidjson.dumps",
                                      (char**) kwlist,
                                      &value,
                                      &skipKeys,
@@ -2879,6 +2883,7 @@ dumps(PyObject* self, PyObject* args, PyObject* kwargs)
                                      &indent,
                                      &defaultFn,
                                      &sortKeys,
+                                     &singleLineArray,
                                      &numberModeObj,
                                      &datetimeModeObj,
                                      &uuidModeObj,
@@ -2978,13 +2983,15 @@ dumps(PyObject* self, PyObject* args, PyObject* kwargs)
 
     return do_encode(value, skipKeys ? true : false, defaultFn, sortKeys ? true : false,
                      ensureAscii ? true : false, prettyPrint ? true : false,
-                     indentCharCount, numberMode, datetimeMode, uuidMode, bytesMode);
+                     indentCharCount, singleLineArray ? true : false,
+                     numberMode, datetimeMode, uuidMode, bytesMode);
 }
 
 
 PyDoc_STRVAR(dump_docstring,
              "dump(obj, stream, *, skipkeys=False, ensure_ascii=True, indent=None,"
-             " default=None, sort_keys=False, number_mode=None, datetime_mode=None,"
+             " default=None, sort_keys=False, single_line_array=False,"
+             " number_mode=None, datetime_mode=None,"
              " uuid_mode=None, bytes_mode=BM_UTF8, chunk_size=65536, allow_nan=True)\n"
              "\n"
              "Encode a Python object into a JSON stream.");
@@ -3002,6 +3009,7 @@ dump(PyObject* self, PyObject* args, PyObject* kwargs)
     PyObject* indent = NULL;
     PyObject* defaultFn = NULL;
     int sortKeys = false;
+    bool singleLineArray = false;
     PyObject* numberModeObj = NULL;
     NumberMode numberMode = NM_NAN;
     PyObject* datetimeModeObj = NULL;
@@ -3023,6 +3031,7 @@ dump(PyObject* self, PyObject* args, PyObject* kwargs)
         "indent",
         "default",
         "sort_keys",
+        "single_line_array",
         "number_mode",
         "datetime_mode",
         "uuid_mode",
@@ -3035,7 +3044,7 @@ dump(PyObject* self, PyObject* args, PyObject* kwargs)
         NULL
     };
 
-    if (!PyArg_ParseTupleAndKeywords(args, kwargs, "OO|$ppOOpOOOOOp:rapidjson.dump",
+    if (!PyArg_ParseTupleAndKeywords(args, kwargs, "OO|$ppOOppOOOOOp:rapidjson.dump",
                                      (char**) kwlist,
                                      &value,
                                      &stream,
@@ -3044,6 +3053,7 @@ dump(PyObject* self, PyObject* args, PyObject* kwargs)
                                      &indent,
                                      &defaultFn,
                                      &sortKeys,
+                                     &singleLineArray,
                                      &numberModeObj,
                                      &datetimeModeObj,
                                      &uuidModeObj,
@@ -3163,14 +3173,15 @@ dump(PyObject* self, PyObject* args, PyObject* kwargs)
     return do_stream_encode(value, stream, chunkSize, skipKeys ? true : false,
                             defaultFn, sortKeys ? true : false,
                             ensureAscii ? true : false, prettyPrint ? true : false,
-                            indentCharCount, numberMode, datetimeMode, uuidMode,
+                            indentCharCount, singleLineArray ? true : false, numberMode, datetimeMode, uuidMode,
                             bytesMode);
 }
 
 
 PyDoc_STRVAR(encoder_doc,
              "Encoder(skip_invalid_keys=False, ensure_ascii=True, indent=None,"
-             " sort_keys=False, number_mode=None, datetime_mode=None, uuid_mode=None,"
+             " sort_keys=False, single_line_array=False,"
+             " number_mode=None, datetime_mode=None, uuid_mode=None,"
              " bytes_mode=None)\n\n"
              "Create and return a new Encoder instance.");
 
@@ -3184,6 +3195,8 @@ static PyMemberDef encoder_members[] = {
      T_UINT, offsetof(EncoderObject, indent), READONLY, "indent"},
     {"sort_keys",
      T_BOOL, offsetof(EncoderObject, ensureAscii), READONLY, "sort_keys"},
+    {"single_line_array",
+     T_BOOL, offsetof(EncoderObject, singleLineArray), READONLY, "single_line_array"},
     {"datetime_mode",
      T_UINT, offsetof(EncoderObject, datetimeMode), READONLY, "datetime_mode"},
     {"uuid_mode",
@@ -3258,7 +3271,7 @@ static PyTypeObject Encoder_Type = {
 
 static PyObject*
 do_encode(PyObject* value, bool skipInvalidKeys, PyObject* defaultFn, bool sortKeys,
-          bool ensureAscii, bool prettyPrint, unsigned indent,
+          bool ensureAscii, bool prettyPrint, unsigned indent, bool singleLineArray,
           NumberMode numberMode, DatetimeMode datetimeMode, UuidMode uuidMode,
           BytesMode bytesMode)
 {
@@ -3278,12 +3291,18 @@ do_encode(PyObject* value, bool skipInvalidKeys, PyObject* defaultFn, bool sortK
         GenericStringBuffer<ASCII<> > buf;
         PrettyWriter<GenericStringBuffer<ASCII<> >, UTF8<>, ASCII<> > writer(buf);
         writer.SetIndent(' ', indent);
+        if (singleLineArray) {
+            writer.SetFormatOptions(kFormatSingleLineArray);
+        }
         return DUMPS_INTERNAL_CALL;
     }
     else {
         StringBuffer buf;
         PrettyWriter<StringBuffer> writer(buf);
         writer.SetIndent(' ', indent);
+        if (singleLineArray) {
+            writer.SetFormatOptions(kFormatSingleLineArray);
+        }
         return DUMPS_INTERNAL_CALL;
     }
 }
@@ -3305,7 +3324,7 @@ do_encode(PyObject* value, bool skipInvalidKeys, PyObject* defaultFn, bool sortK
 static PyObject*
 do_stream_encode(PyObject* value, PyObject* stream, size_t chunkSize,
                  bool skipInvalidKeys, PyObject* defaultFn, bool sortKeys,
-                 bool ensureAscii, bool prettyPrint, unsigned indent,
+                 bool ensureAscii, bool prettyPrint, unsigned indent, bool singleLineArray,
                  NumberMode numberMode, DatetimeMode datetimeMode, UuidMode uuidMode,
                  BytesMode bytesMode)
 {
@@ -3324,11 +3343,17 @@ do_stream_encode(PyObject* value, PyObject* stream, size_t chunkSize,
     else if (ensureAscii) {
         PrettyWriter<PyWriteStreamWrapper, UTF8<>, ASCII<> > writer(os);
         writer.SetIndent(' ', indent);
+        if (singleLineArray) {
+            writer.SetFormatOptions(kFormatSingleLineArray);
+        }
         return DUMP_INTERNAL_CALL;
     }
     else {
         PrettyWriter<PyWriteStreamWrapper> writer(os);
         writer.SetIndent(' ', indent);
+        if (singleLineArray) {
+            writer.SetFormatOptions(kFormatSingleLineArray);
+        }
         return DUMP_INTERNAL_CALL;
     }
 }
@@ -3387,12 +3412,14 @@ encoder_call(PyObject* self, PyObject* args, PyObject* kwargs)
         }
         result = do_stream_encode(value, stream, chunkSize, e->skipInvalidKeys, defaultFn,
                                   e->sortKeys, e->ensureAscii, e->prettyPrint, e->indent,
+                                  e->singleLineArray,
                                   e->numberMode, e->datetimeMode, e->uuidMode,
                                   e->bytesMode);
     }
     else {
         result = do_encode(value, e->skipInvalidKeys, defaultFn, e->sortKeys,
                            e->ensureAscii, e->prettyPrint, e->indent,
+                           e->singleLineArray,
                            e->numberMode, e->datetimeMode, e->uuidMode, e->bytesMode);
     }
 
@@ -3411,6 +3438,7 @@ encoder_new(PyTypeObject* type, PyObject* args, PyObject* kwargs)
     int ensureAscii = true;
     PyObject* indent = NULL;
     int sortKeys = false;
+    bool singleLineArray = false;
     PyObject* numberModeObj = NULL;
     NumberMode numberMode = NM_NAN;
     PyObject* datetimeModeObj = NULL;
@@ -3427,6 +3455,7 @@ encoder_new(PyTypeObject* type, PyObject* args, PyObject* kwargs)
         "ensure_ascii",
         "indent",
         "sort_keys",
+        "single_line_array",
         "number_mode",
         "datetime_mode",
         "uuid_mode",
@@ -3434,12 +3463,13 @@ encoder_new(PyTypeObject* type, PyObject* args, PyObject* kwargs)
         NULL
     };
 
-    if (!PyArg_ParseTupleAndKeywords(args, kwargs, "|ppOpOOOO:Encoder",
+    if (!PyArg_ParseTupleAndKeywords(args, kwargs, "|ppOppOOOO:Encoder",
                                      (char**) kwlist,
                                      &skipInvalidKeys,
                                      &ensureAscii,
                                      &indent,
                                      &sortKeys,
+                                     &singleLineArray,
                                      &numberModeObj,
                                      &datetimeModeObj,
                                      &uuidModeObj,
@@ -3530,6 +3560,7 @@ encoder_new(PyTypeObject* type, PyObject* args, PyObject* kwargs)
     e->prettyPrint = prettyPrint;
     e->indent = indentCharCount;
     e->sortKeys = sortKeys ? true : false;
+    e->singleLineArray = singleLineArray ? true : false;
     e->datetimeMode = datetimeMode;
     e->uuidMode = uuidMode;
     e->numberMode = numberMode;

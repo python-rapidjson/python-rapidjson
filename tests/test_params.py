@@ -180,6 +180,24 @@ def test_indent(dumps):
 
 
 @pytest.mark.unit
+def test_single_line_array(dumps):
+    o = {"a": 1, "b": [2, 3, 4]}
+    expected1 = '{\n    "a": 1,\n    "b": [2, 3, 4]\n}'
+    expected2 = '{\n    "b": [2, 3, 4],\n    "a": 1\n}'
+    expected = (
+        expected1,
+        expected2)
+
+    assert dumps(o, indent=4, single_line_array=True) in expected
+
+    with pytest.raises(TypeError):
+        dumps(o, indent="\t")
+
+    with pytest.raises(TypeError):
+        dumps(o, indent=-1)
+
+
+@pytest.mark.unit
 def test_sort_keys(dumps):
     o = {"a": 1, "z": 2, "b": 3}
     expected0 = '{\n"a": 1,\n"b": 3,\n"z": 2\n}'
