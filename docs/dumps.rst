@@ -16,11 +16,13 @@
    from rapidjson import (dumps, loads, BM_NONE, BM_UTF8, DM_NONE, DM_ISO8601,
                           DM_UNIX_TIME, DM_ONLY_SECONDS, DM_IGNORE_TZ, DM_NAIVE_IS_UTC,
                           DM_SHIFT_TO_UTC, UM_NONE, UM_CANONICAL, UM_HEX, NM_NATIVE,
-                          NM_DECIMAL, NM_NAN, PM_NONE, PM_COMMENTS, PM_TRAILING_COMMAS)
+                          NM_DECIMAL, NM_NAN, PM_NONE, PM_COMMENTS, PM_TRAILING_COMMAS,
+                          WM_COMPACT, WM_PRETTY, WM_SINGLE_LINE_ARRAY)
 
-.. function:: dumps(obj, *, skipkeys=False, ensure_ascii=True, indent=None, \
-                    default=None, sort_keys=False, number_mode=None, datetime_mode=None, \
-                    uuid_mode=None, bytes_mode=BM_UTF8, allow_nan=True)
+.. function:: dumps(obj, *, skipkeys=False, ensure_ascii=True, write_mode=WM_COMPACT, \
+                    indent=4, default=None, sort_keys=False, number_mode=None, \
+                    datetime_mode=None, uuid_mode=None, bytes_mode=BM_UTF8, \
+                    allow_nan=True)
 
    Encode given Python `obj` instance into a ``JSON`` string.
 
@@ -28,6 +30,7 @@
    :param bool skipkeys: whether invalid :class:`dict` keys will be skipped
    :param bool ensure_ascii: whether the output should contain only ASCII
                              characters
+   :param int write_mode: enable particular pretty print behaviors
    :param int indent: indentation width to produce pretty printed JSON
    :param callable default: a function that gets called for objects that can't
                             otherwise be serialized
@@ -75,18 +78,57 @@
       '"The symbol for the Euro currency is €"'
 
 
-   .. _pretty-print:
-   .. rubric:: `indent`
+   .. _write-mode:
+   .. rubric:: `write_mode`
 
-   When `indent` is ``None`` (the default), ``python-rapidjson`` produces the most compact
-   JSON representation. By setting `indent` to 0 each array item and each dictionary value
-   will be followed by a newline. A positive integer means that each *level* will be
-   indented by that many spaces:
+   The `write_mode` controls how ``python-rapidjson`` emits JSON: by default it is
+   :data:`WM_COMPACT`, that produces the most compact JSON representation:
 
    .. code-block:: pycon
 
       >>> dumps([1, 2, {'three': 3, 'four': 4}])
       '[1,2,{"four":4,"three":3}]'
+
+   With :data:`WM_PRETTY` it will use ``RapidJSON``\ 's ``PrettyWriter``, with a default
+   `indent` (see below) of four spaces:
+
+   .. code-block:: pycon
+
+      >>> print(dumps([1, 2, {'three': 3, 'four': 4}], write_mode=WM_PRETTY))
+      [
+          1,
+          2,
+          {
+              "four": 4,
+              "three": 3
+          }
+      ]
+
+   With :data:`WM_SINGLE_LINE_ARRAY` arrays will be kept on a single line:
+
+   .. code-block:: pycon
+
+      >>> print(dumps([1, 2, 'three', [4, 5]], write_mode=WM_SINGLE_LINE_ARRAY))
+      [1, 2, 'three', [4, 5]]
+      >>> print(dumps([1, 2, {'three': 3, 'four': 4}], write_mode=WM_SINGLE_LINE_ARRAY))
+      [1, 2, {
+              "three": 3,
+              "four": 4
+          }]
+
+   .. rubric:: `indent`
+
+   The `indent` parameter specifies how many spaces will be used to indent nested
+   structures, when the `write_mode` above is not :data:`WM_COMPACT`, and it defaults
+   to 4. Specifying a value different from ``None`` automatically sets `write_mode` to
+   :data:`WM_PRETTY`, if not explicited.
+
+   By setting `indent` to 0 each array item (when `write_mode` is not
+   :data:`WM_SINGLE_LINE_MODE`) and each dictionary value will be followed by a newline. A
+   positive integer means that each *level* will be indented by that many spaces:
+
+   .. code-block:: pycon
+
       >>> print(dumps([1, 2, {'three': 3, 'four': 4}], indent=0))
       [
       1,

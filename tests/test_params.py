@@ -3,7 +3,7 @@
 # :Author:    Ken Robbins <ken@kenrobbins.com>
 # :License:   MIT License
 # :Copyright: © 2015 Ken Robbins
-# :Copyright: © 2015, 2016, 2017, 2018 Lele Gaifax
+# :Copyright: © 2015, 2016, 2017, 2018, 2019 Lele Gaifax
 #
 
 from calendar import timegm
@@ -177,6 +177,25 @@ def test_indent(dumps):
 
     with pytest.raises(TypeError):
         dumps(o, indent=-1)
+
+
+@pytest.mark.unit
+def test_write_mode(dumps):
+    o = {"a": 1, "b": [2, 3, 4]}
+    expected0 = '{"a":1,"b":[2,3,4]}'
+    expected1 = '{\n    "a": 1,\n    "b": [2, 3, 4]\n}'
+    expected2 = '{\n    "b": [2, 3, 4],\n    "a": 1\n}'
+    expected = (
+        expected1,
+        expected2)
+
+    assert dumps(o, write_mode=rj.WM_COMPACT) == expected0
+    assert dumps(o, indent=0, write_mode=rj.WM_COMPACT) == expected0
+    assert dumps(o, write_mode=rj.WM_SINGLE_LINE_ARRAY) in expected
+    assert dumps(o, write_mode=rj.WM_PRETTY|rj.WM_SINGLE_LINE_ARRAY) in expected
+
+    with pytest.raises(ValueError):
+        dumps(o, write_mode=4)
 
 
 @pytest.mark.unit

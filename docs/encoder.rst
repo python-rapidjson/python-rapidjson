@@ -16,10 +16,11 @@
    from rapidjson import (Decoder, Encoder, BM_NONE, BM_UTF8, DM_NONE, DM_ISO8601,
                           DM_UNIX_TIME, DM_ONLY_SECONDS, DM_IGNORE_TZ, DM_NAIVE_IS_UTC,
                           DM_SHIFT_TO_UTC, UM_NONE, UM_CANONICAL, UM_HEX, NM_NATIVE,
-                          NM_DECIMAL, NM_NAN, PM_NONE, PM_COMMENTS, PM_TRAILING_COMMAS)
+                          NM_DECIMAL, NM_NAN, PM_NONE, PM_COMMENTS, PM_TRAILING_COMMAS,
+                          WM_COMPACT, WM_PRETTY, WM_SINGLE_LINE_ARRAY)
 
-.. class:: Encoder(skip_invalid_keys=False, ensure_ascii=True, indent=None, \
-                   sort_keys=False, number_mode=None, datetime_mode=None, \
+.. class:: Encoder(skip_invalid_keys=False, ensure_ascii=True, write_mode=WM_COMPACT, \
+                   indent=4, sort_keys=False, number_mode=None, datetime_mode=None, \
                    uuid_mode=None, bytes_mode=BM_UTF8)
 
    Class-based :func:`dumps`\ -like functionality.
@@ -28,8 +29,8 @@
                                   <skip-invalid-keys>`
    :param bool ensure_ascii: whether the output should contain :ref:`only ASCII
                              characters <ensure-ascii>`
-   :param int indent: indentation width to produce :ref:`pretty printed JSON
-                      <pretty-print>`
+   :param int write_mode: enable particular :ref:`pretty print <write-mode>` behaviors
+   :param int indent: indentation width when `write_mode` is not :data:`WM_COMPACT`
    :param bool sort_keys: whether dictionary keys should be :ref:`sorted
                           alphabetically <sort-keys>`
    :param int number_mode: enable particular :ref:`behaviors in handling numbers

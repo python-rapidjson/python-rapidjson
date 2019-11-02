@@ -16,9 +16,10 @@
    import io
    from rapidjson import dump, dumps
 
-.. function:: dump(obj, stream, *, skipkeys=False, ensure_ascii=True, indent=None, \
-                   default=None, sort_keys=False, number_mode=None, datetime_mode=None, \
-                   uuid_mode=None, bytes_mode=BM_UTF8, chunk_size=65536, allow_nan=True)
+.. function:: dump(obj, stream, *, skipkeys=False, ensure_ascii=True, \
+                   write_mode=WM_COMPACT, indent=4, default=None, sort_keys=False, \
+                   number_mode=None, datetime_mode=None, uuid_mode=None, \
+                   bytes_mode=BM_UTF8, chunk_size=65536, allow_nan=True)
 
    Encode given Python `obj` instance into a ``JSON`` stream.
 
@@ -27,6 +28,7 @@
    :param bool skipkeys: whether skip invalid :class:`dict` keys
    :param bool ensure_ascii: whether the output should contain only ASCII
                              characters
+   :param int write_mode: enable particular pretty print behaviors
    :param int indent: indentation width to produce pretty printed JSON
    :param callable default: a function that gets called for objects that can't
                             otherwise be serialized
