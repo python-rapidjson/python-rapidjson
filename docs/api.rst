@@ -176,6 +176,24 @@
    error location in the (invalid) document.
 
 
+.. rubric:: `write_mode` related constants
+
+.. data:: WM_COMPACT
+
+   The default dump mode, without any extra whitespace.
+
+.. data:: WM_PRETTY
+
+   This selects the RapidJSON ``PrettyWriter``, to produce more readable ``JSON``: each
+   array's item and object's key will be preceded by a newline, and nested structures will
+   be indented.
+
+.. data:: WM_SINGLE_LINE_ARRAY
+
+   This tells the ``PrettyWriter`` to emit arrays on a single line, instead of separating
+   items with a newline.
+
+
 .. _ISO 8601: https://en.wikipedia.org/wiki/ISO_8601
 .. _RapidJSON: http://rapidjson.org/
 .. _UTC: https://en.wikipedia.org/wiki/Coordinated_Universal_Time
