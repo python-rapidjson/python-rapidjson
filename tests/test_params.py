@@ -182,7 +182,7 @@ def test_indent(dumps):
 @pytest.mark.unit
 def test_write_mode(dumps):
     o = {"a": 1, "b": [2, 3, 4]}
-    expected_compact = ('{"a":1,"b":[2,3,4]}', {"b":[2,3,4],"a":1})
+    expected_compact = ('{"a":1,"b":[2,3,4]}', '{"b":[2,3,4],"a":1}')
     expected_pretty = ('{\n    "a": 1,\n    "b": [2, 3, 4]\n}',
                        '{\n    "b": [2, 3, 4],\n    "a": 1\n}')
 
