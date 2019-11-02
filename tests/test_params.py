@@ -182,17 +182,14 @@ def test_indent(dumps):
 @pytest.mark.unit
 def test_write_mode(dumps):
     o = {"a": 1, "b": [2, 3, 4]}
-    expected0 = '{"a":1,"b":[2,3,4]}'
-    expected1 = '{\n    "a": 1,\n    "b": [2, 3, 4]\n}'
-    expected2 = '{\n    "b": [2, 3, 4],\n    "a": 1\n}'
-    expected = (
-        expected1,
-        expected2)
+    expected_compact = ('{"a":1,"b":[2,3,4]}', {"b":[2,3,4],"a":1})
+    expected_pretty = ('{\n    "a": 1,\n    "b": [2, 3, 4]\n}',
+                       '{\n    "b": [2, 3, 4],\n    "a": 1\n}')
 
-    assert dumps(o, write_mode=rj.WM_COMPACT) == expected0
-    assert dumps(o, indent=0, write_mode=rj.WM_COMPACT) == expected0
-    assert dumps(o, write_mode=rj.WM_SINGLE_LINE_ARRAY) in expected
-    assert dumps(o, write_mode=rj.WM_PRETTY|rj.WM_SINGLE_LINE_ARRAY) in expected
+    assert dumps(o, write_mode=rj.WM_COMPACT) in expected_compact
+    assert dumps(o, indent=0, write_mode=rj.WM_COMPACT) in expected_compact
+    assert dumps(o, write_mode=rj.WM_SINGLE_LINE_ARRAY) in expected_pretty
+    assert dumps(o, write_mode=rj.WM_PRETTY|rj.WM_SINGLE_LINE_ARRAY) in expected_pretty
 
     with pytest.raises(ValueError):
         dumps(o, write_mode=4)
