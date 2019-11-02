@@ -2267,11 +2267,11 @@ dumps_internal(
                 writer->Uint64(ui);
             }
         } else {
-            // Mimic stdlib json: subclasses of int may override __str__, but we still
+            // Mimic stdlib json: subclasses of int may override __repr__, but we still
             // want to encode them as integers in JSON; one example within the standard
             // library is IntEnum
 
-            PyObject* intStrObj = PyLong_Type.tp_str(object);
+            PyObject* intStrObj = PyLong_Type.tp_repr(object);
             if (intStrObj == NULL)
                 return false;
 
