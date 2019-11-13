@@ -1,6 +1,22 @@
 Changes
 -------
 
+0.9.0 (unreleased)
+~~~~~~~~~~~~~~~~~~
+
+* Produce Python 3.8 wheels
+
+* Compatibility fix for Python 3.8 (`issue #125`__)
+
+  __ https://github.com/python-rapidjson/python-rapidjson/issues/125
+
+* New dump option ``write_mode``, supporting RapidJSON's ``kFormatSingleLineArray`` option
+  (`issue #123`__), thanks to Nguyễn Hồng Quân for the initial implementation (`PR #124`__)
+
+  __ https://github.com/python-rapidjson/python-rapidjson/issues/123
+  __ https://github.com/python-rapidjson/python-rapidjson/pull/124
+
+
 0.8.0 (2019-08-09)
 ~~~~~~~~~~~~~~~~~~
 
