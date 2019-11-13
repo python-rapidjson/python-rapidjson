@@ -1,6 +1,14 @@
 Changes
 -------
 
+0.9.1 (unreleased)
+~~~~~~~~~~~~~~~~~~
+
+* Fix memory leak in case of failed validation (`issue 126`__)
+
+  __ https://github.com/python-rapidjson/python-rapidjson/issues/126
+
+
 0.9.0 (2019-11-13)
 ~~~~~~~~~~~~~~~~~~
 
