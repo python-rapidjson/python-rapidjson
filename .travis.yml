@@ -5,7 +5,7 @@
 # :Copyright: © 2017, 2018, 2019 Lele Gaifax
 #
 
-# Here we execute the Python 3.6 tests; Python 3.4 and 3.5 tests are run by
+# Here we execute the Python 3.6 tests; Python 3.5, 3.7 and 3.8 tests are run by
 # cibuildwheel, inside the manylinux1 Docker image.
 #
 # We also run tests for memory leaks (which require a debug build of python)
