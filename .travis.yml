@@ -22,7 +22,7 @@ matrix:
       services:
         - docker
     - language: python
-      python: "3.5"
+      python: "3.6"
       env: RUN_DEBUG_PYTHON=true
     - os: osx
       osx_image: xcode8.3
@@ -39,8 +39,8 @@ install:
   - if [ $TRAVIS_OS_NAME = osx ]; then brew upgrade python; fi
   - |
     if [ $RUN_DEBUG_PYTHON = true ]; then
-      sudo apt-get install python3.5-dbg
-      virtualenv -p python3.5-dbg /tmp/env
+      sudo apt-get install python3.6-dbg
+      virtualenv -p python3.6-dbg /tmp/env
       . /tmp/env/bin/activate
     fi
   - pip3 install -r requirements-test.txt
