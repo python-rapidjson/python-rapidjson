@@ -3723,9 +3723,11 @@ static PyObject* validator_call(PyObject* self, PyObject* args, PyObject* kwargs
         validator.GetInvalidDocumentPointer().StringifyUriFragment(dptr);
         Py_END_ALLOW_THREADS
 
-        PyErr_SetObject(validation_error,
-                        Py_BuildValue("sss", validator.GetInvalidSchemaKeyword(),
-                                      sptr.GetString(), dptr.GetString()));
+        PyObject* error = Py_BuildValue("sss", validator.GetInvalidSchemaKeyword(),
+                                        sptr.GetString(), dptr.GetString());
+        PyErr_SetObject(validation_error, error);
+
+        Py_XDECREF(error);
         sptr.Clear();
         dptr.Clear();
 
