@@ -1,7 +1,7 @@
 Changes
 -------
 
-0.9.0 (unreleased)
+0.9.0 (2019-11-13)
 ~~~~~~~~~~~~~~~~~~
 
 * Produce Python 3.8 wheels
