@@ -1,7 +1,7 @@
 Changes
 -------
 
-0.9.1 (unreleased)
+0.9.1 (2019-11-13)
 ~~~~~~~~~~~~~~~~~~
 
 * Fix memory leak in case of failed validation (`issue 126`__)
