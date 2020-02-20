@@ -35,7 +35,7 @@ def default(obj):
     return {'foo': obj.foo}
 
 
-# Empirical tollerance used to test the refcount growing
+# Empirical tolerance used to test the refcount growing
 THRESHOLD = 7
 
 
