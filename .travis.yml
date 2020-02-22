@@ -12,7 +12,7 @@
 # using python3.5. Specifically we install python3.5-dbg, the only python3
 # runtime with debug support present on the Ubuntu Xenial.
 
-dist: xenial
+dist: bionic
 
 matrix:
   include:
@@ -22,7 +22,7 @@ matrix:
       services:
         - docker
     - language: python
-      python: "3.5"
+      python: "3.6"
       env: RUN_DEBUG_PYTHON=true
     - os: osx
       python: "3.8"
@@ -38,8 +38,8 @@ env:
 install:
   - |
     if [ $RUN_DEBUG_PYTHON = true ]; then
-      sudo apt-get install python3.5-dbg
-      virtualenv -p python3.5-dbg /tmp/env
+      sudo apt-get install python3-dbg
+      virtualenv -p python3-dbg /tmp/env
       . /tmp/env/bin/activate
     fi
   - pip3 install -r requirements-test.txt
