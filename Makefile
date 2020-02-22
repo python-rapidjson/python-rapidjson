@@ -73,7 +73,7 @@ help::
 
 .PHONY: benchmarks
 benchmarks: build
-	$(PYTEST) benchmarks/
+	PYTHONPATH=. $(PYTEST) benchmarks/
 
 help::
 	@printf "benchmarks-other\n\trun the benchmarks against other engines\n"
@@ -88,7 +88,7 @@ help::
 .PHONY: benchmarks-tables
 benchmarks-tables: PYTEST_OPTIONS = --compare-other-engines --benchmark-json=comparison.json
 benchmarks-tables: benchmarks
-	$(PYTHON) benchmarks/tablize.py | tee docs/benchmarks-tables.rst
+	PYTHONPATH=. $(PYTHON) benchmarks/tablize.py | tee docs/benchmarks-tables.rst
 
 include Makefile.virtualenv
 include Makefile.release
