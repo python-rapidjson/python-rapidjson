@@ -95,7 +95,6 @@ def dumps_and_loads(benchmarks):
                   'rapidjson_c',
                   'rapidjson_nn_f',
                   'rapidjson_nn_c',
-                  'ujson',
                   'simplejson',
                   'stdlib json',
                   'yajl')
@@ -103,15 +102,13 @@ def dumps_and_loads(benchmarks):
                  r'``Encoder()``\ [2]_',
                  r'``dumps(n)``\ [3]_',
                  r'``Encoder(n)``\ [4]_',
-                 r'ujson\ [5]_',
-                 r'simplejson\ [6]_',
-                 r'stdlib\ [7]_',
-                 r'yajl\ [8]_')
-    d_headers = (r'``loads()``\ [9]_',
-                 r'``Decoder()``\ [10]_',
-                 r'``loads(n)``\ [11]_',
-                 r'``Decoder(n)``\ [12]_',
-                 r'ujson',
+                 r'simplejson\ [5]_',
+                 r'stdlib\ [6]_',
+                 r'yajl\ [7]_')
+    d_headers = (r'``loads()``\ [8]_',
+                 r'``Decoder()``\ [9]_',
+                 r'``loads(n)``\ [10]_',
+                 r'``Decoder(n)``\ [11]_',
                  r'simplejson',
                  r'stdlib',
                  r'yajl')
@@ -123,14 +120,13 @@ def dumps_and_loads(benchmarks):
         '.. [2] ``rapidjson.Encoder()``',
         '.. [3] ``rapidjson.dumps(number_mode=NM_NATIVE)``',
         '.. [4] ``rapidjson.Encoder(number_mode=NM_NATIVE)``',
-        '.. [5] `ujson 1.35 <https://pypi.org/pypi/ujson/1.35>`__',
-        '.. [6] `simplejson 3.16.0 <https://pypi.org/pypi/simplejson/3.16.0>`__',
-        '.. [7] Python %d.%d.%d standard library ``json``' % sys.version_info[:3],
-        '.. [8] `yajl 0.3.5 <https://pypi.org/pypi/yajl/0.3.5>`__',
-        '.. [9] ``rapidjson.loads()``',
-        '.. [10] ``rapidjson.Decoder()``',
-        '.. [11] ``rapidjson.loads(number_mode=NM_NATIVE)``',
-        '.. [12] ``rapidjson.Decoder(number_mode=NM_NATIVE)``']
+        '.. [5] `simplejson 3.16.0 <https://pypi.org/pypi/simplejson/3.16.0>`__',
+        '.. [6] Python %d.%d.%d standard library ``json``' % sys.version_info[:3],
+        '.. [7] `yajl 0.3.5 <https://pypi.org/pypi/yajl/0.3.5>`__',
+        '.. [8] ``rapidjson.loads()``',
+        '.. [9] ``rapidjson.Decoder()``',
+        '.. [10] ``rapidjson.loads(number_mode=NM_NATIVE)``',
+        '.. [11] ``rapidjson.Decoder(number_mode=NM_NATIVE)``']
 
     comparison = Comparison(contenders, benchmarks)
 
@@ -150,11 +146,10 @@ def dumps_and_loads(benchmarks):
 
 def ascii_vs_utf8(benchmarks):
     engines = (('rapidjson', 'rj'),
-               ('ujson', 'uj'),
                ('simplejson', 'sj'),
                ('stdlib json', 'json'))
     contenders = ['%s %s' % (e[0], k) for e in engines for k in ('ascii', 'utf8')]
-    i = 12
+    i = 11
     s_headers = []
     footnotes = []
     for e in engines:

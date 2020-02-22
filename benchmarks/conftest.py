@@ -115,23 +115,6 @@ else:
                   json.loads),
     ])
 
-try:
-    import ujson
-except ImportError:
-    pass
-else:
-    contenders.append(Contender('ujson',
-                                ujson.dumps,
-                                partial(ujson.loads, precise_float=True)))
-    string_contenders.extend([
-        Contender('ujson utf8',
-                  partial(ujson.dumps, ensure_ascii=False),
-                  ujson.loads),
-        Contender('ujson ascii',
-                  partial(ujson.dumps, ensure_ascii=True),
-                  ujson.loads),
-    ])
-
 
 def pytest_generate_tests(metafunc):
     if 'contender' in metafunc.fixturenames:
