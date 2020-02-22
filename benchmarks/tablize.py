@@ -95,6 +95,8 @@ def dumps_and_loads(benchmarks):
                   'rapidjson_c',
                   'rapidjson_nn_f',
                   'rapidjson_nn_c',
+                  'hyperjson',
+                  'orjson',
                   'simplejson',
                   'stdlib json',
                   'yajl')
@@ -102,13 +104,17 @@ def dumps_and_loads(benchmarks):
                  r'``Encoder()``\ [2]_',
                  r'``dumps(n)``\ [3]_',
                  r'``Encoder(n)``\ [4]_',
-                 r'simplejson\ [5]_',
-                 r'stdlib\ [6]_',
-                 r'yajl\ [7]_')
-    d_headers = (r'``loads()``\ [8]_',
-                 r'``Decoder()``\ [9]_',
-                 r'``loads(n)``\ [10]_',
-                 r'``Decoder(n)``\ [11]_',
+                 r'hyperjson\ [5]_',
+                 r'orjson\ [6]_',
+                 r'simplejson\ [7]_',
+                 r'stdlib\ [8]_',
+                 r'yajl\ [9]_')
+    d_headers = (r'``loads()``\ [10]_',
+                 r'``Decoder()``\ [11]_',
+                 r'``loads(n)``\ [12]_',
+                 r'``Decoder(n)``\ [13]_',
+                 r'hyperjson',
+                 r'orjson',
                  r'simplejson',
                  r'stdlib',
                  r'yajl')
@@ -120,13 +126,15 @@ def dumps_and_loads(benchmarks):
         '.. [2] ``rapidjson.Encoder()``',
         '.. [3] ``rapidjson.dumps(number_mode=NM_NATIVE)``',
         '.. [4] ``rapidjson.Encoder(number_mode=NM_NATIVE)``',
-        '.. [5] `simplejson 3.16.0 <https://pypi.org/pypi/simplejson/3.16.0>`__',
-        '.. [6] Python %d.%d.%d standard library ``json``' % sys.version_info[:3],
-        '.. [7] `yajl 0.3.5 <https://pypi.org/pypi/yajl/0.3.5>`__',
-        '.. [8] ``rapidjson.loads()``',
-        '.. [9] ``rapidjson.Decoder()``',
-        '.. [10] ``rapidjson.loads(number_mode=NM_NATIVE)``',
-        '.. [11] ``rapidjson.Decoder(number_mode=NM_NATIVE)``']
+        '.. [5] `hyperjson 0.2.4 <https://pypi.org/project/hyperjson/0.2.4/>`__',
+        '.. [6] `orjson 2.5.0 <https://pypi.org/project/orjson/2.5.0/>`__',
+        '.. [7] `simplejson 3.16.0 <https://pypi.org/pypi/simplejson/3.16.0>`__',
+        '.. [8] Python %d.%d.%d standard library ``json``' % sys.version_info[:3],
+        '.. [9] `yajl 0.3.5 <https://pypi.org/pypi/yajl/0.3.5>`__',
+        '.. [10] ``rapidjson.loads()``',
+        '.. [11] ``rapidjson.Decoder()``',
+        '.. [12] ``rapidjson.loads(number_mode=NM_NATIVE)``',
+        '.. [13] ``rapidjson.Decoder(number_mode=NM_NATIVE)``']
 
     comparison = Comparison(contenders, benchmarks)
 
@@ -146,10 +154,12 @@ def dumps_and_loads(benchmarks):
 
 def ascii_vs_utf8(benchmarks):
     engines = (('rapidjson', 'rj'),
+               # ('hyperjson', 'hj'),  # lacks ensure_ascii flag
+               # ('orjson', 'oj'),  # lacks ensure_ascii flag
                ('simplejson', 'sj'),
                ('stdlib json', 'json'))
     contenders = ['%s %s' % (e[0], k) for e in engines for k in ('ascii', 'utf8')]
-    i = 11
+    i = 13
     s_headers = []
     footnotes = []
     for e in engines:

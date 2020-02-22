@@ -115,6 +115,24 @@ else:
                   json.loads),
     ])
 
+try:
+    import hyperjson
+except ImportError:
+    pass
+else:
+    contenders.append(Contender('hyperjson',
+                                hyperjson.dumps,
+                                hyperjson.loads))
+
+try:
+    import orjson
+except ImportError:
+    pass
+else:
+    contenders.append(Contender('orjson',
+                                orjson.dumps,
+                                orjson.loads))
+
 
 def pytest_generate_tests(metafunc):
     if 'contender' in metafunc.fixturenames:
