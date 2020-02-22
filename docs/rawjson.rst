@@ -3,14 +3,14 @@
 .. :Author:    Silvio Tomatis <silviot@gmail.com>
 .. :License:   MIT License
 .. :Copyright: © 2018 Silvio Tomatis
-.. :Copyright: © 2018 Lele Gaifax
+.. :Copyright: © 2018, 2020 Lele Gaifax
 ..
 
 ===============
  RawJSON class
 ===============
 
-.. module:: rapidjson
+.. currentmodule:: rapidjson
 
 .. testsetup::
 

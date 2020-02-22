@@ -2,14 +2,14 @@
 .. :Project:   python-rapidjson -- API documentation
 .. :Author:    Lele Gaifax <lele@metapensiero.it>
 .. :License:   MIT License
-.. :Copyright: © 2016, 2017, 2018, 2019 Lele Gaifax
+.. :Copyright: © 2016, 2017, 2018, 2019, 2020 Lele Gaifax
 ..
 
 ===============================
  Exposed functions and symbols
 ===============================
 
-.. module:: rapidjson
+.. currentmodule:: rapidjson
 
 .. toctree::
    :maxdepth: 2

@@ -2,14 +2,14 @@
 .. :Project:   python-rapidjson -- Decoder class documentation
 .. :Author:    Lele Gaifax <lele@metapensiero.it>
 .. :License:   MIT License
-.. :Copyright: © 2017, 2018 Lele Gaifax
+.. :Copyright: © 2017, 2018, 2020 Lele Gaifax
 ..
 
 ===============
  Decoder class
 ===============
 
-.. module:: rapidjson
+.. currentmodule:: rapidjson
 
 .. testsetup::
 

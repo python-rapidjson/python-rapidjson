@@ -2,14 +2,14 @@
 .. :Project:   python-rapidjson -- dumps function documentation
 .. :Author:    Lele Gaifax <lele@metapensiero.it>
 .. :License:   MIT License
-.. :Copyright: © 2016, 2017, 2018, 2019 Lele Gaifax
+.. :Copyright: © 2016, 2017, 2018, 2019, 2020 Lele Gaifax
 ..
 
 ==================
  dumps() function
 ==================
 
-.. module:: rapidjson
+.. currentmodule:: rapidjson
 
 .. testsetup::
 
