@@ -83,7 +83,7 @@ benchmarks-others: PYTEST_OPTIONS = --compare-other-engines
 benchmarks-others: benchmarks
 
 help::
-	@printf "benchmarks-table\n\tproduce a reST table out of benchmarks-other results\n"
+	@printf "benchmarks-tables\n\tproduce a reST table out of benchmarks-other results\n"
 
 .PHONY: benchmarks-tables
 benchmarks-tables: PYTEST_OPTIONS = --compare-other-engines --benchmark-json=comparison.json
