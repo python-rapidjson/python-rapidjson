@@ -2,7 +2,7 @@
 # :Project:   python-rapidjson -- Configuration to build and upload manylinux1 wheels to PyPI
 # :Author:    Lele Gaifax <lele@metapensiero.it>
 # :License:   MIT License
-# :Copyright: © 2017, 2018, 2019 Lele Gaifax
+# :Copyright: © 2017, 2018, 2019, 2020 Lele Gaifax
 #
 
 # Here we execute the Python 3.6 tests; Python 3.5, 3.7 and 3.8 tests are run by
@@ -25,7 +25,7 @@ matrix:
       python: "3.5"
       env: RUN_DEBUG_PYTHON=true
     - os: osx
-      osx_image: xcode8.3
+      python: "3.8"
 
 env:
   global:
@@ -36,7 +36,6 @@ env:
       # Note: TWINE_PASSWORD is set in Travis settings
 
 install:
-  - if [ $TRAVIS_OS_NAME = osx ]; then brew upgrade python; fi
   - |
     if [ $RUN_DEBUG_PYTHON = true ]; then
       sudo apt-get install python3.5-dbg
