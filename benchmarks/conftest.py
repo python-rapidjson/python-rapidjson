@@ -2,7 +2,7 @@
 # :Project:   python-rapidjson -- Benchmarks specific pytest configuration
 # :Author:    Lele Gaifax <lele@metapensiero.it>
 # :License:   MIT License
-# :Copyright: © 2016, 2017, 2018 Lele Gaifax
+# :Copyright: © 2016, 2017, 2018, 2020 Lele Gaifax
 #
 
 from collections import namedtuple
@@ -131,6 +131,24 @@ else:
                   partial(ujson.dumps, ensure_ascii=True),
                   ujson.loads),
     ])
+
+try:
+    import hyperjson
+except ImportError:
+    pass
+else:
+    contenders.append(Contender('hyperjson',
+                                hyperjson.dumps,
+                                hyperjson.loads))
+
+try:
+    import orjson
+except ImportError:
+    pass
+else:
+    contenders.append(Contender('orjson',
+                                orjson.dumps,
+                                orjson.loads))
 
 
 def pytest_generate_tests(metafunc):

@@ -2,7 +2,7 @@
 # :Project:   python-rapidjson -- Development requirements
 # :Author:    Lele Gaifax <lele@metapensiero.it>
 # :License:   MIT License
-# :Copyright: © 2017, 2018, 2019 Lele Gaifax
+# :Copyright: © 2017, 2018, 2019, 2020 Lele Gaifax
 #
 
 -r requirements-test.txt
@@ -16,6 +16,8 @@ twine==1.13.0
 pytest-benchmark==3.2.2
 
 # Keep in sync with benchmarks/tablize.py versions
-simplejson==3.16.0
+hyperjson==0.2.4
+orjson==2.5.0
+simplejson==3.17.0
 ujson==1.35
 yajl==0.3.5
