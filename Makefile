@@ -2,7 +2,7 @@
 # :Project:   python-rapidjson -- Development Makefile
 # :Author:    Lele Gaifax <lele@metapensiero.it>
 # :License:   MIT License
-# :Copyright: © 2017, 2018, 2019 Lele Gaifax
+# :Copyright: © 2017, 2018, 2019, 2020 Lele Gaifax
 #
 
 export TOPDIR := $(CURDIR)
@@ -76,14 +76,14 @@ benchmarks: build
 	$(PYTEST) benchmarks/
 
 help::
-	@printf "benchmarks-other\n\trun the benchmarks against other engines\n"
+	@printf "benchmarks-others\n\trun the benchmarks against other engines\n"
 
 .PHONY: benchmarks-others
 benchmarks-others: PYTEST_OPTIONS = --compare-other-engines
 benchmarks-others: benchmarks
 
 help::
-	@printf "benchmarks-table\n\tproduce a reST table out of benchmarks-other results\n"
+	@printf "benchmarks-tables\n\tproduce a reST table out of benchmarks-others results\n"
 
 .PHONY: benchmarks-tables
 benchmarks-tables: PYTEST_OPTIONS = --compare-other-engines --benchmark-json=comparison.json
