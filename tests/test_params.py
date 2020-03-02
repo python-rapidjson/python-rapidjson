@@ -496,6 +496,13 @@ def test_uuid_and_datetime_mode_together(dumps, loads):
         ('1999-02-03T10:20:30.123456789Z', datetime),
         ('1999-02-03T10:20:30.123456789-01:01', datetime),
         ('1999-02-03T10:20:30.123456789+00:00', datetime),
+        ('1999-02-03T10:20:30.', str),
+        ('1999-02-03T10:20:30.1A', str),
+        ('1999-02-03T10:20:30. ', str),
+        ('1999-02-03T10:20:30.123456789A', str),
+        ('1999-02-03T10:20:30.123456789 ', str),
+        ('1999-02-03T10:20:30.12345+00:00Z ', str),
+        ('1999-02-03T10:20:30.1A34X6+01:00Z', str),
     ])
 def test_datetime_iso8601(value, cls, loads):
     result = loads('"%s"' % value, datetime_mode=rj.DM_ISO8601)

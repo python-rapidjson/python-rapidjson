@@ -1065,10 +1065,12 @@ struct PyHandler {
             usecLength = length - 9;
         }
 
+        if (usecLength > 9) return false;
+
         switch (usecLength) {
-            case 9:
-            case 8:
-            case 7:
+            case 9: if (!isdigit(str[17])) { return false; }
+            case 8: if (!isdigit(str[16])) { return false; }
+            case 7: if (!isdigit(str[15])) { return false; }
             case 6: if (!isdigit(str[14])) { return false; } usecs += digit(14);
             case 5: if (!isdigit(str[13])) { return false; } usecs += digit(13)*10;
             case 4: if (!isdigit(str[12])) { return false; } usecs += digit(12)*100;
