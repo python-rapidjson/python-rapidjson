@@ -1066,6 +1066,9 @@ struct PyHandler {
         }
 
         switch (usecLength) {
+            case 9:
+            case 8:
+            case 7:
             case 6: if (!isdigit(str[14])) { return false; } usecs += digit(14);
             case 5: if (!isdigit(str[13])) { return false; } usecs += digit(13)*10;
             case 4: if (!isdigit(str[12])) { return false; } usecs += digit(12)*100;

@@ -7,7 +7,7 @@
 #
 
 from calendar import timegm
-from datetime import date, datetime, time
+from datetime import date, datetime, time, timezone, timedelta
 import io
 import math
 import uuid
@@ -372,6 +372,27 @@ def test_datetime_values(value, dumps, loads):
     loaded = loads(dumped, datetime_mode=rj.DM_ISO8601)
     assert loaded == value
 
+@pytest.mark.unit
+@pytest.mark.parametrize(
+    'value, expected', [
+        pytest.param('1999-01-03T10:20:30.1', datetime(1999, 1, 3, 10, 20, 30, 100000)),
+        pytest.param('2000-02-03T10:20:30.12', datetime(2000, 2, 3, 10, 20, 30, 120000)),
+        pytest.param('2020-03-03T10:20:30.123', datetime(2020, 3, 3, 10, 20, 30, 123000)),
+        pytest.param('2021-04-03T10:20:30.1234', datetime(2021, 4, 3, 10, 20, 30, 123400)),
+        pytest.param('1999-08-03T10:20:30.12345', datetime(1999, 8, 3, 10, 20, 30, 123450)),
+        pytest.param('1999-09-03T10:20:30.123456', datetime(1999, 9, 3, 10, 20, 30, 123456)),
+        pytest.param('1999-10-03T10:20:30.1234567', datetime(1999, 10, 3, 10, 20, 30, 123456)),
+        pytest.param('1999-11-03T10:20:30.12345678', datetime(1999, 11, 3, 10, 20, 30, 123456)),
+        pytest.param('1999-12-03T10:20:30.123456789', datetime(1999, 12, 3, 10, 20, 30, 123456)),
+        pytest.param('1999-12-03T10:20:30.123456789Z', datetime(1999, 12, 3, 10, 20, 30, 123456, tzinfo=timezone.utc)),
+        pytest.param('1999-12-03T10:20:30.123456789-02:30', datetime(1999, 12, 3, 10, 20, 30, 123456, tzinfo=timezone(timedelta(days=-1, seconds=77400)))),
+        pytest.param('1999-12-03T10:20:30.123456789+02:30', datetime(1999, 12, 3, 10, 20, 30, 123456, tzinfo=timezone(timedelta(seconds=9000)))),
+    ]
+)
+def test_datetime_fractional_values(value, expected, dumps, loads):
+    dumped = dumps(value, datetime_mode=rj.DM_ISO8601)
+    loaded = loads(dumped, datetime_mode=rj.DM_ISO8601)
+    assert loaded == expected
 
 @pytest.mark.unit
 def test_uuid_mode(dumps, loads):
@@ -474,6 +495,7 @@ def test_uuid_and_datetime_mode_together(dumps, loads):
         ('1999-02-03T10:20:30.12345678+20:11', datetime),
         ('1999-02-03T10:20:30.123456789Z', datetime),
         ('1999-02-03T10:20:30.123456789-01:01', datetime),
+        ('1999-02-03T10:20:30.123456789+00:00', datetime),
     ])
 def test_datetime_iso8601(value, cls, loads):
     result = loads('"%s"' % value, datetime_mode=rj.DM_ISO8601)
