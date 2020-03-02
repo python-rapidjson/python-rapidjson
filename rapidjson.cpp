@@ -1025,7 +1025,7 @@ struct PyHandler {
 
         if (hofs > 23 || mofs > 59) return false;
 
-        if (str[8] == '-') tzsign = -1;
+        if (str[0] == '-') tzsign = -1;
         tzoff = tzsign * (hofs * 3600 + mofs * 60);
         return true;
     }
