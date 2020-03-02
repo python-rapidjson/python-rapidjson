@@ -1002,306 +1002,170 @@ struct PyHandler {
 
 #define digit(idx) (str[idx] - '0')
 
-    bool IsIso8601(const char* str, SizeType length,
-                   int& year, int& month, int& day,
-                   int& hours, int& mins, int &secs, int& usecs, int& tzoff) {
-        bool res;
-        int hofs = 0, mofs = 0, tzsign = 1;
+    bool IsIso8601Date(const char* str, int& year, int& month, int& day) {
+      // we've already checked that str is a valid length and that 5 and 8 are '-'
+        if (!isdigit(str[0]) || !isdigit(str[1]) || !isdigit(str[2]) || !isdigit(str[3])
+            || !isdigit(str[5]) || !isdigit(str[6])
+            || !isdigit(str[8]) || !isdigit(str[9])) return false;
 
+        year = digit(0)*1000 + digit(1)*100 + digit(2)*10 + digit(3);
+        month = digit(5)*10 + digit(6);
+        day = digit(8)*10 + digit(9);
+
+        return year > 0 && month <= 12 && day <= days_per_month(year, month);
+    }
+
+    bool IsIso8601Offset(const char* str, int& tzoff) {
+         if (!isdigit(str[1]) || !isdigit(str[2]) || str[3] != ':'
+              || !isdigit(str[4]) || !isdigit(str[5])) return false;
+
+        int hofs = 0, mofs = 0, tzsign = 1;
+        hofs = digit(1)*10 + digit(2);
+        mofs = digit(4)*10 + digit(5);
+
+        if (hofs > 23 || mofs > 59) return false;
+
+        if (str[8] == '-') tzsign = -1;
+        tzoff = tzsign * (hofs * 3600 + mofs * 60);
+        return true;
+    }
+
+    bool IsIso8601Time(const char* str, SizeType length, int& hours, int& mins, int& secs, int& usecs, int& tzoff) {
+      // we've already checked that str is a minimum valid length, but nothing else
+        if (!isdigit(str[0]) || !isdigit(str[1]) || str[2] != ':'
+            || !isdigit(str[3]) || !isdigit(str[4]) || str[5] != ':'
+            || !isdigit(str[6]) || !isdigit(str[7])) return false;
+
+         hours = digit(0)*10 + digit(1);
+         mins = digit(3)*10 + digit(4);
+         secs = digit(6)*10 + digit(7);
+
+        if (hours > 23 || mins > 59 || secs > 59) return false;
+
+        if (length == 8 || (length == 9 && str[8] == 'Z')) {
+         // just time
+            return true;
+        }
+
+
+        if (length == 14 && (str[8] == '-' || str[8] == '+')) {
+            return IsIso8601Offset(&str[8], tzoff);
+        }
+
+      // at this point we need a . AND at least 1 more digit
+        if (length == 9 || str[8] != '.' || !isdigit(str[9])) return false;
+
+        int usecLength;
+        if (str[length - 1] == 'Z') {
+            usecLength = length - 10;
+        } else if (str[length - 3] == ':') {
+            if (!IsIso8601Offset(&str[length - 6], tzoff)) return false;
+            usecLength = length - 15;
+        } else {
+            usecLength = length - 9;
+        }
+
+        switch (usecLength) {
+            case 6: if (!isdigit(str[14])) { return false; } usecs += digit(14);
+            case 5: if (!isdigit(str[13])) { return false; } usecs += digit(13)*10;
+            case 4: if (!isdigit(str[12])) { return false; } usecs += digit(12)*100;
+            case 3: if (!isdigit(str[11])) { return false; } usecs += digit(11)*1000;
+            case 2: if (!isdigit(str[10])) { return false; } usecs += digit(10)*10000;
+            case 1: if (!isdigit(str[9])) { return false; } usecs += digit(9)*100000;
+        }
+
+        return true;
+    }
+
+    bool IsIso8601(const char* str, SizeType length, int& year, int& month, int& day, int& hours, int& mins, int &secs, int& usecs, int& tzoff) {
         year = -1;
         month = day = hours = mins = secs = usecs = tzoff = 0;
 
-        switch(length) {
-        case 8:                     /* 20:02:20 */
-        case 9:                     /* 20:02:20Z */
-        case 12:                    /* 20:02:20.123 */
-        case 13:                    /* 20:02:20.123Z */
-        case 14:                    /* 20:02:20-05:00 */
-        case 15:                    /* 20:02:20.123456 */
-        case 16:                    /* 20:02:20.123456Z */
-        case 18:                    /* 20:02:20.123-05:00 */
-        case 21:                    /* 20:02:20.123456-05:00 */
-            res = (str[2] == ':' && str[5] == ':'
-                   && isdigit(str[0]) && isdigit(str[1])
-                   && isdigit(str[3]) && isdigit(str[4])
-                   && isdigit(str[6]) && isdigit(str[7]));
-            if (res) {
-                hours = digit(0)*10 + digit(1);
-                mins = digit(3)*10 + digit(4);
-                secs = digit(6)*10 + digit(7);
+      // Early exit for values that are clearly not valid (too short or too long)
+        if (length < 8 || length > 35) return false;
 
-                if (length == 9)
-                    res = str[8] == 'Z';
-                else if (length == 14)
-                    res = str[8] == '-' || str[8] == '+';
-                else if (length > 8)
-                    res = str[8] == '.';
-                if (res && (length == 13 || length == 16)) {
-                    res = str[length-1] == 'Z';
-                    length--;
-                }
-                if (res && (length == 14 || length == 18 || length == 21)) {
-                    res = ((str[length-6] == '+' || str[length-6] == '-')
-                           && isdigit(str[length-5])
-                           && isdigit(str[length-4])
-                           && str[length-3] == ':'
-                           && isdigit(str[length-2])
-                           && isdigit(str[length-1]));
-                    if (res) {
-                        hofs = digit(length-5)*10 + digit(length-4);
-                        mofs = digit(length-2)*10 + digit(length-1);
-                        if (str[length-6] == '-')
-                            tzsign = -1;
-                    }
-                    length -= 6;
-                }
-                if (res && length > 9 && length != 14) {
-                    res = isdigit(str[9]) && isdigit(str[10]) && isdigit(str[11]);
-                    if (res && length > 12)
-                        res = isdigit(str[12]) && isdigit(str[13]) && isdigit(str[14]);
-                    if (res) {
-                        if (length == 8 || length == 9 || length == 14)
-                            usecs = 0;
-                        else {
-                            usecs = digit(9) * 100000
-                                + digit(10) * 10000
-                                + digit(11) * 1000;
-                            if (length == 15 || length == 16 || length == 21)
-                                usecs += digit(12) * 100
-                                    + digit(13) * 10
-                                    + digit(14);
-                        }
-                    }
-                }
-            }
-            break;
+        bool isDate = str[4] == '-' && str[7] == '-';
 
-        case 10:                    /* 1999-02-03 */
-        case 19:                    /* 1999-02-03T10:20:30 */
-        case 20:                    /* 1999-02-03T10:20:30Z */
-        case 23:                    /* 1999-02-03T10:20:30.123 */
-        case 24:                    /* 1999-02-03T10:20:30.123Z */
-        case 25:                    /* 1999-02-03T10:20:30-05:00 */
-        case 26:                    /* 1999-02-03T10:20:30.123456 */
-        case 27:                    /* 1999-02-03T10:20:30.123456Z */
-        case 29:                    /* 1999-02-03T10:20:30.123-05:00 */
-        case 32:                    /* 1999-02-03T10:20:30.123456-05:00 */
-            res = (str[4] == '-' && str[7] == '-'
-                   && isdigit(str[0]) && isdigit(str[1])
-                   && isdigit(str[2]) && isdigit(str[3])
-                   && isdigit(str[5]) && isdigit(str[6])
-                   && isdigit(str[8]) && isdigit(str[9]));
-            if (res) {
-                year = digit(0)*1000
-                    + digit(1)*100
-                    + digit(2)*10
-                    + digit(3);
-                month = digit(5)*10 + digit(6);
-                day = digit(8)*10 + digit(9);
-            }
-            if (res && length > 10) {
-                if (str[10] == ' ' || str[10] == 'T') {
-                    res = (str[13] == ':' && str[16] == ':'
-                           && isdigit(str[11]) && isdigit(str[12])
-                           && isdigit(str[14]) && isdigit(str[15])
-                           && isdigit(str[17]) && isdigit(str[18]));
-                    if (res) {
-                        hours = digit(11)*10 + digit(12);
-                        mins = digit(14)*10 + digit(15);
-                        secs = digit(17)*10 + digit(18);
-                        if (length == 25 || length == 29 || length == 32) {
-                            res = ((str[length-6] == '+' || str[length-6] == '-')
-                                   && isdigit(str[length-5])
-                                   && isdigit(str[length-4])
-                                   && str[length-3] == ':'
-                                   && isdigit(str[length-2])
-                                   && isdigit(str[length-1]));
-                            if (res) {
-                                hofs = digit(length-5)*10 + digit(length-4);
-                                mofs = digit(length-2)*10 + digit(length-1);
-                                if (str[length-6] == '-')
-                                    tzsign = -1;
-                            }
-                            length -= 6;
-                        }
-                        if (res && (length == 20
-                                    || length == 24
-                                    || length == 27)) {
-                            res = str[length-1] == 'Z';
-                            length--;
-                        }
-                        if (res && length == 23)
-                            res = (str[19] == '.'
-                                   && isdigit(str[20])
-                                   && isdigit(str[21])
-                                   && isdigit(str[22]));
-                        else if (res && length == 26)
-                            res = (str[19] == '.'
-                                   && isdigit(str[20])
-                                   && isdigit(str[21])
-                                   && isdigit(str[22])
-                                   && isdigit(str[23])
-                                   && isdigit(str[24])
-                                   && isdigit(str[25]));
-                        if (res) {
-                            if (length == 10 || length == 19 || length == 20
-                                || length == 25)
-                                usecs = 0;
-                            else {
-                                usecs = digit(20)*100000
-                                    + digit(21)*10000
-                                    + digit(22)*1000;
-                                if (length == 26 || length == 27 || length == 32)
-                                    usecs += digit(23)*100
-                                        + digit(24)*10
-                                        + digit(25);
-                            }
-                        }
-                    }
-                } else
-                    res = false;
-            }
-            break;
-
-        default:
-            res = false;
-            break;
+        if (!isDate) {
+            return IsIso8601Time(str, length, hours, mins, secs, usecs, tzoff);
         }
 
-        if (res && (hours > 23 || mins > 59 || secs > 59
-                    || year == 0 || month > 12
-                    || (month > 0 && day > days_per_month(year, month))
-                    || hofs > 23 || mofs > 59))
-            res = false;
-        else {
-            tzoff = tzsign * (hofs * 3600 + mofs * 60);
+        if (length == 10) {
+            // if it looks like just a date, validate just the date
+            return IsIso8601Date(str, year, month, day);
         }
-
-        return res;
+        if (length > 18 && (str[10] == 'T' || str[10] == ' ')) {
+            // if it looks like a date + time, validate date + time
+            return IsIso8601Date(str, year, month, day) && IsIso8601Time(&str[11], length - 11, hours, mins, secs, usecs, tzoff);
+        }
+        // can't be valid
+        return false;
     }
 
-    bool HandleIso8601(const char* str, SizeType length,
-                       int year, int month, int day,
-                       int hours, int mins, int secs, int usecs, int tzoff) {
+    bool HandleIso8601(const char* str, SizeType length, int year, int month, int day, int hours, int mins, int secs, int usecs, int tzoff) {
+        // we treat year 0 as invalid and thus the default when there is no date
+        bool hasDate = year > 0;
+
+        if (length == 10 && hasDate) {
+            // just a date, handle quickly
+            return Handle(PyDate_FromDate(year, month, day));
+        }
+
+        bool isZ = str[length - 1] == 'Z';
+        bool hasOffset = !isZ && (str[length - 6] == '-' || str[length - 6] == '+');
+
         PyObject* value;
 
-        switch(length) {
-        case 8:                     /* 20:02:20 */
-        case 9:                     /* 20:02:20Z */
-        case 12:                    /* 20:02:20.123 */
-        case 13:                    /* 20:02:20.123Z */
-        case 14:                    /* 20:02:20-05:00 */
-        case 15:                    /* 20:02:20.123456 */
-        case 16:                    /* 20:02:20.123456Z */
-        case 18:                    /* 20:02:20.123-05:00 */
-        case 21:                    /* 20:02:20.123456-05:00 */
-            if ((length == 8 && datetimeMode & DM_NAIVE_IS_UTC)
-                || length == 9 || length == 13 || length == 16)
-                value = PyDateTimeAPI->Time_FromTime(
-                    hours, mins, secs, usecs, timezone_utc,
-                    PyDateTimeAPI->TimeType);
-            else if (datetimeMode & DM_IGNORE_TZ
-                     || length == 8 || length == 12 || length == 15)
+        if ((datetimeMode & DM_NAIVE_IS_UTC || isZ) && !hasOffset) {
+            if (hasDate) {
+                value = PyDateTimeAPI->DateTime_FromDateAndTime(year, month, day, hours, mins, secs, usecs, timezone_utc, PyDateTimeAPI->DateTimeType);
+            } else {
+                value = PyDateTimeAPI->Time_FromTime(hours, mins, secs, usecs, timezone_utc, PyDateTimeAPI->TimeType);
+            }
+        } else if (datetimeMode & DM_IGNORE_TZ || (!hasOffset && !isZ)) {
+            if (hasDate) {
+                value = PyDateTime_FromDateAndTime(year, month, day, hours, mins, secs, usecs);
+            } else {
                 value = PyTime_FromTime(hours, mins, secs, usecs);
-            else /* if (length == 14 || length == 18 || length == 21) */ {
-                if (datetimeMode & DM_SHIFT_TO_UTC && tzoff) {
-                    PyErr_Format(PyExc_ValueError,
-                                 "Time literal cannot be shifted to UTC: %s", str);
+            }
+        } else if (!hasDate && datetimeMode & DM_SHIFT_TO_UTC && tzoff) {
+            PyErr_Format(PyExc_ValueError, "Time literal cannot be shifted to UTC: %s", str);
+            value = NULL;
+        } else if (!hasDate && datetimeMode & DM_SHIFT_TO_UTC) {
+            value = PyDateTimeAPI->Time_FromTime(hours, mins, secs, usecs, timezone_utc, PyDateTimeAPI->TimeType);
+        } else {
+            PyObject* offset = PyDateTimeAPI->Delta_FromDelta(0, tzoff, 0, 1, PyDateTimeAPI->DeltaType);
+            if (offset == NULL) {
+                value = NULL;
+            } else {
+                PyObject* tz = PyObject_CallFunctionObjArgs(timezone_type, offset, NULL);
+                Py_DECREF(offset);
+                if (tz == NULL) {
                     value = NULL;
                 } else {
-                    if (datetimeMode & DM_SHIFT_TO_UTC) {
-                        value = PyDateTimeAPI->Time_FromTime(
-                            hours, mins, secs, usecs, timezone_utc,
-                            PyDateTimeAPI->TimeType);
-                    } else {
-                        PyObject* offset = PyDateTimeAPI->Delta_FromDelta(
-                            0, tzoff, 0, 1, PyDateTimeAPI->DeltaType);
-                        if (offset == NULL)
-                            value = NULL;
-                        else {
-                            PyObject* tz = PyObject_CallFunctionObjArgs(
-                                timezone_type, offset, NULL);
-                            Py_DECREF(offset);
-                            if (tz == NULL)
+                    if (hasDate) {
+                        value = PyDateTimeAPI->DateTime_FromDateAndTime(year, month, day, hours, mins, secs, usecs, tz, PyDateTimeAPI->DateTimeType);
+                        if (value != NULL && datetimeMode & DM_SHIFT_TO_UTC) {
+                            PyObject* asUTC = PyObject_CallMethodObjArgs(value, astimezone_name, timezone_utc, NULL);
+                            Py_DECREF(value);
+                            if (asUTC == NULL) {
                                 value = NULL;
-                            else {
-                                value = PyDateTimeAPI->Time_FromTime(
-                                    hours, mins, secs, usecs, tz,
-                                    PyDateTimeAPI->TimeType);
-                                Py_DECREF(tz);
+                            } else {
+                                value = asUTC;
                             }
                         }
+                    } else {
+                        value = PyDateTimeAPI->Time_FromTime(hours, mins, secs, usecs, tz, PyDateTimeAPI->TimeType);
                     }
+                    Py_DECREF(tz);
                 }
             }
-            break;
-
-        case 10:                    /* 1999-02-03 */
-            value = PyDate_FromDate(year, month, day);
-            break;
-
-        case 19:                    /* 1999-02-03T10:20:30 */
-        case 20:                    /* 1999-02-03T10:20:30Z */
-        case 23:                    /* 1999-02-03T10:20:30.123 */
-        case 24:                    /* 1999-02-03T10:20:30.123Z */
-        case 25:                    /* 1999-02-03T10:20:30-05:00 */
-        case 26:                    /* 1999-02-03T10:20:30.123456 */
-        case 27:                    /* 1999-02-03T10:20:30.123456Z */
-        case 29:                    /* 1999-02-03T10:20:30.123-05:00 */
-        case 32:                    /* 1999-02-03T10:20:30.123456-05:00 */
-            if ((length == 19 && datetimeMode & DM_NAIVE_IS_UTC)
-                || length == 20 || length == 24 || length == 27)
-                value = PyDateTimeAPI->DateTime_FromDateAndTime(
-                    year, month, day, hours, mins, secs, usecs,
-                    timezone_utc, PyDateTimeAPI->DateTimeType);
-            else if (datetimeMode & DM_IGNORE_TZ
-                     || length == 19 || length == 23 || length == 26)
-                value = PyDateTime_FromDateAndTime(
-                    year, month, day, hours, mins, secs, usecs);
-            else /* if (length == 25 || length == 29 || length == 32) */ {
-                PyObject* offset = PyDateTimeAPI->Delta_FromDelta(
-                    0, tzoff, 0, 1, PyDateTimeAPI->DeltaType);
-                if (offset == NULL)
-                    value = NULL;
-                else {
-                    PyObject* tz = PyObject_CallFunctionObjArgs(
-                        timezone_type, offset, NULL);
-                    Py_DECREF(offset);
-                    if (tz == NULL)
-                        value = NULL;
-                    else {
-                        value = PyDateTimeAPI->DateTime_FromDateAndTime(
-                            year, month, day, hours, mins, secs, usecs,
-                            tz, PyDateTimeAPI->DateTimeType);
-                        Py_DECREF(tz);
-
-                        if (value != NULL && datetimeMode & DM_SHIFT_TO_UTC) {
-                            PyObject* asUTC = PyObject_CallMethodObjArgs(
-                                value, astimezone_name, timezone_utc, NULL);
-
-                            Py_DECREF(value);
-
-                            if (asUTC == NULL)
-                                value = NULL;
-                            else
-                                value = asUTC;
-                        }
-                    }
-                }
-            }
-            break;
-
-        default:
-            PyErr_SetString(PyExc_ValueError,
-                            "not a datetime, nor a date, nor a time");
-            value = NULL;
-            break;
         }
 
         if (value == NULL)
             return false;
-        else
-            return Handle(value);
+
+        return Handle(value);
     }
 
 #undef digit
