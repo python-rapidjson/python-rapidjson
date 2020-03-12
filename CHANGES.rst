@@ -1,6 +1,15 @@
 Changes
 -------
 
+0.9.2 (unreleased)
+~~~~~~~~~~~~~~~~~~
+
+* Handle wider precision range in timestamps fractional seconds (`PR 133`__), thanks to
+  Karl Seguin
+
+  __ https://github.com/python-rapidjson/python-rapidjson/pull/133
+
+
 0.9.1 (2019-11-13)
 ~~~~~~~~~~~~~~~~~~
 
