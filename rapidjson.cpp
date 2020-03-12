@@ -3684,8 +3684,7 @@ static PyObject* validator_new(PyTypeObject* type, PyObject* args, PyObject* kwa
 ////////////
 
 
-static PyMethodDef
-functions[] = {
+static PyMethodDef functions[] = {
     {"loads", (PyCFunction) loads, METH_VARARGS | METH_KEYWORDS,
      loads_docstring},
     {"load", (PyCFunction) load, METH_VARARGS | METH_KEYWORDS,
@@ -3698,162 +3697,134 @@ functions[] = {
 };
 
 
-static void
-module_free(void* m)
+static int
+module_exec(PyObject* m)
 {
-    Py_CLEAR(decimal_type);
-    Py_CLEAR(timezone_type);
-    Py_CLEAR(timezone_utc);
-    Py_CLEAR(uuid_type);
-    Py_CLEAR(validation_error);
-    Py_CLEAR(decode_error);
-}
-
-
-static PyModuleDef module = {
-    PyModuleDef_HEAD_INIT,      /* m_base */
-    "rapidjson",                /* m_name */
-    PyDoc_STR("Fast, simple JSON encoder and decoder. Based on RapidJSON C++ library."),
-    -1,                         /* m_size */
-    functions,                  /* m_methods */
-    NULL,                       /* m_slots */
-    NULL,                       /* m_traverse */
-    NULL,                       /* m_clear */
-    (freefunc) module_free      /* m_free */
-};
-
-
-PyMODINIT_FUNC
-PyInit_rapidjson()
-{
-    PyObject* m = NULL;
     PyObject* datetimeModule;
     PyObject* decimalModule;
     PyObject* uuidModule;
 
     if (PyType_Ready(&Decoder_Type) < 0)
-        goto error;
+        return -1;
 
     if (PyType_Ready(&Encoder_Type) < 0)
-        goto error;
+        return -1;
 
     if (PyType_Ready(&Validator_Type) < 0)
-        goto error;
+        return -1;
 
     if (PyType_Ready(&RawJSON_Type) < 0)
-        return NULL;
+        return -1;
 
     PyDateTime_IMPORT;
+    if(!PyDateTimeAPI)
+        return -1;
 
     datetimeModule = PyImport_ImportModule("datetime");
     if (datetimeModule == NULL)
-        goto error;
+        return -1;
 
     decimalModule = PyImport_ImportModule("decimal");
     if (decimalModule == NULL)
-        goto error;
+        return -1;
 
     decimal_type = PyObject_GetAttrString(decimalModule, "Decimal");
     Py_DECREF(decimalModule);
 
     if (decimal_type == NULL)
-        goto error;
+        return -1;
 
     timezone_type = PyObject_GetAttrString(datetimeModule, "timezone");
     Py_DECREF(datetimeModule);
 
     if (timezone_type == NULL)
-        goto error;
+        return -1;
 
     timezone_utc = PyObject_GetAttrString(timezone_type, "utc");
     if (timezone_utc == NULL)
-        goto error;
+        return -1;
 
     uuidModule = PyImport_ImportModule("uuid");
     if (uuidModule == NULL)
-        goto error;
+        return -1;
 
     uuid_type = PyObject_GetAttrString(uuidModule, "UUID");
     Py_DECREF(uuidModule);
 
     if (uuid_type == NULL)
-        goto error;
+        return -1;
 
     astimezone_name = PyUnicode_InternFromString("astimezone");
     if (astimezone_name == NULL)
-        goto error;
+        return -1;
 
     hex_name = PyUnicode_InternFromString("hex");
     if (hex_name == NULL)
-        goto error;
+        return -1;
 
     timestamp_name = PyUnicode_InternFromString("timestamp");
     if (timestamp_name == NULL)
-        goto error;
+        return -1;
 
     total_seconds_name = PyUnicode_InternFromString("total_seconds");
     if (total_seconds_name == NULL)
-        goto error;
+        return -1;
 
     utcoffset_name = PyUnicode_InternFromString("utcoffset");
     if (utcoffset_name == NULL)
-        goto error;
+        return -1;
 
     is_infinite_name = PyUnicode_InternFromString("is_infinite");
     if (is_infinite_name == NULL)
-        goto error;
+        return -1;
 
     is_nan_name = PyUnicode_InternFromString("is_nan");
     if (is_infinite_name == NULL)
-        goto error;
+        return -1;
 
     minus_inf_string_value = PyUnicode_InternFromString("-Infinity");
     if (minus_inf_string_value == NULL)
-        goto error;
+        return -1;
 
     nan_string_value = PyUnicode_InternFromString("nan");
     if (nan_string_value == NULL)
-        goto error;
+        return -1;
 
     plus_inf_string_value = PyUnicode_InternFromString("+Infinity");
     if (plus_inf_string_value == NULL)
-        goto error;
+        return -1;
 
     start_object_name = PyUnicode_InternFromString("start_object");
     if (start_object_name == NULL)
-        goto error;
+        return -1;
 
     end_object_name = PyUnicode_InternFromString("end_object");
     if (end_object_name == NULL)
-        goto error;
+        return -1;
 
     default_name = PyUnicode_InternFromString("default");
     if (default_name == NULL)
-        goto error;
+        return -1;
 
     end_array_name = PyUnicode_InternFromString("end_array");
     if (end_array_name == NULL)
-        goto error;
+        return -1;
 
     string_name = PyUnicode_InternFromString("string");
     if (string_name == NULL)
-        goto error;
+        return -1;
 
     read_name = PyUnicode_InternFromString("read");
     if (read_name == NULL)
-        goto error;
+        return -1;
 
     write_name = PyUnicode_InternFromString("write");
     if (write_name == NULL)
-        goto error;
+        return -1;
 
     encoding_name = PyUnicode_InternFromString("encoding");
     if (encoding_name == NULL)
-        goto error;
-
-    m = PyModule_Create(&module);
-    if (m == NULL)
-        goto error;
+        return -1;
 
 #define STRINGIFY(x) XSTRINGIFY(x)
 #define XSTRINGIFY(x) #x
@@ -3889,44 +3860,77 @@ PyInit_rapidjson()
         || PyModule_AddStringConstant(m, "__version__", STRINGIFY(PYTHON_RAPIDJSON_VERSION))
         || PyModule_AddStringConstant(m, "__author__", "Ken Robbins <ken@kenrobbins.com>")
         || PyModule_AddStringConstant(m, "__rapidjson_version__", RAPIDJSON_VERSION_STRING))
-        goto error;
+        return -1;
 
     Py_INCREF(&Decoder_Type);
-    if (PyModule_AddObject(m, "Decoder", (PyObject*) &Decoder_Type))
-        goto error;
+    if (PyModule_AddObject(m, "Decoder", (PyObject*) &Decoder_Type) < 0) {
+        Py_DECREF(&Decoder_Type);
+        return -1;
+    }
 
     Py_INCREF(&Encoder_Type);
-    if (PyModule_AddObject(m, "Encoder", (PyObject*) &Encoder_Type))
-        goto error;
+    if (PyModule_AddObject(m, "Encoder", (PyObject*) &Encoder_Type) < 0) {
+        Py_DECREF(&Encoder_Type);
+        return -1;
+    }
 
     Py_INCREF(&Validator_Type);
-    if (PyModule_AddObject(m, "Validator", (PyObject*) &Validator_Type))
-        goto error;
+    if (PyModule_AddObject(m, "Validator", (PyObject*) &Validator_Type) < 0) {
+        Py_DECREF(&Validator_Type);
+        return -1;
+    }
 
     Py_INCREF(&RawJSON_Type);
-    if (PyModule_AddObject(m, "RawJSON", (PyObject*) &RawJSON_Type))
-        goto error;
+    if (PyModule_AddObject(m, "RawJSON", (PyObject*) &RawJSON_Type) < 0) {
+        Py_DECREF(&RawJSON_Type);
+        return -1;
+    }
 
     validation_error = PyErr_NewException("rapidjson.ValidationError",
                                           PyExc_ValueError, NULL);
     if (validation_error == NULL)
-        goto error;
+        return -1;
     Py_INCREF(validation_error);
-    if (PyModule_AddObject(m, "ValidationError", validation_error))
-        goto error;
+    if (PyModule_AddObject(m, "ValidationError", validation_error) < 0) {
+        Py_DECREF(validation_error);
+        return -1;
+    }
 
     decode_error = PyErr_NewException("rapidjson.JSONDecodeError",
                                       PyExc_ValueError, NULL);
     if (decode_error == NULL)
-        goto error;
+        return -1;
     Py_INCREF(decode_error);
-    if (PyModule_AddObject(m, "JSONDecodeError", decode_error))
-        goto error;
+    if (PyModule_AddObject(m, "JSONDecodeError", decode_error) < 0) {
+        Py_DECREF(decode_error);
+        return -1;
+    }
 
-    return m;
+    return 0;
+}
 
-error:
-    Py_CLEAR(m);
-    module_free(NULL);
-    return NULL;
+
+static struct PyModuleDef_Slot slots[] = {
+    {Py_mod_exec, (void*) module_exec},
+    {0, NULL}
+};
+
+
+static PyModuleDef module = {
+    PyModuleDef_HEAD_INIT,      /* m_base */
+    "rapidjson",                /* m_name */
+    PyDoc_STR("Fast, simple JSON encoder and decoder. Based on RapidJSON C++ library."),
+    0,                          /* m_size */
+    functions,                  /* m_methods */
+    slots,                      /* m_slots */
+    NULL,                       /* m_traverse */
+    NULL,                       /* m_clear */
+    NULL                        /* m_free */
+};
+
+
+PyMODINIT_FUNC
+PyInit_rapidjson()
+{
+    return PyModuleDef_Init(&module);
 }
