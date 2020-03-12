@@ -156,7 +156,7 @@
       >>> loads('"2016-01-02T01:02:03+01:00"', datetime_mode=DM_ISO8601)
       datetime.datetime(2016, 1, 2, 1, 2, 3, tzinfo=...delta(...3600)))
       >>> loads('"2016-01-02T01:02:03-01:00"', datetime_mode=DM_ISO8601)
-      datetime.datetime(2016, 1, 2, 1, 2, 3, tzinfo=...delta(days=-1, seconds=82800)))
+      datetime.datetime(2016, 1, 2, 1, 2, 3, tzinfo=...delta(...82800)))
       >>> loads('"2016-01-02"', datetime_mode=DM_ISO8601)
       datetime.date(2016, 1, 2)
       >>> loads('"01:02:03+01:00"', datetime_mode=DM_ISO8601)
