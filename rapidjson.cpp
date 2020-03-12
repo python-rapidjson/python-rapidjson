@@ -3,7 +3,7 @@
 // :Author:    Ken Robbins <ken@kenrobbins.com>
 // :License:   MIT License
 // :Copyright: © 2015 Ken Robbins
-// :Copyright: © 2015, 2016, 2017, 2018, 2019 Lele Gaifax
+// :Copyright: © 2015, 2016, 2017, 2018, 2019, 2020 Lele Gaifax
 //
 
 #include <Python.h>
@@ -1003,7 +1003,7 @@ struct PyHandler {
 #define digit(idx) (str[idx] - '0')
 
     bool IsIso8601Date(const char* str, int& year, int& month, int& day) {
-      // we've already checked that str is a valid length and that 5 and 8 are '-'
+        // we've already checked that str is a valid length and that 5 and 8 are '-'
         if (!isdigit(str[0]) || !isdigit(str[1]) || !isdigit(str[2]) || !isdigit(str[3])
             || !isdigit(str[5]) || !isdigit(str[6])
             || !isdigit(str[8]) || !isdigit(str[9])) return false;
@@ -1030,8 +1030,9 @@ struct PyHandler {
         return true;
     }
 
-    bool IsIso8601Time(const char* str, SizeType length, int& hours, int& mins, int& secs, int& usecs, int& tzoff) {
-      // we've already checked that str is a minimum valid length, but nothing else
+    bool IsIso8601Time(const char* str, SizeType length,
+                       int& hours, int& mins, int& secs, int& usecs, int& tzoff) {
+        // we've already checked that str is a minimum valid length, but nothing else
         if (!isdigit(str[0]) || !isdigit(str[1]) || str[2] != ':'
             || !isdigit(str[3]) || !isdigit(str[4]) || str[5] != ':'
             || !isdigit(str[6]) || !isdigit(str[7])) return false;
@@ -1052,7 +1053,7 @@ struct PyHandler {
             return IsIso8601Offset(&str[8], tzoff);
         }
 
-      // at this point we need a . AND at least 1 more digit
+        // at this point we need a . AND at least 1 more digit
         if (length == 9 || str[8] != '.' || !isdigit(str[9])) return false;
 
         int usecLength;
@@ -1082,7 +1083,9 @@ struct PyHandler {
         return true;
     }
 
-    bool IsIso8601(const char* str, SizeType length, int& year, int& month, int& day, int& hours, int& mins, int &secs, int& usecs, int& tzoff) {
+    bool IsIso8601(const char* str, SizeType length,
+                   int& year, int& month, int& day,
+                   int& hours, int& mins, int &secs, int& usecs, int& tzoff) {
         year = -1;
         month = day = hours = mins = secs = usecs = tzoff = 0;
 
@@ -1101,13 +1104,16 @@ struct PyHandler {
         }
         if (length > 18 && (str[10] == 'T' || str[10] == ' ')) {
             // if it looks like a date + time, validate date + time
-            return IsIso8601Date(str, year, month, day) && IsIso8601Time(&str[11], length - 11, hours, mins, secs, usecs, tzoff);
+            return IsIso8601Date(str, year, month, day)
+                && IsIso8601Time(&str[11], length - 11, hours, mins, secs, usecs, tzoff);
         }
         // can't be valid
         return false;
     }
 
-    bool HandleIso8601(const char* str, SizeType length, int year, int month, int day, int hours, int mins, int secs, int usecs, int tzoff) {
+    bool HandleIso8601(const char* str, SizeType length,
+                       int year, int month, int day,
+                       int hours, int mins, int secs, int usecs, int tzoff) {
         // we treat year 0 as invalid and thus the default when there is no date
         bool hasDate = year > 0;
 
@@ -1123,23 +1129,30 @@ struct PyHandler {
 
         if ((datetimeMode & DM_NAIVE_IS_UTC || isZ) && !hasOffset) {
             if (hasDate) {
-                value = PyDateTimeAPI->DateTime_FromDateAndTime(year, month, day, hours, mins, secs, usecs, timezone_utc, PyDateTimeAPI->DateTimeType);
+                value = PyDateTimeAPI->DateTime_FromDateAndTime(
+                    year, month, day, hours, mins, secs, usecs, timezone_utc,
+                    PyDateTimeAPI->DateTimeType);
             } else {
-                value = PyDateTimeAPI->Time_FromTime(hours, mins, secs, usecs, timezone_utc, PyDateTimeAPI->TimeType);
+                value = PyDateTimeAPI->Time_FromTime(
+                    hours, mins, secs, usecs, timezone_utc, PyDateTimeAPI->TimeType);
             }
         } else if (datetimeMode & DM_IGNORE_TZ || (!hasOffset && !isZ)) {
             if (hasDate) {
-                value = PyDateTime_FromDateAndTime(year, month, day, hours, mins, secs, usecs);
+                value = PyDateTime_FromDateAndTime(year, month, day,
+                                                   hours, mins, secs, usecs);
             } else {
                 value = PyTime_FromTime(hours, mins, secs, usecs);
             }
         } else if (!hasDate && datetimeMode & DM_SHIFT_TO_UTC && tzoff) {
-            PyErr_Format(PyExc_ValueError, "Time literal cannot be shifted to UTC: %s", str);
+            PyErr_Format(PyExc_ValueError,
+                         "Time literal cannot be shifted to UTC: %s", str);
             value = NULL;
         } else if (!hasDate && datetimeMode & DM_SHIFT_TO_UTC) {
-            value = PyDateTimeAPI->Time_FromTime(hours, mins, secs, usecs, timezone_utc, PyDateTimeAPI->TimeType);
+            value = PyDateTimeAPI->Time_FromTime(
+                hours, mins, secs, usecs, timezone_utc, PyDateTimeAPI->TimeType);
         } else {
-            PyObject* offset = PyDateTimeAPI->Delta_FromDelta(0, tzoff, 0, 1, PyDateTimeAPI->DeltaType);
+            PyObject* offset = PyDateTimeAPI->Delta_FromDelta(0, tzoff, 0, 1,
+                                                              PyDateTimeAPI->DeltaType);
             if (offset == NULL) {
                 value = NULL;
             } else {
@@ -1149,9 +1162,12 @@ struct PyHandler {
                     value = NULL;
                 } else {
                     if (hasDate) {
-                        value = PyDateTimeAPI->DateTime_FromDateAndTime(year, month, day, hours, mins, secs, usecs, tz, PyDateTimeAPI->DateTimeType);
+                        value = PyDateTimeAPI->DateTime_FromDateAndTime(
+                            year, month, day, hours, mins, secs, usecs, tz,
+                            PyDateTimeAPI->DateTimeType);
                         if (value != NULL && datetimeMode & DM_SHIFT_TO_UTC) {
-                            PyObject* asUTC = PyObject_CallMethodObjArgs(value, astimezone_name, timezone_utc, NULL);
+                            PyObject* asUTC = PyObject_CallMethodObjArgs(
+                                value, astimezone_name, timezone_utc, NULL);
                             Py_DECREF(value);
                             if (asUTC == NULL) {
                                 value = NULL;
@@ -1160,7 +1176,8 @@ struct PyHandler {
                             }
                         }
                     } else {
-                        value = PyDateTimeAPI->Time_FromTime(hours, mins, secs, usecs, tz, PyDateTimeAPI->TimeType);
+                        value = PyDateTimeAPI->Time_FromTime(hours, mins, secs, usecs, tz,
+                                                             PyDateTimeAPI->TimeType);
                     }
                     Py_DECREF(tz);
                 }
@@ -2538,7 +2555,8 @@ dumps_internal(
             int size;
             memset(isoformat, 0, ISOFORMAT_LEN);
 
-            size = snprintf(isoformat, ISOFORMAT_LEN-1, "\"%04u-%02u-%02u\"", year, month, day);
+            size = snprintf(isoformat, ISOFORMAT_LEN-1, "\"%04u-%02u-%02u\"",
+                            year, month, day);
             writer->RawValue(isoformat, size, kStringType);
         } else /* datetime_mode_format(datetimeMode) == DM_UNIX_TIME */ {
             // A date object, take its midnight timestamp
