@@ -2,7 +2,7 @@
 # :Project:   python-rapidjson -- Validator class tests
 # :Author:    Lele Gaifax <lele@metapensiero.it>
 # :License:   MIT License
-# :Copyright: © 2017, 2019 Lele Gaifax
+# :Copyright: © 2017, 2019, 2020 Lele Gaifax
 #
 
 import pytest
@@ -10,13 +10,11 @@ import pytest
 import rapidjson as rj
 
 
-@pytest.mark.unit
 def test_invalid_schema():
     pytest.raises(rj.JSONDecodeError, rj.Validator, '')
     pytest.raises(rj.JSONDecodeError, rj.Validator, '"')
 
 
-@pytest.mark.unit
 def test_invalid_json():
     validate = rj.Validator('""')
     pytest.raises(rj.JSONDecodeError, validate, '')
@@ -27,7 +25,6 @@ def test_invalid_json():
     ('{ "type": ["number", "string"] }', '42'),
     ('{ "type": ["number", "string"] }', '"Life, the universe, and everything"'),
 ))
-@pytest.mark.unit
 def test_valid(schema, json):
     validate = rj.Validator(schema)
     validate(json)
@@ -39,7 +36,6 @@ def test_valid(schema, json):
      ('type', '#', '#'),
     ),
 ))
-@pytest.mark.unit
 def test_invalid(schema, json, details):
     validate = rj.Validator(schema)
     with pytest.raises(ValueError) as error:
@@ -64,7 +60,6 @@ def test_invalid(schema, json, details):
      pytest.param('{"I_2": "A string"}', marks=pytest.mark.xfail),
      pytest.param('{"keyword": "value"}', marks=pytest.mark.xfail),
 ])
-@pytest.mark.unit
 def test_additional_and_pattern_properties_valid(schema, json):
     validate = rj.Validator(schema)
     validate(json)

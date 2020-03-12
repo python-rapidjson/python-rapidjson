@@ -3,7 +3,7 @@
 # :Author:    John Anderson <sontek@gmail.com>
 # :License:   MIT License
 # :Copyright: © 2015 John Anderson
-# :Copyright: © 2016, 2017, 2018 Lele Gaifax
+# :Copyright: © 2016, 2017, 2018, 2020 Lele Gaifax
 #
 
 import io
@@ -14,7 +14,6 @@ import pytest
 import rapidjson
 
 
-@pytest.mark.unit
 @pytest.mark.parametrize('u', [
     '\N{GREEK SMALL LETTER ALPHA}\N{GREEK CAPITAL LETTER OMEGA}',
     '\U0010ffff',
@@ -29,7 +28,6 @@ def test_unicode(u, dumps, loads):
     assert dumps(u, ensure_ascii=False) == json.dumps(u, ensure_ascii=False)
 
 
-@pytest.mark.unit
 @pytest.mark.parametrize('o', [
     "\ud80d",
     {"foo": "\ud80d"},
@@ -40,7 +38,6 @@ def test_dump_surrogate(o, dumps):
         dumps(o)
 
 
-@pytest.mark.unit
 @pytest.mark.parametrize('j', [
     '"\\ud80d"',
     '{"foo": "\\ud80d"}',
@@ -51,7 +48,6 @@ def test_load_surrogate(j, loads):
         loads(j)
 
 
-@pytest.mark.unit
 @pytest.mark.parametrize('j', [
     '"\\udc00"',
     '"\\udfff"',
@@ -61,7 +57,6 @@ def test_unicode_decode_error(j, loads):
         loads(j)
 
 
-@pytest.mark.unit
 def test_non_utf8_bytes(dumps):
     value = b'\xff\xf0'
     with pytest.raises(UnicodeDecodeError, match="'utf-8' codec can't decode byte"):

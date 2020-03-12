@@ -2,7 +2,7 @@
 # :Project:   python-rapidjson -- Streaming API related tests
 # :Author:    Lele Gaifax <lele@metapensiero.it>
 # :License:   MIT License
-# :Copyright: © 2017, 2018 Lele Gaifax
+# :Copyright: © 2017, 2018, 2020 Lele Gaifax
 #
 
 import io
@@ -14,7 +14,6 @@ import pytest
 import rapidjson as rj
 
 
-@pytest.mark.unit
 @pytest.mark.parametrize('cs', (-1, 0, sys.maxsize*10, 1.23, 'foo'))
 def test_invalid_chunk_size(cs):
     s = io.StringIO('"foo"')
@@ -32,7 +31,6 @@ class ChunkedStream(io.StringIO):
         self.chunks.append(s)
 
 
-@pytest.mark.unit
 def test_chunked_stream():
     stream = ChunkedStream()
     rj.dump('1234567890', stream)
@@ -66,21 +64,18 @@ class CattyStream(io.StringIO):
         raise CattyError('No real reason')
 
 
-@pytest.mark.unit
 def test_underlying_stream_read_error():
     stream = CattyStream()
     with pytest.raises(CattyError):
         rj.load(stream)
 
 
-@pytest.mark.unit
 def test_underlying_stream_write_error():
     stream = CattyStream()
     with pytest.raises(CattyError):
         rj.dump('1234567890', stream)
 
 
-@pytest.mark.unit
 def test_file_object():
     for stream in tempfile.TemporaryFile(), tempfile.TemporaryFile('w+', encoding='utf-8'):
         with stream:

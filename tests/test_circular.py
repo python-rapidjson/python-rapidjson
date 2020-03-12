@@ -3,7 +3,7 @@
 # :Author:    John Anderson <sontek@gmail.com>
 # :License:   MIT License
 # :Copyright: © 2015 John Anderson
-# :Copyright: © 2017, 2018 Lele Gaifax
+# :Copyright: © 2017, 2018, 2020 Lele Gaifax
 #
 
 import sys
@@ -17,7 +17,6 @@ else:
     expected_exception = RuntimeError
 
 
-@pytest.mark.unit
 def test_circular_dict(dumps):
     dct = {}
     dct['a'] = dct
@@ -26,7 +25,6 @@ def test_circular_dict(dumps):
         dumps(dct)
 
 
-@pytest.mark.unit
 def test_circular_list(dumps):
     lst = []
     lst.append(lst)
@@ -35,7 +33,6 @@ def test_circular_list(dumps):
         dumps(lst)
 
 
-@pytest.mark.unit
 def test_circular_composite(dumps):
     dct2 = {}
     dct2['a'] = []
@@ -45,7 +42,6 @@ def test_circular_composite(dumps):
         dumps(dct2)
 
 
-@pytest.mark.unit
 def test_max_recursion_depth(dumps):
     import sys
 

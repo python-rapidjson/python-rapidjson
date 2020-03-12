@@ -3,7 +3,7 @@
 # :Author:    John Anderson <sontek@gmail.com>
 # :License:   MIT License
 # :Copyright: © 2015 John Anderson
-# :Copyright: © 2016, 2017 Lele Gaifax
+# :Copyright: © 2016, 2017, 2020 Lele Gaifax
 #
 
 from decimal import Decimal
@@ -14,7 +14,6 @@ import pytest
 import rapidjson as rj
 
 
-@pytest.mark.unit
 def test_infinity_f():
     inf = float("inf")
 
@@ -44,7 +43,6 @@ def test_infinity_f():
     assert loaded.is_infinite()
 
 
-@pytest.mark.unit
 def test_infinity_c():
     inf = float("inf")
 
@@ -67,7 +65,6 @@ def test_infinity_c():
     assert loaded.is_infinite()
 
 
-@pytest.mark.unit
 def test_negative_infinity_f():
     inf = float("-infinity")
     dumped = rj.dumps(inf)
@@ -96,7 +93,6 @@ def test_negative_infinity_f():
     assert loaded.is_infinite()
 
 
-@pytest.mark.unit
 def test_negative_infinity_c():
     inf = float("-infinity")
     dumped = rj.Encoder()(inf)
@@ -118,7 +114,6 @@ def test_negative_infinity_c():
     assert loaded.is_infinite()
 
 
-@pytest.mark.unit
 def test_nan_f():
     nan = float("nan")
     dumped = rj.dumps(nan)
@@ -144,7 +139,6 @@ def test_nan_f():
     assert loaded.is_nan()
 
 
-@pytest.mark.unit
 def test_nan_c():
     nan = float("nan")
     dumped = rj.Encoder()(nan)

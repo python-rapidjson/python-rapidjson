@@ -17,7 +17,6 @@ import pytest
 import rapidjson as rj
 
 
-@pytest.mark.unit
 def test_skipkeys():
     o = {True: False, -1: 1, 1.1: 1.1, (1,2): "foo", b"asdf": 1, None: None}
 
@@ -30,7 +29,6 @@ def test_skipkeys():
     assert rj.dumps(o, skipkeys=True) == '{}'
 
 
-@pytest.mark.unit
 def test_skip_invalid_keys():
     o = {True: False, -1: 1, 1.1: 1.1, (1,2): "foo", b"asdf": 1, None: None}
 
@@ -43,7 +41,6 @@ def test_skip_invalid_keys():
     assert rj.Encoder(skip_invalid_keys=True)(o) == '{}'
 
 
-@pytest.mark.unit
 def test_ensure_ascii(dumps):
     s = '\N{GREEK SMALL LETTER ALPHA}\N{GREEK CAPITAL LETTER OMEGA}'
     assert dumps(s) == '"\\u03B1\\u03A9"'
@@ -51,7 +48,6 @@ def test_ensure_ascii(dumps):
     assert dumps(s, ensure_ascii=False) == '"%s"' % s
 
 
-@pytest.mark.unit
 def test_allow_nan():
     f = [1.1, float("inf"), 2.2, float("nan"), 3.3, float("-inf"), 4.4]
     expected = '[1.1,Infinity,2.2,NaN,3.3,-Infinity,4.4]'
@@ -91,7 +87,6 @@ def test_allow_nan():
         rj.loads(s, allow_nan=False)
 
 
-@pytest.mark.unit
 def test_native(dumps, loads):
     f = [-1, 1, 1.1, -2.2]
     expected = '[-1,1,1.1,-2.2]'
@@ -115,7 +110,6 @@ def test_native(dumps, loads):
                  parse_mode=rj.PM_COMMENTS | rj.PM_TRAILING_COMMAS) == expected
 
 
-@pytest.mark.unit
 def test_parse_mode(dumps, loads):
     trailing_comma = '[-1,1,1.1,-2.2,]'
     expected = [-1,1,1.1,-2.2]
@@ -153,7 +147,6 @@ def test_parse_mode(dumps, loads):
     assert loads(c_and_tc, parse_mode=rj.PM_COMMENTS | rj.PM_TRAILING_COMMAS) == expected
 
 
-@pytest.mark.unit
 def test_indent(dumps):
     o = {"a": 1, "z": 2, "b": 3}
     expected1 = '{\n    "a": 1,\n    "z": 2,\n    "b": 3\n}'
@@ -179,7 +172,6 @@ def test_indent(dumps):
         dumps(o, indent=-1)
 
 
-@pytest.mark.unit
 def test_write_mode(dumps):
     o = {"a": 1, "b": [2, 3, 4]}
     expected_compact = ('{"a":1,"b":[2,3,4]}', '{"b":[2,3,4],"a":1}')
@@ -195,7 +187,6 @@ def test_write_mode(dumps):
         dumps(o, write_mode=4)
 
 
-@pytest.mark.unit
 def test_sort_keys(dumps):
     o = {"a": 1, "z": 2, "b": 3}
     expected0 = '{\n"a": 1,\n"b": 3,\n"z": 2\n}'
@@ -211,7 +202,6 @@ def test_sort_keys(dumps):
     assert dumps(o, sort_keys=True) == '{"a":"a","a\\u0000b":"a\\u0000b","a0":"a0","a1":"a1"}'
 
 
-@pytest.mark.unit
 def test_default():
     class Bar:
         pass
@@ -237,7 +227,6 @@ def test_default():
         rj.dumps(o)
 
 
-@pytest.mark.unit
 def test_decimal(dumps, loads):
     import math
     from decimal import Decimal
@@ -257,7 +246,6 @@ def test_decimal(dumps, loads):
     assert loads(dumps(d, number_mode=rj.NM_DECIMAL)) == float(dstr)
 
 
-@pytest.mark.unit
 def test_datetime_mode_dumps(dumps):
     import pytz
 
@@ -330,7 +318,6 @@ def test_datetime_mode_dumps(dumps):
     assert dumps(d, datetime_mode=rj.DM_UNIX_TIME) == str(d.timestamp())
 
 
-@pytest.mark.unit
 def test_datetime_mode_loads(dumps, loads):
     import pytz
 
@@ -361,7 +348,6 @@ def test_datetime_mode_loads(dumps, loads):
     assert load_as_naive == local.replace(tzinfo=None)
 
 
-@pytest.mark.unit
 @pytest.mark.parametrize(
     'value', [date.today(), datetime.now(), time(10,20,30)])
 def test_datetime_values(value, dumps, loads):
@@ -373,7 +359,6 @@ def test_datetime_values(value, dumps, loads):
     assert loaded == value
 
 
-@pytest.mark.unit
 @pytest.mark.parametrize(
     'value, expected', [
         ('1999-01-03T10:20:30.1',
@@ -410,7 +395,6 @@ def test_datetime_fractional_values(value, expected, dumps, loads):
     assert loaded == expected
 
 
-@pytest.mark.unit
 def test_uuid_mode(dumps, loads):
     assert rj.UM_NONE == 0
     assert rj.UM_CANONICAL == 1
@@ -439,7 +423,6 @@ def test_uuid_mode(dumps, loads):
     assert loaded == value
 
 
-@pytest.mark.unit
 def test_uuid_and_datetime_mode_together(dumps, loads):
     value = [date.today(), uuid.uuid1()]
     dumped = dumps(value,
@@ -451,7 +434,6 @@ def test_uuid_and_datetime_mode_together(dumps, loads):
     assert loaded == value
 
 
-@pytest.mark.unit
 @pytest.mark.parametrize(
     'value,cls', [
         ('x999-02-03', str),
@@ -525,7 +507,6 @@ def test_datetime_iso8601(value, cls, loads):
     assert isinstance(result, cls)
 
 
-@pytest.mark.unit
 @pytest.mark.parametrize(
     'value,cls', [
         ('7a683da49aa011e5972e3085a99ccac7', str),
@@ -539,7 +520,6 @@ def test_uuid_canonical(value, cls, loads):
     assert isinstance(result, cls), type(result)
 
 
-@pytest.mark.unit
 @pytest.mark.parametrize(
     'value,cls', [
         ('za683da49aa011e5972e3085a99ccac7', str),
@@ -552,7 +532,6 @@ def test_uuid_hex(value, cls, loads):
     assert isinstance(result, cls), type(result)
 
 
-@pytest.mark.unit
 def test_object_hook():
     class Foo:
         def __init__(self, foo):
@@ -577,7 +556,6 @@ def test_object_hook():
     assert res.foo == "bar"
 
 
-@pytest.mark.unit
 @pytest.mark.parametrize(
     'posargs,kwargs', (
         ( (), {} ),
@@ -608,7 +586,6 @@ def test_invalid_loads_params(posargs, kwargs, loads):
         assert False, "Expected either a TypeError or a ValueError"
 
 
-@pytest.mark.unit
 @pytest.mark.parametrize(
     'posargs,kwargs', (
         ( (), {} ),
@@ -634,7 +611,6 @@ def test_invalid_dumps_params(posargs, kwargs, dumps):
         assert False, "Expected either a TypeError or a ValueError"
 
 
-@pytest.mark.unit
 def test_explicit_defaults_loads():
     assert rj.loads(
         string='"foo"',
@@ -647,7 +623,6 @@ def test_explicit_defaults_loads():
     ) == "foo"
 
 
-@pytest.mark.unit
 def test_explicit_defaults_load():
     assert rj.load(
         stream=io.StringIO('"foo"'),
@@ -661,7 +636,6 @@ def test_explicit_defaults_load():
     ) == "foo"
 
 
-@pytest.mark.unit
 def test_explicit_defaults_decoder():
     assert rj.Decoder(
         number_mode=None,
@@ -670,7 +644,6 @@ def test_explicit_defaults_decoder():
         parse_mode=None)('"foo"') == "foo"
 
 
-@pytest.mark.unit
 def test_explicit_defaults_dumps():
     assert rj.dumps(
         obj='foo',
@@ -686,7 +659,6 @@ def test_explicit_defaults_dumps():
     ) == '"foo"'
 
 
-@pytest.mark.unit
 def test_explicit_defaults_dump():
     stream = io.StringIO()
     assert rj.dump(
@@ -705,7 +677,6 @@ def test_explicit_defaults_dump():
     assert stream.getvalue() == '"foo"'
 
 
-@pytest.mark.unit
 def test_explicit_defaults_encoder():
     assert rj.Encoder(
         skip_invalid_keys=False,
@@ -717,7 +688,6 @@ def test_explicit_defaults_encoder():
         uuid_mode=None)({'foo': 'bar'}) == '{"foo":"bar"}'
 
 
-@pytest.mark.unit
 def test_encoder_call():
     o = {'foo': 'bar'}
 

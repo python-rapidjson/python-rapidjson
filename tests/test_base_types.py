@@ -3,7 +3,7 @@
 # :Author:    John Anderson <sontek@gmail.com>
 # :License:   MIT License
 # :Copyright: © 2015 John Anderson
-# :Copyright: © 2016, 2017, 2018, 2019 Lele Gaifax
+# :Copyright: © 2016, 2017, 2018, 2019, 2020 Lele Gaifax
 #
 
 import random
@@ -14,7 +14,6 @@ import pytest
 import rapidjson as rj
 
 
-@pytest.mark.unit
 @pytest.mark.parametrize(
     'value', (
         'A', 'cruel\x00world',
@@ -30,20 +29,17 @@ def test_base_values(value, dumps, loads):
     assert loaded == value and type(loaded) is type(value)
 
 
-@pytest.mark.unit
 def test_float(dumps):
     value = 0.1 + 0.2
     dumped = dumps(value)
     assert dumped == '0.30000000000000004'
 
 
-@pytest.mark.unit
 def test_tuple(dumps):
     obj = [1, 2, 'a', 1.2, {'foo': 'bar'},]
     assert dumps(obj) == dumps(tuple(obj))
 
 
-@pytest.mark.unit
 def test_bytes_value(dumps):
     value = b'cruel\x00world'
     dumped = dumps(value)
@@ -52,7 +48,6 @@ def test_bytes_value(dumps):
     assert dumped == r'"cruel\u0000world"'
 
 
-@pytest.mark.unit
 def test_larger_structure(dumps, loads):
     value = {
         'words': """
@@ -72,7 +67,6 @@ def test_larger_structure(dumps, loads):
     assert loaded == value
 
 
-@pytest.mark.unit
 def test_object_hook():
     def as_complex(dct):
         if '__complex__' in dct:
@@ -88,7 +82,6 @@ def test_object_hook():
     assert result == (1+2j)
 
 
-@pytest.mark.unit
 def test_end_object():
     class ComplexDecoder(rj.Decoder):
         def end_object(self, dct):
@@ -102,7 +95,6 @@ def test_end_object():
     assert result == (1+2j)
 
 
-@pytest.mark.unit
 def test_dumps_default():
     def encode_complex(obj):
         if isinstance(obj, complex):
@@ -113,7 +105,6 @@ def test_dumps_default():
     assert result == '[2.0,1.0]'
 
 
-@pytest.mark.unit
 def test_encoder_default():
     class ComplexEncoder(rj.Encoder):
         def default(self, obj):
@@ -126,7 +117,6 @@ def test_encoder_default():
     assert result == '[2.0,1.0]'
 
 
-@pytest.mark.unit
 def test_doubles(dumps, loads):
     for x in range(100000):
         d = sys.maxsize * random.random()
@@ -135,7 +125,6 @@ def test_doubles(dumps, loads):
         assert loaded == d
 
 
-@pytest.mark.unit
 def test_unicode(dumps, loads):
    arabic='بينهم ان يكون مسلما رشيدا عاقلا ًوابنا شرعيا لابوين عمانيين'
    chinese='本站所提供的資料和服務都不收費，因此網站所需要的資金全來自廣告及捐款。若您願意捐款補助'
@@ -145,7 +134,6 @@ def test_unicode(dumps, loads):
        assert text == loaded
 
 
-@pytest.mark.unit
 def test_serialize_sets_dumps():
     def default_iterable(obj):
         if isinstance(obj, set):
@@ -158,7 +146,6 @@ def test_serialize_sets_dumps():
         rj.dumps([set()])
 
 
-@pytest.mark.unit
 def test_serialize_sets_encoder():
     class SetsEncoder(rj.Encoder):
         def default(self, obj):
@@ -173,7 +160,6 @@ def test_serialize_sets_encoder():
         rj.Encoder()([set()])
 
 
-@pytest.mark.unit
 def test_constants(dumps, loads):
     for c in [None, True, False]:
         assert loads(dumps(c)) is c
@@ -181,7 +167,6 @@ def test_constants(dumps, loads):
         assert loads(dumps({'a': c}))['a'] is c
 
 
-@pytest.mark.unit
 def test_iterables(dumps):
     assert dumps(iter("abc")) == '["a","b","c"]'
 
@@ -193,14 +178,12 @@ def test_iterables(dumps):
     assert dumps(gen()) == '[1,2,3]'
 
 
-@pytest.mark.unit
 def test_decode_error(loads):
     pytest.raises(rj.JSONDecodeError, loads, '{')
 
 
 # TODO: Figure out what we want to do here
 bad_tests = """
-@pytest.mark.unit
 def test_true_false():
     dumped1 = sorted(rj.dumps({True: False, False: True}))
     dumped2 = sorted(rj.dumps({
