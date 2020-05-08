@@ -164,9 +164,14 @@ def test_indent(dumps):
         expected6)
 
     assert dumps(o, indent=4) in expected
+    assert dumps(o, indent="    ") in expected
+    assert dumps(o, indent="\t") in (e.replace("    ", "\t") for e in expected)
 
     with pytest.raises(TypeError):
-        dumps(o, indent="\t")
+        dumps(o, indent="\n\t")
+
+    with pytest.raises(TypeError):
+        dumps(o, indent="foo")
 
     with pytest.raises(TypeError):
         dumps(o, indent=-1)

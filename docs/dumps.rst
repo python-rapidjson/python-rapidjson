@@ -31,7 +31,7 @@
    :param bool ensure_ascii: whether the output should contain only ASCII
                              characters
    :param int write_mode: enable particular pretty print behaviors
-   :param int indent: indentation width to produce pretty printed JSON
+   :param indent: indentation width or string to produce pretty printed JSON
    :param callable default: a function that gets called for objects that can't
                             otherwise be serialized
    :param bool sort_keys: whether dictionary keys should be sorted
@@ -116,12 +116,19 @@
               "four": 4
           }]
 
+
    .. rubric:: `indent`
 
-   The `indent` parameter specifies how many spaces will be used to indent nested
-   structures, when the `write_mode` above is not :data:`WM_COMPACT`, and it defaults
-   to 4. Specifying a value different from ``None`` automatically sets `write_mode` to
-   :data:`WM_PRETTY`, if not explicited.
+   The `indent` parameter may be either a positive integer number or a string: in the
+   former case it specifies a number of spaces, while in the latter the string may contain
+   zero or more ASCII *whitespace* characters (space, tab ``\t``, newline ``\n`` and
+   carriage-return ``\r``), all equals (that is, ``"\n\t"`` is not accepted).
+
+   The integer number or the length of the string determine how many spaces (or the
+   characters composing the string) will be used to indent nested structures, when the
+   `write_mode` above is not :data:`WM_COMPACT`, and it defaults to 4. Specifying a value
+   different from ``None`` automatically sets `write_mode` to :data:`WM_PRETTY`, if not
+   explicited.
 
    By setting `indent` to 0 each array item (when `write_mode` is not
    :data:`WM_SINGLE_LINE_MODE`) and each dictionary value will be followed by a newline. A
@@ -146,6 +153,33 @@
           "four": 4,
           "three": 3
         }
+      ]
+      >>> print(dumps([1, 2, {'three': 3, 'four': 4}], indent=""))
+      [
+      1,
+      2,
+      {
+      "four": 4,
+      "three": 3
+      }
+      ]
+      >>> print(dumps([1, 2, {'three': 3, 'four': 4}], indent="  "))
+      [
+        1,
+        2,
+        {
+          "four": 4,
+          "three": 3
+        }
+      ]
+      >>> print(dumps([1, 2, {'three': 3, 'four': 4}], indent="\t"))
+      [
+              1,
+              2,
+              {
+                      "three": 3,
+                      "four": 4
+              }
       ]
 
 

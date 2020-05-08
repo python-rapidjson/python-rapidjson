@@ -29,7 +29,7 @@
    :param bool ensure_ascii: whether the output should contain only ASCII
                              characters
    :param int write_mode: enable particular pretty print behaviors
-   :param int indent: indentation width to produce pretty printed JSON
+   :param indent: indentation width or string to produce pretty printed JSON
    :param callable default: a function that gets called for objects that can't
                             otherwise be serialized
    :param bool sort_keys: whether dictionary keys should be sorted

@@ -195,15 +195,15 @@ static PyObject* decoder_new(PyTypeObject* type, PyObject* args, PyObject* kwarg
 
 static PyObject* do_encode(PyObject* value, bool skipInvalidKeys, PyObject* defaultFn,
                            bool sortKeys, bool ensureAscii, WriteMode writeMode,
-                           unsigned indent, NumberMode numberMode,
+                           char indentChar, unsigned indentCount, NumberMode numberMode,
                            DatetimeMode datetimeMode, UuidMode uuidMode,
                            BytesMode bytesMode);
 static PyObject* do_stream_encode(PyObject* value, PyObject* stream, size_t chunkSize,
                                   bool skipInvalidKeys, PyObject* defaultFn,
                                   bool sortKeys, bool ensureAscii, WriteMode writeMode,
-                                  unsigned indent, NumberMode numberMode,
-                                  DatetimeMode datetimeMode, UuidMode uuidMode,
-                                  BytesMode bytesMode);
+                                  char indentChar, unsigned indentCount,
+                                  NumberMode numberMode, DatetimeMode datetimeMode,
+                                  UuidMode uuidMode, BytesMode bytesMode);
 static PyObject* encoder_call(PyObject* self, PyObject* args, PyObject* kwargs);
 static PyObject* encoder_new(PyTypeObject* type, PyObject* args, PyObject* kwargs);
 
@@ -2665,7 +2665,8 @@ typedef struct {
     bool skipInvalidKeys;
     bool ensureAscii;
     WriteMode writeMode;
-    unsigned indent;
+    char indentChar;
+    unsigned indentCount;
     bool sortKeys;
     DatetimeMode datetimeMode;
     UuidMode uuidMode;
@@ -2703,7 +2704,8 @@ dumps(PyObject* self, PyObject* args, PyObject* kwargs)
     BytesMode bytesMode = BM_UTF8;
     PyObject* writeModeObj = NULL;
     WriteMode writeMode = WM_COMPACT;
-    unsigned indentCharCount = 4;
+    char indentChar = ' ';
+    unsigned indentCount = 4;
     int allowNan = -1;
     static char const* kwlist[] = {
         "obj",
@@ -2753,10 +2755,36 @@ dumps(PyObject* self, PyObject* args, PyObject* kwargs)
         writeMode = WM_PRETTY;
 
         if (PyLong_Check(indent) && PyLong_AsLong(indent) >= 0) {
-            indentCharCount = PyLong_AsUnsignedLong(indent);
-        }
-        else {
-            PyErr_SetString(PyExc_TypeError, "indent must be a non-negative int");
+            indentCount = PyLong_AsUnsignedLong(indent);
+        } else if (PyUnicode_Check(indent)) {
+            Py_ssize_t len;
+            const char* indentStr = PyUnicode_AsUTF8AndSize(indent, &len);
+
+            indentCount = len;
+            if (indentCount) {
+                indentChar = '\0';
+                while (len--) {
+                    char ch = indentStr[len];
+
+                    if (ch == '\n' || ch == ' ' || ch == '\t' || ch == '\r') {
+                        if (indentChar == '\0') {
+                            indentChar = ch;
+                        } else if (indentChar != ch) {
+                            PyErr_SetString(
+                                PyExc_TypeError,
+                                "indent string cannot contains different chars");
+                            return NULL;
+                        }
+                    } else {
+                        PyErr_SetString(PyExc_TypeError,
+                                        "non-whitespace char in indent string");
+                        return NULL;
+                    }
+                }
+            }
+        } else {
+            PyErr_SetString(PyExc_TypeError,
+                            "indent must be a non-negative int or a string");
             return NULL;
         }
     }
@@ -2844,7 +2872,7 @@ dumps(PyObject* self, PyObject* args, PyObject* kwargs)
     }
 
     return do_encode(value, skipKeys ? true : false, defaultFn, sortKeys ? true : false,
-                     ensureAscii ? true : false, writeMode, indentCharCount,
+                     ensureAscii ? true : false, writeMode, indentChar, indentCount,
                      numberMode, datetimeMode, uuidMode, bytesMode);
 }
 
@@ -2880,7 +2908,8 @@ dump(PyObject* self, PyObject* args, PyObject* kwargs)
     BytesMode bytesMode = BM_UTF8;
     PyObject* writeModeObj = NULL;
     WriteMode writeMode = WM_COMPACT;
-    unsigned indentCharCount = 4;
+    char indentChar = ' ';
+    unsigned indentCount = 4;
     PyObject* chunkSizeObj = NULL;
     size_t chunkSize = 65536;
     int allowNan = -1;
@@ -2936,10 +2965,36 @@ dump(PyObject* self, PyObject* args, PyObject* kwargs)
         writeMode = WM_PRETTY;
 
         if (PyLong_Check(indent) && PyLong_AsLong(indent) >= 0) {
-            indentCharCount = PyLong_AsUnsignedLong(indent);
-        }
-        else {
-            PyErr_SetString(PyExc_TypeError, "indent must be a non-negative int");
+            indentCount = PyLong_AsUnsignedLong(indent);
+        } else if (PyUnicode_Check(indent)) {
+            Py_ssize_t len;
+            const char* indentStr = PyUnicode_AsUTF8AndSize(indent, &len);
+
+            indentCount = len;
+            if (indentCount) {
+                indentChar = '\0';
+                while (len--) {
+                    char ch = indentStr[len];
+
+                    if (ch == '\n' || ch == ' ' || ch == '\t' || ch == '\r') {
+                        if (indentChar == '\0') {
+                            indentChar = ch;
+                        } else if (indentChar != ch) {
+                            PyErr_SetString(
+                                PyExc_TypeError,
+                                "indent string cannot contains different chars");
+                            return NULL;
+                        }
+                    } else {
+                        PyErr_SetString(PyExc_TypeError,
+                                        "non-whitespace char in indent string");
+                        return NULL;
+                    }
+                }
+            }
+        } else {
+            PyErr_SetString(PyExc_TypeError,
+                            "indent must be a non-negative int or a string");
             return NULL;
         }
     }
@@ -3044,8 +3099,8 @@ dump(PyObject* self, PyObject* args, PyObject* kwargs)
 
     return do_stream_encode(value, stream, chunkSize, skipKeys ? true : false,
                             defaultFn, sortKeys ? true : false,
-                            ensureAscii ? true : false, writeMode, indentCharCount,
-                            numberMode, datetimeMode, uuidMode, bytesMode);
+                            ensureAscii ? true : false, writeMode, indentChar,
+                            indentCount, numberMode, datetimeMode, uuidMode, bytesMode);
 }
 
 
@@ -3061,8 +3116,10 @@ static PyMemberDef encoder_members[] = {
      T_BOOL, offsetof(EncoderObject, skipInvalidKeys), READONLY, "skip_invalid_keys"},
     {"ensure_ascii",
      T_BOOL, offsetof(EncoderObject, ensureAscii), READONLY, "ensure_ascii"},
-    {"indent",
-     T_UINT, offsetof(EncoderObject, indent), READONLY, "indent"},
+    {"indent_char",
+     T_CHAR, offsetof(EncoderObject, indentChar), READONLY, "indent_char"},
+    {"indent_count",
+     T_UINT, offsetof(EncoderObject, indentCount), READONLY, "indent_count"},
     {"sort_keys",
      T_BOOL, offsetof(EncoderObject, ensureAscii), READONLY, "sort_keys"},
     {"datetime_mode",
@@ -3139,7 +3196,7 @@ static PyTypeObject Encoder_Type = {
 
 static PyObject*
 do_encode(PyObject* value, bool skipInvalidKeys, PyObject* defaultFn, bool sortKeys,
-          bool ensureAscii, WriteMode writeMode, unsigned indent,
+          bool ensureAscii, WriteMode writeMode, char indentChar, unsigned indentCount,
           NumberMode numberMode, DatetimeMode datetimeMode, UuidMode uuidMode,
           BytesMode bytesMode)
 {
@@ -3156,7 +3213,7 @@ do_encode(PyObject* value, bool skipInvalidKeys, PyObject* defaultFn, bool sortK
     } else if (ensureAscii) {
         GenericStringBuffer<ASCII<> > buf;
         PrettyWriter<GenericStringBuffer<ASCII<> >, UTF8<>, ASCII<> > writer(buf);
-        writer.SetIndent(' ', indent);
+        writer.SetIndent(indentChar, indentCount);
         if (writeMode & WM_SINGLE_LINE_ARRAY) {
             writer.SetFormatOptions(kFormatSingleLineArray);
         }
@@ -3164,7 +3221,7 @@ do_encode(PyObject* value, bool skipInvalidKeys, PyObject* defaultFn, bool sortK
     } else {
         StringBuffer buf;
         PrettyWriter<StringBuffer> writer(buf);
-        writer.SetIndent(' ', indent);
+        writer.SetIndent(indentChar, indentCount);
         if (writeMode & WM_SINGLE_LINE_ARRAY) {
             writer.SetFormatOptions(kFormatSingleLineArray);
         }
@@ -3189,9 +3246,9 @@ do_encode(PyObject* value, bool skipInvalidKeys, PyObject* defaultFn, bool sortK
 static PyObject*
 do_stream_encode(PyObject* value, PyObject* stream, size_t chunkSize,
                  bool skipInvalidKeys, PyObject* defaultFn, bool sortKeys,
-                 bool ensureAscii, WriteMode writeMode, unsigned indent,
-                 NumberMode numberMode, DatetimeMode datetimeMode, UuidMode uuidMode,
-                 BytesMode bytesMode)
+                 bool ensureAscii, WriteMode writeMode, char indentChar,
+                 unsigned indentCount, NumberMode numberMode, DatetimeMode datetimeMode,
+                 UuidMode uuidMode, BytesMode bytesMode)
 {
     PyWriteStreamWrapper os(stream, chunkSize);
 
@@ -3205,14 +3262,14 @@ do_stream_encode(PyObject* value, PyObject* stream, size_t chunkSize,
         }
     } else if (ensureAscii) {
         PrettyWriter<PyWriteStreamWrapper, UTF8<>, ASCII<> > writer(os);
-        writer.SetIndent(' ', indent);
+        writer.SetIndent(indentChar, indentCount);
         if (writeMode & WM_SINGLE_LINE_ARRAY) {
             writer.SetFormatOptions(kFormatSingleLineArray);
         }
         return DUMP_INTERNAL_CALL;
     } else {
         PrettyWriter<PyWriteStreamWrapper> writer(os);
-        writer.SetIndent(' ', indent);
+        writer.SetIndent(indentChar, indentCount);
         if (writeMode & WM_SINGLE_LINE_ARRAY) {
             writer.SetFormatOptions(kFormatSingleLineArray);
         }
@@ -3272,12 +3329,12 @@ encoder_call(PyObject* self, PyObject* args, PyObject* kwargs)
             }
         }
         result = do_stream_encode(value, stream, chunkSize, e->skipInvalidKeys, defaultFn,
-                                  e->sortKeys, e->ensureAscii, e->writeMode, e->indent,
-                                  e->numberMode, e->datetimeMode, e->uuidMode,
-                                  e->bytesMode);
+                                  e->sortKeys, e->ensureAscii, e->writeMode, e->indentChar,
+                                  e->indentCount, e->numberMode, e->datetimeMode,
+                                  e->uuidMode, e->bytesMode);
     } else {
         result = do_encode(value, e->skipInvalidKeys, defaultFn, e->sortKeys,
-                           e->ensureAscii, e->writeMode, e->indent,
+                           e->ensureAscii, e->writeMode, e->indentChar, e->indentCount,
                            e->numberMode, e->datetimeMode, e->uuidMode, e->bytesMode);
     }
 
@@ -3306,7 +3363,8 @@ encoder_new(PyTypeObject* type, PyObject* args, PyObject* kwargs)
     BytesMode bytesMode = BM_UTF8;
     PyObject* writeModeObj = NULL;
     WriteMode writeMode = WM_COMPACT;
-    unsigned indentCharCount = 4;
+    char indentChar = ' ';
+    unsigned indentCount = 4;
 
     static char const* kwlist[] = {
         "skip_invalid_keys",
@@ -3338,10 +3396,36 @@ encoder_new(PyTypeObject* type, PyObject* args, PyObject* kwargs)
         writeMode = WM_PRETTY;
 
         if (PyLong_Check(indent) && PyLong_AsLong(indent) >= 0) {
-            indentCharCount = PyLong_AsUnsignedLong(indent);
-        }
-        else {
-            PyErr_SetString(PyExc_TypeError, "indent must be a non-negative int");
+            indentCount = PyLong_AsUnsignedLong(indent);
+        } else if (PyUnicode_Check(indent)) {
+            Py_ssize_t len;
+            const char* indentStr = PyUnicode_AsUTF8AndSize(indent, &len);
+
+            indentCount = len;
+            if (indentCount) {
+                indentChar = '\0';
+                while (len--) {
+                    char ch = indentStr[len];
+
+                    if (ch == '\n' || ch == ' ' || ch == '\t' || ch == '\r') {
+                        if (indentChar == '\0') {
+                            indentChar = ch;
+                        } else if (indentChar != ch) {
+                            PyErr_SetString(
+                                PyExc_TypeError,
+                                "indent string cannot contains different chars");
+                            return NULL;
+                        }
+                    } else {
+                        PyErr_SetString(PyExc_TypeError,
+                                        "non-whitespace char in indent string");
+                        return NULL;
+                    }
+                }
+            }
+        } else {
+            PyErr_SetString(PyExc_TypeError,
+                            "indent must be a non-negative int or a string");
             return NULL;
         }
     }
@@ -3428,7 +3512,8 @@ encoder_new(PyTypeObject* type, PyObject* args, PyObject* kwargs)
     e->skipInvalidKeys = skipInvalidKeys ? true : false;
     e->ensureAscii = ensureAscii ? true : false;
     e->writeMode = writeMode;
-    e->indent = indentCharCount;
+    e->indentChar = indentChar;
+    e->indentCount = indentCount;
     e->sortKeys = sortKeys ? true : false;
     e->datetimeMode = datetimeMode;
     e->uuidMode = uuidMode;
