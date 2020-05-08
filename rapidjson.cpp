@@ -133,14 +133,15 @@ days_per_month(int year, int month) {
     assert(month >= 1);
     assert(month <= 12);
     if (month == 1 || month == 3 || month == 5 || month == 7
-        || month == 8 || month == 10 || month == 12)
+        || month == 8 || month == 10 || month == 12) {
         return 31;
-    else if (month == 4 || month == 6 || month == 9 || month == 11)
+    } else if (month == 4 || month == 6 || month == 9 || month == 11) {
         return 30;
-    else if (year % 4 == 0 && (year % 100 != 0 || year % 400 == 0))
+    } else if (year % 4 == 0 && (year % 100 != 0 || year % 400 == 0)) {
         return 29;
-    else
+    } else {
         return 28;
+    }
 }
 
 
@@ -283,15 +284,13 @@ private:
 
         if (chunk == NULL) {
             eof = true;
-        }
-        else {
+        } else {
             Py_ssize_t len;
 
             if (PyBytes_Check(chunk)) {
                 len = PyBytes_GET_SIZE(chunk);
                 buffer = PyBytes_AS_STRING(chunk);
-            }
-            else {
+            } else {
                 buffer = PyUnicode_AsUTF8AndSize(chunk, &len);
                 if (buffer == NULL) {
                     len = 0;
@@ -300,8 +299,7 @@ private:
 
             if (len == 0) {
                 eof = true;
-            }
-            else {
+            } else {
                 offset += chunkLen;
                 chunkLen = len;
                 pos = 0;
@@ -360,13 +358,11 @@ public:
         if (isBinary) {
             c = PyBytes_FromStringAndSize(buffer, (size_t)(cursor - buffer));
             cursor = buffer;
-        }
-        else {
+        } else {
             if (multiByteChar == NULL) {
                 c = PyUnicode_FromStringAndSize(buffer, (size_t)(cursor - buffer));
                 cursor = buffer;
-            }
-            else {
+            } else {
                 size_t complete = (size_t)(multiByteChar - buffer);
                 c = PyUnicode_FromStringAndSize(buffer, complete);
                 size_t remaining = (size_t)(cursor - multiByteChar);
@@ -380,13 +376,11 @@ public:
         }
         if (c == NULL) {
             // Propagate the error state, it will be catched by dumps_internal()
-        }
-        else {
+        } else {
             PyObject* res = PyObject_CallMethodObjArgs(stream, write_name, c, NULL);
             if (res == NULL) {
                 // Likewise
-            }
-            else {
+            } else {
                 Py_DECREF(res);
             }
             Py_DECREF(c);
@@ -397,10 +391,11 @@ public:
         if (cursor == bufferEnd)
             Flush();
         if (!isBinary) {
-            if ((c & 0x80) == 0)
+            if ((c & 0x80) == 0) {
                 multiByteChar = NULL;
-            else if (c & 0x40)
+            } else if (c & 0x40) {
                 multiByteChar = cursor;
+            }
         }
         *cursor++ = c;
     }
@@ -547,11 +542,9 @@ float_from_string(const char* s, Py_ssize_t len)
     x = PyOS_string_to_double(s, (char **) &end, NULL);
     if (end != s + len) {
         return NULL;
-    }
-    else if (x == -1.0 && PyErr_Occurred()) {
+    } else if (x == -1.0 && PyErr_Occurred()) {
         return NULL;
-    }
-    else {
+    } else {
         return PyFloat_FromDouble(x);
     }
 }
@@ -639,13 +632,11 @@ struct PyHandler {
                 if (rc == -1) {
                     return false;
                 }
-            }
-            else {
+            } else {
                 PyList_Append(current.object, value);
                 Py_DECREF(value);
             }
-        }
-        else {
+        } else {
             root = value;
         }
         return true;
@@ -764,8 +755,7 @@ struct PyHandler {
                 if (rc == -1) {
                     return false;
                 }
-            }
-            else {
+            } else {
                 // Change these to PySequence_Size() and PySequence_SetItem(),
                 // should we implement Decoder.start_array()
                 Py_ssize_t listLen = PyList_GET_SIZE(current.object);
@@ -779,8 +769,7 @@ struct PyHandler {
                     return false;
                 }
             }
-        }
-        else {
+        } else {
             Py_SETREF(root, replacement);
         }
 
@@ -852,8 +841,7 @@ struct PyHandler {
                     Py_DECREF(replacement);
                     return false;
                 }
-            }
-            else {
+            } else {
                 // Change these to PySequence_Size() and PySequence_SetItem(),
                 // should we implement Decoder.start_array()
                 Py_ssize_t listLen = PyList_GET_SIZE(current.object);
@@ -864,8 +852,7 @@ struct PyHandler {
                     return false;
                 }
             }
-        }
-        else {
+        } else {
             Py_SETREF(root, replacement);
         }
 
@@ -1016,8 +1003,8 @@ struct PyHandler {
     }
 
     bool IsIso8601Offset(const char* str, int& tzoff) {
-         if (!isdigit(str[1]) || !isdigit(str[2]) || str[3] != ':'
-              || !isdigit(str[4]) || !isdigit(str[5])) return false;
+        if (!isdigit(str[1]) || !isdigit(str[2]) || str[3] != ':'
+            || !isdigit(str[4]) || !isdigit(str[5])) return false;
 
         int hofs = 0, mofs = 0, tzsign = 1;
         hofs = digit(1)*10 + digit(2);
@@ -1037,14 +1024,14 @@ struct PyHandler {
             || !isdigit(str[3]) || !isdigit(str[4]) || str[5] != ':'
             || !isdigit(str[6]) || !isdigit(str[7])) return false;
 
-         hours = digit(0)*10 + digit(1);
-         mins = digit(3)*10 + digit(4);
-         secs = digit(6)*10 + digit(7);
+        hours = digit(0)*10 + digit(1);
+        mins = digit(3)*10 + digit(4);
+        secs = digit(6)*10 + digit(7);
 
         if (hours > 23 || mins > 59 || secs > 59) return false;
 
         if (length == 8 || (length == 9 && str[8] == 'Z')) {
-         // just time
+            // just time
             return true;
         }
 
@@ -1089,7 +1076,7 @@ struct PyHandler {
         year = -1;
         month = day = hours = mins = secs = usecs = tzoff = 0;
 
-      // Early exit for values that are clearly not valid (too short or too long)
+        // Early exit for values that are clearly not valid (too short or too long)
         if (length < 8 || length > 35) return false;
 
         bool isDate = str[4] == '-' && str[7] == '-';
@@ -1314,18 +1301,18 @@ loads(PyObject* self, PyObject* args, PyObject* kwargs)
         return NULL;
 
     if (objectHook && !PyCallable_Check(objectHook)) {
-        if (objectHook == Py_None)
+        if (objectHook == Py_None) {
             objectHook = NULL;
-        else {
+        } else {
             PyErr_SetString(PyExc_TypeError, "object_hook is not callable");
             return NULL;
         }
     }
 
     if (numberModeObj) {
-        if (numberModeObj == Py_None)
+        if (numberModeObj == Py_None) {
             numberMode = NM_NONE;
-        else if (PyLong_Check(numberModeObj)) {
+        } else if (PyLong_Check(numberModeObj)) {
             int mode = PyLong_AsLong(numberModeObj);
             if (mode < 0 || mode >= 1<<3) {
                 PyErr_SetString(PyExc_ValueError, "Invalid number_mode");
@@ -1347,9 +1334,9 @@ loads(PyObject* self, PyObject* args, PyObject* kwargs)
     }
 
     if (datetimeModeObj) {
-        if (datetimeModeObj == Py_None)
+        if (datetimeModeObj == Py_None) {
             datetimeMode = DM_NONE;
-        else if (PyLong_Check(datetimeModeObj)) {
+        } else if (PyLong_Check(datetimeModeObj)) {
             int mode = PyLong_AsLong(datetimeModeObj);
             if (!valid_datetime_mode(mode)) {
                 PyErr_SetString(PyExc_ValueError, "Invalid datetime_mode");
@@ -1362,8 +1349,7 @@ loads(PyObject* self, PyObject* args, PyObject* kwargs)
                                 " ISO8601");
                 return NULL;
             }
-        }
-        else {
+        } else {
             PyErr_SetString(PyExc_TypeError,
                             "datetime_mode must be a non-negative integer value or None");
             return NULL;
@@ -1371,17 +1357,16 @@ loads(PyObject* self, PyObject* args, PyObject* kwargs)
     }
 
     if (uuidModeObj) {
-        if (uuidModeObj == Py_None)
+        if (uuidModeObj == Py_None) {
             uuidMode = UM_NONE;
-        else if (PyLong_Check(uuidModeObj)) {
+        } else if (PyLong_Check(uuidModeObj)) {
             int mode = PyLong_AsLong(uuidModeObj);
             if (mode < 0 || mode >= 1<<2) {
                 PyErr_SetString(PyExc_ValueError, "Invalid uuid_mode");
                 return NULL;
             }
             uuidMode = (UuidMode) mode;
-        }
-        else {
+        } else {
             PyErr_SetString(PyExc_TypeError,
                             "uuid_mode must be an integer value or None");
             return NULL;
@@ -1389,17 +1374,16 @@ loads(PyObject* self, PyObject* args, PyObject* kwargs)
     }
 
     if (parseModeObj) {
-        if (parseModeObj == Py_None)
+        if (parseModeObj == Py_None) {
             parseMode = PM_NONE;
-        else if (PyLong_Check(parseModeObj)) {
+        } else if (PyLong_Check(parseModeObj)) {
             int mode = PyLong_AsLong(parseModeObj);
             if (mode < 0 || mode >= 1<<2) {
                 PyErr_SetString(PyExc_ValueError, "Invalid parse_mode");
                 return NULL;
             }
             parseMode = (ParseMode) mode;
-        }
-        else {
+        } else {
             PyErr_SetString(PyExc_TypeError,
                             "parse_mode must be an integer value or None");
             return NULL;
@@ -1412,10 +1396,10 @@ loads(PyObject* self, PyObject* args, PyObject* kwargs)
 
     if (PyUnicode_Check(jsonObject)) {
         jsonStr = PyUnicode_AsUTF8AndSize(jsonObject, &jsonStrLen);
-        if (jsonStr == NULL)
+        if (jsonStr == NULL) {
             return NULL;
-    }
-    else if (PyBytes_Check(jsonObject) || PyByteArray_Check(jsonObject)) {
+        }
+    } else if (PyBytes_Check(jsonObject) || PyByteArray_Check(jsonObject)) {
         asUnicode = PyUnicode_FromEncodedObject(jsonObject, "utf-8", NULL);
         if (asUnicode == NULL)
             return NULL;
@@ -1424,8 +1408,7 @@ loads(PyObject* self, PyObject* args, PyObject* kwargs)
             Py_DECREF(asUnicode);
             return NULL;
         }
-    }
-    else {
+    } else {
         PyErr_SetString(PyExc_TypeError,
                         "Expected string or UTF-8 encoded bytes or bytearray");
         return NULL;
@@ -1499,18 +1482,18 @@ load(PyObject* self, PyObject* args, PyObject* kwargs)
     }
 
     if (objectHook && !PyCallable_Check(objectHook)) {
-        if (objectHook == Py_None)
+        if (objectHook == Py_None) {
             objectHook = NULL;
-        else {
+        } else {
             PyErr_SetString(PyExc_TypeError, "object_hook is not callable");
             return NULL;
         }
     }
 
     if (numberModeObj) {
-        if (numberModeObj == Py_None)
+        if (numberModeObj == Py_None) {
             numberMode = NM_NONE;
-        else if (PyLong_Check(numberModeObj)) {
+        } else if (PyLong_Check(numberModeObj)) {
             int mode = PyLong_AsLong(numberModeObj);
             if (mode < 0 || mode >= 1<<3) {
                 PyErr_SetString(PyExc_ValueError, "Invalid number_mode");
@@ -1532,9 +1515,9 @@ load(PyObject* self, PyObject* args, PyObject* kwargs)
     }
 
     if (datetimeModeObj) {
-        if (datetimeModeObj == Py_None)
+        if (datetimeModeObj == Py_None) {
             datetimeMode = DM_NONE;
-        else if (PyLong_Check(datetimeModeObj)) {
+        } else if (PyLong_Check(datetimeModeObj)) {
             int mode = PyLong_AsLong(datetimeModeObj);
             if (!valid_datetime_mode(mode)) {
                 PyErr_SetString(PyExc_ValueError, "Invalid datetime_mode");
@@ -1547,8 +1530,7 @@ load(PyObject* self, PyObject* args, PyObject* kwargs)
                                 " ISO8601");
                 return NULL;
             }
-        }
-        else {
+        } else {
             PyErr_SetString(PyExc_TypeError,
                             "datetime_mode must be a non-negative integer value or None");
             return NULL;
@@ -1556,17 +1538,16 @@ load(PyObject* self, PyObject* args, PyObject* kwargs)
     }
 
     if (uuidModeObj) {
-        if (uuidModeObj == Py_None)
+        if (uuidModeObj == Py_None) {
             uuidMode = UM_NONE;
-        else if (PyLong_Check(uuidModeObj)) {
+        } else if (PyLong_Check(uuidModeObj)) {
             int mode = PyLong_AsLong(uuidModeObj);
             if (mode < 0 || mode >= 1<<2) {
                 PyErr_SetString(PyExc_ValueError, "Invalid uuid_mode");
                 return NULL;
             }
             uuidMode = (UuidMode) mode;
-        }
-        else {
+        } else {
             PyErr_SetString(PyExc_TypeError,
                             "uuid_mode must be an integer value or None");
             return NULL;
@@ -1574,17 +1555,16 @@ load(PyObject* self, PyObject* args, PyObject* kwargs)
     }
 
     if (parseModeObj) {
-        if (parseModeObj == Py_None)
+        if (parseModeObj == Py_None) {
             parseMode = PM_NONE;
-        else if (PyLong_Check(parseModeObj)) {
+        } else if (PyLong_Check(parseModeObj)) {
             int mode = PyLong_AsLong(parseModeObj);
             if (mode < 0 || mode >= 1<<2) {
                 PyErr_SetString(PyExc_ValueError, "Invalid parse_mode");
                 return NULL;
             }
             parseMode = (ParseMode) mode;
-        }
-        else {
+        } else {
             PyErr_SetString(PyExc_TypeError,
                             "parse_mode must be an integer value or None");
             return NULL;
@@ -1601,8 +1581,7 @@ load(PyObject* self, PyObject* args, PyObject* kwargs)
                 return NULL;
             }
             chunkSize = (size_t) size;
-        }
-        else {
+        } else {
             PyErr_SetString(PyExc_TypeError,
                             "chunk_size must be an unsigned integer value or None");
             return NULL;
@@ -1701,73 +1680,81 @@ static PyTypeObject Decoder_Type = {
                reader.Parse<flags>(ss, handler);                        \
                                                                         \
            but C++ does not allow that...                               \
-         */                                                             \
+        */                                                              \
                                                                         \
-        if (numberMode & NM_NAN)                                        \
-            if (numberMode & NM_NATIVE)                                 \
-                if (parseMode & PM_TRAILING_COMMAS)                     \
-                    if (parseMode & PM_COMMENTS)                        \
+        if (numberMode & NM_NAN) {                                      \
+            if (numberMode & NM_NATIVE) {                               \
+                if (parseMode & PM_TRAILING_COMMAS) {                   \
+                    if (parseMode & PM_COMMENTS) {                      \
                         r.Parse<f |                                     \
                                 kParseNanAndInfFlag |                   \
                                 kParseCommentsFlag |                    \
                                 kParseTrailingCommasFlag>(s, h);        \
-                    else                                                \
+                    } else {                                            \
                         r.Parse<f |                                     \
                                 kParseNanAndInfFlag |                   \
                                 kParseTrailingCommasFlag>(s, h);        \
-                else if (parseMode & PM_COMMENTS)                       \
+                    }                                                   \
+                } else if (parseMode & PM_COMMENTS) {                   \
                     r.Parse<f |                                         \
                             kParseNanAndInfFlag |                       \
                             kParseCommentsFlag>(s, h);                  \
-                else                                                    \
+                } else {                                                \
                     r.Parse<f |                                         \
                             kParseNanAndInfFlag>(s, h);                 \
-            else if (parseMode & PM_TRAILING_COMMAS)                    \
-                if (parseMode & PM_COMMENTS)                            \
+                }                                                       \
+            } else if (parseMode & PM_TRAILING_COMMAS) {                \
+                if (parseMode & PM_COMMENTS) {                          \
                     r.Parse<f |                                         \
                             kParseNumbersAsStringsFlag |                \
                             kParseNanAndInfFlag |                       \
                             kParseCommentsFlag |                        \
                             kParseTrailingCommasFlag>(s, h);            \
-                else                                                    \
+                } else {                                                \
                     r.Parse<f |                                         \
                             kParseNumbersAsStringsFlag |                \
                             kParseNanAndInfFlag |                       \
                             kParseTrailingCommasFlag>(s, h);            \
-            else if (parseMode & PM_COMMENTS)                           \
+                }                                                       \
+            } else if (parseMode & PM_COMMENTS) {                       \
                 r.Parse<f |                                             \
                         kParseNumbersAsStringsFlag |                    \
                         kParseNanAndInfFlag |                           \
                         kParseCommentsFlag>(s, h);                      \
-            else                                                        \
+            } else {                                                    \
                 r.Parse<f |                                             \
                         kParseNumbersAsStringsFlag |                    \
                         kParseNanAndInfFlag>(s, h);                     \
-        else if (numberMode & NM_NATIVE)                                \
-            if (parseMode & PM_TRAILING_COMMAS)                         \
-                if (parseMode & PM_COMMENTS)                            \
+            }                                                           \
+        } else if (numberMode & NM_NATIVE) {                            \
+            if (parseMode & PM_TRAILING_COMMAS) {                       \
+                if (parseMode & PM_COMMENTS) {                          \
                     r.Parse<f |                                         \
                             kParseCommentsFlag |                        \
                             kParseTrailingCommasFlag>(s, h);            \
-                else                                                    \
+                } else {                                                \
                     r.Parse<f |                                         \
                             kParseTrailingCommasFlag>(s, h);            \
-            else if (parseMode & PM_COMMENTS)                           \
+                }                                                       \
+            } else if (parseMode & PM_COMMENTS) {                       \
                 r.Parse<f |                                             \
                         kParseCommentsFlag>(s, h);                      \
-            else                                                        \
+            } else {                                                    \
                 r.Parse<f>(s, h);                                       \
-        else if (parseMode & PM_TRAILING_COMMAS)                        \
-            if (parseMode & PM_COMMENTS)                                \
+            }                                                           \
+        } else if (parseMode & PM_TRAILING_COMMAS) {                    \
+            if (parseMode & PM_COMMENTS) {                              \
                 r.Parse<f |                                             \
                         kParseCommentsFlag |                            \
                         kParseNumbersAsStringsFlag>(s, h);              \
-            else                                                        \
+            } else {                                                    \
                 r.Parse<f |                                             \
                         kParseNumbersAsStringsFlag |                    \
                         kParseTrailingCommasFlag>(s, h);                \
-        else                                                            \
+            }                                                           \
+        } else {                                                        \
             r.Parse<f | kParseNumbersAsStringsFlag>(s, h);              \
+        }                                                               \
     } while(0)
 
 
@@ -1793,8 +1780,7 @@ do_decode(PyObject* decoder, const char* jsonStr, Py_ssize_t jsonStrLen,
         DECODE(reader, kParseInsituFlag, ss, handler);
 
         PyMem_Free(jsonStrCopy);
-    }
-    else {
+    } else {
         PyReadStreamWrapper sw(jsonStream, chunkSize);
 
         DECODE(reader, kParseNoFlags, sw, handler);
@@ -1827,8 +1813,7 @@ do_decode(PyObject* decoder, const char* jsonStr, Py_ssize_t jsonStrLen,
 
         Py_XDECREF(handler.root);
         return NULL;
-    }
-    else if (PyErr_Occurred()) {
+    } else if (PyErr_Occurred()) {
         // Catch possible error raised in associated stream operations
         Py_XDECREF(handler.root);
         return NULL;
@@ -1866,8 +1851,7 @@ decoder_call(PyObject* self, PyObject* args, PyObject* kwargs)
                 return NULL;
             }
             chunkSize = (size_t) size;
-        }
-        else {
+        } else {
             PyErr_SetString(PyExc_TypeError,
                             "chunk_size must be an unsigned integer value or None");
             return NULL;
@@ -1882,8 +1866,7 @@ decoder_call(PyObject* self, PyObject* args, PyObject* kwargs)
         jsonStr = PyUnicode_AsUTF8AndSize(jsonObject, &jsonStrLen);
         if (jsonStr == NULL)
             return NULL;
-    }
-    else if (PyBytes_Check(jsonObject) || PyByteArray_Check(jsonObject)) {
+    } else if (PyBytes_Check(jsonObject) || PyByteArray_Check(jsonObject)) {
         asUnicode = PyUnicode_FromEncodedObject(jsonObject, "utf-8", NULL);
         if (asUnicode == NULL)
             return NULL;
@@ -1892,12 +1875,10 @@ decoder_call(PyObject* self, PyObject* args, PyObject* kwargs)
             Py_DECREF(asUnicode);
             return NULL;
         }
-    }
-    else if (PyObject_HasAttr(jsonObject, read_name)) {
+    } else if (PyObject_HasAttr(jsonObject, read_name)) {
         jsonStr = NULL;
         jsonStrLen = 0;
-    }
-    else {
+    } else {
         PyErr_SetString(PyExc_TypeError,
                         "Expected string or UTF-8 encoded bytes or bytearray");
         return NULL;
@@ -1945,9 +1926,9 @@ decoder_new(PyTypeObject* type, PyObject* args, PyObject* kwargs)
         return NULL;
 
     if (numberModeObj) {
-        if (numberModeObj == Py_None)
+        if (numberModeObj == Py_None) {
             numberMode = NM_NONE;
-        else if (PyLong_Check(numberModeObj)) {
+        } else if (PyLong_Check(numberModeObj)) {
             int mode = PyLong_AsLong(numberModeObj);
             if (mode < 0 || mode >= 1<<3) {
                 PyErr_SetString(PyExc_ValueError, "Invalid number_mode");
@@ -1963,9 +1944,9 @@ decoder_new(PyTypeObject* type, PyObject* args, PyObject* kwargs)
     }
 
     if (datetimeModeObj) {
-        if (datetimeModeObj == Py_None)
+        if (datetimeModeObj == Py_None) {
             datetimeMode = DM_NONE;
-        else if (PyLong_Check(datetimeModeObj)) {
+        } else if (PyLong_Check(datetimeModeObj)) {
             int mode = PyLong_AsLong(datetimeModeObj);
             if (!valid_datetime_mode(mode)) {
                 PyErr_SetString(PyExc_ValueError, "Invalid datetime_mode");
@@ -1978,8 +1959,7 @@ decoder_new(PyTypeObject* type, PyObject* args, PyObject* kwargs)
                                 " ISO8601");
                 return NULL;
             }
-        }
-        else {
+        } else {
             PyErr_SetString(PyExc_TypeError,
                             "datetime_mode must be a non-negative integer value or None");
             return NULL;
@@ -1987,17 +1967,16 @@ decoder_new(PyTypeObject* type, PyObject* args, PyObject* kwargs)
     }
 
     if (uuidModeObj) {
-        if (uuidModeObj == Py_None)
+        if (uuidModeObj == Py_None) {
             uuidMode = UM_NONE;
-        else if (PyLong_Check(uuidModeObj)) {
+        } else if (PyLong_Check(uuidModeObj)) {
             int mode = PyLong_AsLong(uuidModeObj);
             if (mode < 0 || mode >= 1<<2) {
                 PyErr_SetString(PyExc_ValueError, "Invalid uuid_mode");
                 return NULL;
             }
             uuidMode = (UuidMode) mode;
-        }
-        else {
+        } else {
             PyErr_SetString(PyExc_TypeError,
                             "uuid_mode must be an integer value or None");
             return NULL;
@@ -2005,17 +1984,16 @@ decoder_new(PyTypeObject* type, PyObject* args, PyObject* kwargs)
     }
 
     if (parseModeObj) {
-        if (parseModeObj == Py_None)
+        if (parseModeObj == Py_None) {
             parseMode = PM_NONE;
-        else if (PyLong_Check(parseModeObj)) {
+        } else if (PyLong_Check(parseModeObj)) {
             int mode = PyLong_AsLong(parseModeObj);
             if (mode < 0 || mode >= 1<<2) {
                 PyErr_SetString(PyExc_ValueError, "Invalid parse_mode");
                 return NULL;
             }
             parseMode = (ParseMode) mode;
-        }
-        else {
+        } else {
             PyErr_SetString(PyExc_TypeError,
                             "parse_mode must be an integer value or None");
             return NULL;
@@ -2089,14 +2067,13 @@ dumps_internal(
 
     if (object == Py_None) {
         writer->Null();
-    }
-    else if (PyBool_Check(object)) {
+    } else if (PyBool_Check(object)) {
         writer->Bool(object == Py_True);
-    }
-    else if (numberMode & NM_DECIMAL
-             && (is_decimal = PyObject_IsInstance(object, decimal_type))) {
-        if (is_decimal == -1)
+    } else if (numberMode & NM_DECIMAL
+               && (is_decimal = PyObject_IsInstance(object, decimal_type))) {
+        if (is_decimal == -1) {
             return false;
+        }
 
         if (!(numberMode & NM_NAN)) {
             bool is_inf_or_nan;
@@ -2140,8 +2117,7 @@ dumps_internal(
 
         writer->RawValue(decStr, size, kNumberType);
         Py_DECREF(decStrObj);
-    }
-    else if (PyLong_Check(object)) {
+    } else if (PyLong_Check(object)) {
         if (numberMode & NM_NATIVE) {
             int overflow;
             long long i = PyLong_AsLongLongAndOverflow(object, &overflow);
@@ -2176,16 +2152,15 @@ dumps_internal(
             writer->RawValue(intStr, size, kNumberType);
             Py_DECREF(intStrObj);
         }
-    }
-    else if (PyFloat_Check(object)) {
+    } else if (PyFloat_Check(object)) {
         double d = PyFloat_AsDouble(object);
         if (d == -1.0 && PyErr_Occurred())
             return false;
 
         if (IS_NAN(d)) {
-            if (numberMode & NM_NAN)
+            if (numberMode & NM_NAN) {
                 writer->RawValue("NaN", 3, kNumberType);
-            else {
+            } else {
                 PyErr_SetString(PyExc_ValueError,
                                 "Out of range float values are not JSON compliant");
                 return false;
@@ -2195,13 +2170,12 @@ dumps_internal(
                 PyErr_SetString(PyExc_ValueError,
                                 "Out of range float values are not JSON compliant");
                 return false;
-            }
-            else if (d < 0)
+            } else if (d < 0) {
                 writer->RawValue("-Infinity", 9, kNumberType);
-            else
+            } else {
                 writer->RawValue("Infinity", 8, kNumberType);
-        }
-        else {
+            }
+        } else {
             // The RJ dtoa() produces "strange" results for particular values, see #101:
             // use Python's repr() to emit a raw value instead of writer->Double(d)
 
@@ -2220,17 +2194,15 @@ dumps_internal(
             writer->RawValue(rs, l, kNumberType);
             Py_DECREF(dr);
         }
-    }
-    else if (PyUnicode_Check(object)) {
+    } else if (PyUnicode_Check(object)) {
         Py_ssize_t l;
         const char* s = PyUnicode_AsUTF8AndSize(object, &l);
         if (s == NULL)
             return false;
         ASSERT_VALID_SIZE(l);
         writer->String(s, (SizeType) l);
-    }
-    else if (bytesMode == BM_UTF8
-             && (PyBytes_Check(object) || PyByteArray_Check(object))) {
+    } else if (bytesMode == BM_UTF8
+               && (PyBytes_Check(object) || PyByteArray_Check(object))) {
         PyObject* unicodeObj = PyUnicode_FromEncodedObject(object, "utf-8", NULL);
 
         if (unicodeObj == NULL)
@@ -2245,8 +2217,7 @@ dumps_internal(
         ASSERT_VALID_SIZE(l);
         writer->String(s, (SizeType) l);
         Py_DECREF(unicodeObj);
-    }
-    else if (PyList_Check(object)) {
+    } else if (PyList_Check(object)) {
         writer->StartArray();
 
         Py_ssize_t size = PyList_GET_SIZE(object);
@@ -2262,8 +2233,7 @@ dumps_internal(
         }
 
         writer->EndArray();
-    }
-    else if (PyTuple_Check(object)) {
+    } else if (PyTuple_Check(object)) {
         writer->StartArray();
 
         Py_ssize_t size = PyTuple_GET_SIZE(object);
@@ -2279,8 +2249,7 @@ dumps_internal(
         }
 
         writer->EndArray();
-    }
-    else if (PyDict_Check(object)) {
+    } else if (PyDict_Check(object)) {
         writer->StartObject();
 
         Py_ssize_t pos = 0;
@@ -2302,14 +2271,12 @@ dumps_internal(
                     Py_LeaveRecursiveCall();
                     if (!r)
                         return false;
-                }
-                else if (!skipKeys) {
+                } else if (!skipKeys) {
                     PyErr_SetString(PyExc_TypeError, "keys must be strings");
                     return false;
                 }
             }
-        }
-        else {
+        } else {
             std::vector<DictItem> items;
 
             while (PyDict_Next(object, &pos, &key, &item)) {
@@ -2320,8 +2287,7 @@ dumps_internal(
                         return false;
                     ASSERT_VALID_SIZE(l);
                     items.push_back(DictItem(key_str, l, item));
-                }
-                else if (!skipKeys) {
+                } else if (!skipKeys) {
                     PyErr_SetString(PyExc_TypeError, "keys must be strings");
                     return false;
                 }
@@ -2341,9 +2307,8 @@ dumps_internal(
         }
 
         writer->EndObject();
-    }
-    else if (datetimeMode != DM_NONE
-             && (PyTime_Check(object) || PyDateTime_Check(object))) {
+    } else if (datetimeMode != DM_NONE
+               && (PyTime_Check(object) || PyDateTime_Check(object))) {
         unsigned int year, month, day, hour, min, sec, microsec;
         PyObject* dtObject = object;
         PyObject* asUTC = NULL;
@@ -2514,9 +2479,9 @@ dumps_internal(
 
                 Py_DECREF(timestampObj);
 
-                if (datetimeMode & DM_ONLY_SECONDS)
+                if (datetimeMode & DM_ONLY_SECONDS) {
                     writer->Int64((int64_t) timestamp);
-                else {
+                } else {
                     // Writer.SetMaxDecimalPlaces(6) truncates the value,
                     // so for example 1514893636.276703 would come out as
                     // 1514893636.276702, because its exact double value is
@@ -2543,8 +2508,7 @@ dumps_internal(
             }
         }
         Py_XDECREF(asUTC);
-    }
-    else if (datetimeMode != DM_NONE && PyDate_Check(object)) {
+    } else if (datetimeMode != DM_NONE && PyDate_Check(object)) {
         unsigned int year = PyDateTime_GET_YEAR(object);
         unsigned int month = PyDateTime_GET_MONTH(object);
         unsigned int day = PyDateTime_GET_DAY(object);
@@ -2588,9 +2552,9 @@ dumps_internal(
 
             Py_DECREF(timestampObj);
 
-            if (datetimeMode & DM_ONLY_SECONDS)
+            if (datetimeMode & DM_ONLY_SECONDS) {
                 writer->Int64((int64_t) timestamp);
-            else {
+            } else {
                 // Writer.SetMaxDecimalPlaces(6) truncates the value,
                 // so for example 1514893636.276703 would come out as
                 // 1514893636.276702, because its exact double value is
@@ -2603,9 +2567,8 @@ dumps_internal(
                 writer->RawValue(tsStr, size, kNumberType);
             }
         }
-    }
-    else if (uuidMode != UM_NONE
-             && PyObject_TypeCheck(object, (PyTypeObject*) uuid_type)) {
+    } else if (uuidMode != UM_NONE
+               && PyObject_TypeCheck(object, (PyTypeObject*) uuid_type)) {
         PyObject* hexval;
         if (uuidMode == UM_CANONICAL)
             hexval = PyObject_Str(object);
@@ -2633,8 +2596,7 @@ dumps_internal(
         memcpy(quoted + 1, s, size);
         writer->RawValue(quoted, (SizeType) size + 2, kStringType);
         Py_DECREF(hexval);
-    }
-    else if (PyIter_Check(object)) {
+    } else if (PyIter_Check(object)) {
         PyObject* iterator = PyObject_GetIter(object);
         if (iterator == NULL)
             return false;
@@ -2664,8 +2626,7 @@ dumps_internal(
             return false;
 
         writer->EndArray();
-    }
-    else if PyObject_TypeCheck(object, &RawJSON_Type) {
+    } else if (PyObject_TypeCheck(object, &RawJSON_Type)) {
         const char* jsonStr;
         Py_ssize_t l;
         jsonStr = PyUnicode_AsUTF8AndSize(((RawJSON*) object)->value, &l);
@@ -2673,8 +2634,7 @@ dumps_internal(
             return false;
         ASSERT_VALID_SIZE(l);
         writer->RawValue(jsonStr, (SizeType) l, kStringType);
-    }
-    else if (defaultFn) {
+    } else if (defaultFn) {
         PyObject* retval = PyObject_CallFunctionObjArgs(defaultFn, object, NULL);
         if (retval == NULL)
             return false;
@@ -2687,8 +2647,7 @@ dumps_internal(
         Py_DECREF(retval);
         if (!r)
             return false;
-    }
-    else {
+    } else {
         PyErr_Format(PyExc_TypeError, "%R is not JSON serializable", object);
         return false;
     }
@@ -2782,9 +2741,9 @@ dumps(PyObject* self, PyObject* args, PyObject* kwargs)
         return NULL;
 
     if (defaultFn && !PyCallable_Check(defaultFn)) {
-        if (defaultFn == Py_None)
+        if (defaultFn == Py_None) {
             defaultFn = NULL;
-        else {
+        } else {
             PyErr_SetString(PyExc_TypeError, "default must be a callable");
             return NULL;
         }
@@ -2802,25 +2761,26 @@ dumps(PyObject* self, PyObject* args, PyObject* kwargs)
         }
     }
     if (writeModeObj) {
-        if (writeModeObj == Py_None)
+        if (writeModeObj == Py_None) {
             writeMode = WM_COMPACT;
-        else if (PyLong_Check(writeModeObj)) {
+        } else if (PyLong_Check(writeModeObj)) {
             int mode = PyLong_AsLong(writeModeObj);
             if (mode < 0 || mode >= 1<<2) {
                 PyErr_SetString(PyExc_ValueError, "Invalid write_mode");
                 return NULL;
             }
-            if (mode == WM_COMPACT)
+            if (mode == WM_COMPACT) {
                 writeMode = WM_COMPACT;
-            else if (mode & WM_SINGLE_LINE_ARRAY)
+            } else if (mode & WM_SINGLE_LINE_ARRAY) {
                 writeMode = (WriteMode) (writeMode | WM_SINGLE_LINE_ARRAY);
+            }
         }
     }
 
     if (numberModeObj) {
-        if (numberModeObj == Py_None)
+        if (numberModeObj == Py_None) {
             numberMode = NM_NONE;
-        else if (PyLong_Check(numberModeObj)) {
+        } else if (PyLong_Check(numberModeObj)) {
             int mode = PyLong_AsLong(numberModeObj);
             if (mode < 0 || mode >= 1<<3) {
                 PyErr_SetString(PyExc_ValueError, "Invalid number_mode");
@@ -2836,18 +2796,17 @@ dumps(PyObject* self, PyObject* args, PyObject* kwargs)
             numberMode = (NumberMode) (numberMode & ~NM_NAN);
     }
 
-   if (datetimeModeObj) {
-        if (datetimeModeObj == Py_None)
+    if (datetimeModeObj) {
+        if (datetimeModeObj == Py_None) {
             datetimeMode = DM_NONE;
-        else if (PyLong_Check(datetimeModeObj)) {
+        } else if (PyLong_Check(datetimeModeObj)) {
             int mode = PyLong_AsLong(datetimeModeObj);
             if (!valid_datetime_mode(mode)) {
                 PyErr_SetString(PyExc_ValueError, "Invalid datetime_mode");
                 return NULL;
             }
             datetimeMode = (DatetimeMode) mode;
-        }
-        else {
+        } else {
             PyErr_SetString(PyExc_TypeError,
                             "datetime_mode must be a non-negative integer value or None");
             return NULL;
@@ -2855,32 +2814,30 @@ dumps(PyObject* self, PyObject* args, PyObject* kwargs)
     }
 
     if (uuidModeObj) {
-        if (uuidModeObj == Py_None)
+        if (uuidModeObj == Py_None) {
             uuidMode = UM_NONE;
-        else if (PyLong_Check(uuidModeObj)) {
+        } else if (PyLong_Check(uuidModeObj)) {
             uuidMode = (UuidMode) PyLong_AsLong(uuidModeObj);
             if (uuidMode < UM_NONE || uuidMode > UM_HEX) {
                 PyErr_SetString(PyExc_ValueError, "Invalid uuid_mode");
                 return NULL;
             }
-        }
-        else {
+        } else {
             PyErr_SetString(PyExc_TypeError, "uuid_mode must be an integer value");
             return NULL;
         }
     }
 
     if (bytesModeObj) {
-        if (bytesModeObj == Py_None)
+        if (bytesModeObj == Py_None) {
             bytesMode = BM_NONE;
-        else if (PyLong_Check(bytesModeObj)) {
+        } else if (PyLong_Check(bytesModeObj)) {
             bytesMode = (BytesMode) PyLong_AsLong(bytesModeObj);
             if (bytesMode < BM_NONE || bytesMode > BM_UTF8) {
                 PyErr_SetString(PyExc_ValueError, "Invalid bytes_mode");
                 return NULL;
             }
-        }
-        else {
+        } else {
             PyErr_SetString(PyExc_TypeError, "bytes_mode must be an integer value");
             return NULL;
         }
@@ -2967,9 +2924,9 @@ dump(PyObject* self, PyObject* args, PyObject* kwargs)
         return NULL;
 
     if (defaultFn && !PyCallable_Check(defaultFn)) {
-        if (defaultFn == Py_None)
+        if (defaultFn == Py_None) {
             defaultFn = NULL;
-        else {
+        } else {
             PyErr_SetString(PyExc_TypeError, "default must be a callable");
             return NULL;
         }
@@ -2987,25 +2944,25 @@ dump(PyObject* self, PyObject* args, PyObject* kwargs)
         }
     }
     if (writeModeObj) {
-        if (writeModeObj == Py_None)
+        if (writeModeObj == Py_None) {
             writeMode = WM_COMPACT;
-        else if (PyLong_Check(writeModeObj)) {
+        } else if (PyLong_Check(writeModeObj)) {
             int mode = PyLong_AsLong(writeModeObj);
             if (mode < 0 || mode >= 1<<2) {
                 PyErr_SetString(PyExc_ValueError, "Invalid write_mode");
                 return NULL;
             }
-            if (mode == WM_COMPACT)
+            if (mode == WM_COMPACT) {
                 writeMode = WM_COMPACT;
-            else if (mode & WM_SINGLE_LINE_ARRAY)
+            } else if (mode & WM_SINGLE_LINE_ARRAY)
                 writeMode = (WriteMode) (writeMode | WM_SINGLE_LINE_ARRAY);
         }
     }
 
     if (numberModeObj) {
-        if (numberModeObj == Py_None)
+        if (numberModeObj == Py_None) {
             numberMode = NM_NONE;
-        else if (PyLong_Check(numberModeObj)) {
+        } else if (PyLong_Check(numberModeObj)) {
             int mode = PyLong_AsLong(numberModeObj);
             if (mode < 0 || mode >= 1<<3) {
                 PyErr_SetString(PyExc_ValueError, "Invalid number_mode");
@@ -3021,18 +2978,17 @@ dump(PyObject* self, PyObject* args, PyObject* kwargs)
             numberMode = (NumberMode) (numberMode & ~NM_NAN);
     }
 
-   if (datetimeModeObj) {
-        if (datetimeModeObj == Py_None)
+    if (datetimeModeObj) {
+        if (datetimeModeObj == Py_None) {
             datetimeMode = DM_NONE;
-        else if (PyLong_Check(datetimeModeObj)) {
+        } else if (PyLong_Check(datetimeModeObj)) {
             int mode = PyLong_AsLong(datetimeModeObj);
             if (!valid_datetime_mode(mode)) {
                 PyErr_SetString(PyExc_ValueError, "Invalid datetime_mode");
                 return NULL;
             }
             datetimeMode = (DatetimeMode) mode;
-        }
-        else {
+        } else {
             PyErr_SetString(PyExc_TypeError,
                             "datetime_mode must be a non-negative integer value or None");
             return NULL;
@@ -3040,32 +2996,30 @@ dump(PyObject* self, PyObject* args, PyObject* kwargs)
     }
 
     if (uuidModeObj) {
-        if (uuidModeObj == Py_None)
+        if (uuidModeObj == Py_None) {
             uuidMode = UM_NONE;
-        else if (PyLong_Check(uuidModeObj)) {
+        } else if (PyLong_Check(uuidModeObj)) {
             uuidMode = (UuidMode) PyLong_AsLong(uuidModeObj);
             if (uuidMode < UM_NONE || uuidMode > UM_HEX) {
                 PyErr_SetString(PyExc_ValueError, "Invalid uuid_mode");
                 return NULL;
             }
-        }
-        else {
+        } else {
             PyErr_SetString(PyExc_TypeError, "uuid_mode must be an integer value");
             return NULL;
         }
     }
 
     if (bytesModeObj) {
-        if (bytesModeObj == Py_None)
+        if (bytesModeObj == Py_None) {
             bytesMode = BM_NONE;
-        else if (PyLong_Check(bytesModeObj)) {
+        } else if (PyLong_Check(bytesModeObj)) {
             bytesMode = (BytesMode) PyLong_AsLong(bytesModeObj);
             if (bytesMode < BM_NONE || bytesMode > BM_UTF8) {
                 PyErr_SetString(PyExc_ValueError, "Invalid bytes_mode");
                 return NULL;
             }
-        }
-        else {
+        } else {
             PyErr_SetString(PyExc_TypeError, "bytes_mode must be an integer value");
             return NULL;
         }
@@ -3081,8 +3035,7 @@ dump(PyObject* self, PyObject* args, PyObject* kwargs)
                 return NULL;
             }
             chunkSize = (size_t) size;
-        }
-        else {
+        } else {
             PyErr_SetString(PyExc_TypeError,
                             "chunk_size must be an unsigned integer value or None");
             return NULL;
@@ -3195,14 +3148,12 @@ do_encode(PyObject* value, bool skipInvalidKeys, PyObject* defaultFn, bool sortK
             GenericStringBuffer<ASCII<> > buf;
             Writer<GenericStringBuffer<ASCII<> >, UTF8<>, ASCII<> > writer(buf);
             return DUMPS_INTERNAL_CALL;
-        }
-        else {
+        } else {
             StringBuffer buf;
             Writer<StringBuffer> writer(buf);
             return DUMPS_INTERNAL_CALL;
         }
-    }
-    else if (ensureAscii) {
+    } else if (ensureAscii) {
         GenericStringBuffer<ASCII<> > buf;
         PrettyWriter<GenericStringBuffer<ASCII<> >, UTF8<>, ASCII<> > writer(buf);
         writer.SetIndent(' ', indent);
@@ -3210,8 +3161,7 @@ do_encode(PyObject* value, bool skipInvalidKeys, PyObject* defaultFn, bool sortK
             writer.SetFormatOptions(kFormatSingleLineArray);
         }
         return DUMPS_INTERNAL_CALL;
-    }
-    else {
+    } else {
         StringBuffer buf;
         PrettyWriter<StringBuffer> writer(buf);
         writer.SetIndent(' ', indent);
@@ -3223,16 +3173,16 @@ do_encode(PyObject* value, bool skipInvalidKeys, PyObject* defaultFn, bool sortK
 }
 
 
-#define DUMP_INTERNAL_CALL                              \
-    (dumps_internal(&writer,                            \
-                    value,                              \
-                    skipInvalidKeys,                    \
-                    defaultFn,                          \
-                    sortKeys,                           \
-                    numberMode,                         \
-                    datetimeMode,                       \
-                    uuidMode,                           \
-                    bytesMode)                          \
+#define DUMP_INTERNAL_CALL                      \
+    (dumps_internal(&writer,                    \
+                    value,                      \
+                    skipInvalidKeys,            \
+                    defaultFn,                  \
+                    sortKeys,                   \
+                    numberMode,                 \
+                    datetimeMode,               \
+                    uuidMode,                   \
+                    bytesMode)                  \
      ? Py_INCREF(Py_None), Py_None : NULL)
 
 
@@ -3249,21 +3199,18 @@ do_stream_encode(PyObject* value, PyObject* stream, size_t chunkSize,
         if (ensureAscii) {
             Writer<PyWriteStreamWrapper, UTF8<>, ASCII<> > writer(os);
             return DUMP_INTERNAL_CALL;
-        }
-        else {
+        } else {
             Writer<PyWriteStreamWrapper> writer(os);
             return DUMP_INTERNAL_CALL;
         }
-    }
-    else if (ensureAscii) {
+    } else if (ensureAscii) {
         PrettyWriter<PyWriteStreamWrapper, UTF8<>, ASCII<> > writer(os);
         writer.SetIndent(' ', indent);
         if (writeMode & WM_SINGLE_LINE_ARRAY) {
             writer.SetFormatOptions(kFormatSingleLineArray);
         }
         return DUMP_INTERNAL_CALL;
-    }
-    else {
+    } else {
         PrettyWriter<PyWriteStreamWrapper> writer(os);
         writer.SetIndent(' ', indent);
         if (writeMode & WM_SINGLE_LINE_ARRAY) {
@@ -3318,8 +3265,7 @@ encoder_call(PyObject* self, PyObject* args, PyObject* kwargs)
                     return NULL;
                 }
                 chunkSize = (size_t) size;
-            }
-            else {
+            } else {
                 PyErr_SetString(PyExc_TypeError,
                                 "chunk_size must be an unsigned integer value or None");
                 return NULL;
@@ -3329,8 +3275,7 @@ encoder_call(PyObject* self, PyObject* args, PyObject* kwargs)
                                   e->sortKeys, e->ensureAscii, e->writeMode, e->indent,
                                   e->numberMode, e->datetimeMode, e->uuidMode,
                                   e->bytesMode);
-    }
-    else {
+    } else {
         result = do_encode(value, e->skipInvalidKeys, defaultFn, e->sortKeys,
                            e->ensureAscii, e->writeMode, e->indent,
                            e->numberMode, e->datetimeMode, e->uuidMode, e->bytesMode);
@@ -3401,25 +3346,25 @@ encoder_new(PyTypeObject* type, PyObject* args, PyObject* kwargs)
         }
     }
     if (writeModeObj) {
-        if (writeModeObj == Py_None)
+        if (writeModeObj == Py_None) {
             writeMode = WM_COMPACT;
-        else if (PyLong_Check(writeModeObj)) {
+        } else if (PyLong_Check(writeModeObj)) {
             int mode = PyLong_AsLong(writeModeObj);
             if (mode < 0 || mode >= 1<<2) {
                 PyErr_SetString(PyExc_ValueError, "Invalid write_mode");
                 return NULL;
             }
-            if (mode == WM_COMPACT)
+            if (mode == WM_COMPACT) {
                 writeMode = WM_COMPACT;
-            else if (mode & WM_SINGLE_LINE_ARRAY)
+            } else if (mode & WM_SINGLE_LINE_ARRAY)
                 writeMode = (WriteMode) (writeMode | WM_SINGLE_LINE_ARRAY);
         }
     }
 
     if (numberModeObj) {
-        if (numberModeObj == Py_None)
+        if (numberModeObj == Py_None) {
             numberMode = NM_NONE;
-        else if (PyLong_Check(numberModeObj)) {
+        } else if (PyLong_Check(numberModeObj)) {
             int mode = PyLong_AsLong(numberModeObj);
             if (mode < 0 || mode >= 1<<3) {
                 PyErr_SetString(PyExc_ValueError, "Invalid number_mode");
@@ -3429,18 +3374,17 @@ encoder_new(PyTypeObject* type, PyObject* args, PyObject* kwargs)
         }
     }
 
-   if (datetimeModeObj) {
-        if (datetimeModeObj == Py_None)
+    if (datetimeModeObj) {
+        if (datetimeModeObj == Py_None) {
             datetimeMode = DM_NONE;
-        else if (PyLong_Check(datetimeModeObj)) {
+        } else if (PyLong_Check(datetimeModeObj)) {
             int mode = PyLong_AsLong(datetimeModeObj);
             if (!valid_datetime_mode(mode)) {
                 PyErr_SetString(PyExc_ValueError, "Invalid datetime_mode");
                 return NULL;
             }
             datetimeMode = (DatetimeMode) mode;
-        }
-        else {
+        } else {
             PyErr_SetString(PyExc_TypeError,
                             "datetime_mode must be a non-negative integer value or None");
             return NULL;
@@ -3448,32 +3392,30 @@ encoder_new(PyTypeObject* type, PyObject* args, PyObject* kwargs)
     }
 
     if (uuidModeObj) {
-        if (uuidModeObj == Py_None)
+        if (uuidModeObj == Py_None) {
             uuidMode = UM_NONE;
-        else if (PyLong_Check(uuidModeObj)) {
+        } else if (PyLong_Check(uuidModeObj)) {
             uuidMode = (UuidMode) PyLong_AsLong(uuidModeObj);
             if (uuidMode < UM_NONE || uuidMode > UM_HEX) {
                 PyErr_SetString(PyExc_ValueError, "Invalid uuid_mode");
                 return NULL;
             }
-        }
-        else {
+        } else {
             PyErr_SetString(PyExc_TypeError, "uuid_mode must be an integer value");
             return NULL;
         }
     }
 
     if (bytesModeObj) {
-        if (bytesModeObj == Py_None)
+        if (bytesModeObj == Py_None) {
             bytesMode = BM_NONE;
-        else if (PyLong_Check(bytesModeObj)) {
+        } else if (PyLong_Check(bytesModeObj)) {
             bytesMode = (BytesMode) PyLong_AsLong(bytesModeObj);
             if (bytesMode < BM_NONE || bytesMode > BM_UTF8) {
                 PyErr_SetString(PyExc_ValueError, "Invalid bytes_mode");
                 return NULL;
             }
-        }
-        else {
+        } else {
             PyErr_SetString(PyExc_TypeError, "bytes_mode must be an integer value");
             return NULL;
         }
@@ -3571,13 +3513,11 @@ static PyObject* validator_call(PyObject* self, PyObject* args, PyObject* kwargs
         jsonStr = PyBytes_AsString(jsonObject);
         if (jsonStr == NULL)
             return NULL;
-    }
-    else if (PyUnicode_Check(jsonObject)) {
+    } else if (PyUnicode_Check(jsonObject)) {
         jsonStr = PyUnicode_AsUTF8(jsonObject);
         if (jsonStr == NULL)
             return NULL;
-    }
-    else {
+    } else {
         PyErr_SetString(PyExc_TypeError, "Expected string or UTF-8 encoded bytes");
         return NULL;
     }
@@ -3646,13 +3586,11 @@ static PyObject* validator_new(PyTypeObject* type, PyObject* args, PyObject* kwa
         jsonStr = PyBytes_AsString(jsonObject);
         if (jsonStr == NULL)
             return NULL;
-    }
-    else if (PyUnicode_Check(jsonObject)) {
+    } else if (PyUnicode_Check(jsonObject)) {
         jsonStr = PyUnicode_AsUTF8(jsonObject);
         if (jsonStr == NULL)
             return NULL;
-    }
-    else {
+    } else {
         PyErr_SetString(PyExc_TypeError, "Expected string or UTF-8 encoded bytes");
         return NULL;
     }
