@@ -49,7 +49,7 @@ To reproduce the tables above, run:
 
 .. code-block:: bash
 
-   $ make benchmark-tables
+   $ make benchmarks-tables
 
 
 Compare different versions
