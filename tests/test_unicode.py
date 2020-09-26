@@ -6,7 +6,6 @@
 # :Copyright: © 2016, 2017, 2018, 2020 Lele Gaifax
 #
 
-import io
 import json
 
 import pytest

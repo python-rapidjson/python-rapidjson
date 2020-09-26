@@ -8,8 +8,6 @@
 
 import enum
 
-import pytest
-
 import rapidjson as rj
 
 

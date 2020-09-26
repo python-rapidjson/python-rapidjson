@@ -25,7 +25,7 @@ composite_object = {
         pellentesque quis sollicitudin id, adipiscing.
         """,
     'list': list(range(200)),
-    'dict': dict((str(i),'a') for i in list(range(200))),
+    'dict': dict((str(i),'a') for i in range(200)),
     'int': 100100100,
     'float': 100999.123456
 }
@@ -60,7 +60,7 @@ complex_object = [
     [user, friends],  [user, friends],  [user, friends]
 ]
 
-for x in range(256):
+for _ in range(256):
     doubles.append(sys.maxsize * random.random())
     numbers.append(sys.maxsize * random.random())
     numbers.append(random.randint(0, sys.maxsize))
@@ -75,11 +75,11 @@ for x in range(256):
                                     random.randint(0, 59)),
                       datetime.datetime.now()])
 
-for y in range(100):
+for _ in range(100):
     arrays = []
     list_dicts.append({str(random.random()*20): int(random.random()*1000000)})
 
-    for x in range(100):
+    for _ in range(100):
         arrays.append({str(random.random() * 20): int(random.random()*1000000)})
         dict_lists[str(random.random() * 20)] = arrays
 

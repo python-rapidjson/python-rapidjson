@@ -57,7 +57,7 @@ def test_larger_structure(dumps, loads):
             pellentesque quis sollicitudin id, adipiscing.
             """,
         'list': list(range(200)),
-        'dict': dict((str(i),'a') for i in list(range(200))),
+        'dict': dict((str(i),'a') for i in range(200)),
         'int': 100100100,
         'float': 100999.123456
     }
@@ -118,7 +118,7 @@ def test_encoder_default():
 
 
 def test_doubles(dumps, loads):
-    for x in range(100000):
+    for _ in range(100000):
         d = sys.maxsize * random.random()
         dumped = dumps(d)
         loaded = loads(dumped)
