@@ -5,7 +5,7 @@
 # :Copyright: © 2017, 2018, 2019, 2020 Lele Gaifax
 #
 
-# Here we execute the Python 3.6 tests; Python 3.5, 3.7 and 3.8 tests are run by
+# Here we execute the Python 3.6 tests; Python 3.7, 3.8 and 3.9 tests are run by
 # cibuildwheel, inside the manylinux1 Docker image.
 #
 # We also run tests for memory leaks (which require a debug build of python)
@@ -31,7 +31,7 @@ env:
   global:
     - CIBW_TEST_REQUIRES="pytest pytest-benchmark pytz"
     - CIBW_TEST_COMMAND="py.test {project}/tests"
-    - CIBW_SKIP="cp2* cp33*"
+    - CIBW_SKIP="cp2* cp33* cp34* cp35*"
     - TWINE_USERNAME=lelit
       # Note: TWINE_PASSWORD is set in Travis settings
 
@@ -54,7 +54,7 @@ script:
   # so we remove bytecode files before running it.
   - find . -name __pycache__ -exec rm -rf {} +
   - |
-    pip3 install cibuildwheel==1.1.0
+    pip3 install cibuildwheel==1.6.2
     cibuildwheel --output-dir wheelhouse
     if [[ -n "$TRAVIS_TAG" && -z "$RUN_DEBUG_PYTHON" ]]; then
       pip3 install twine
