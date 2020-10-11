@@ -6,9 +6,6 @@
 # :Copyright: © 2017, 2020 Lele Gaifax
 #
 
-import pytest
-
-
 # from http://json.org/JSON_checker/test/pass2.json
 JSON = r'''
 [[[[[[[[[[[[[[[[[[["Not too deep"]]]]]]]]]]]]]]]]]]]

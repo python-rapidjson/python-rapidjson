@@ -585,7 +585,7 @@ def test_object_hook():
 def test_invalid_loads_params(posargs, kwargs, loads):
     try:
         loads(*posargs, **kwargs)
-    except (TypeError, ValueError) as e:
+    except (TypeError, ValueError):
         pass
     else:
         assert False, "Expected either a TypeError or a ValueError"
@@ -610,7 +610,7 @@ def test_invalid_loads_params(posargs, kwargs, loads):
 def test_invalid_dumps_params(posargs, kwargs, dumps):
     try:
         dumps(*posargs, **kwargs)
-    except (TypeError, ValueError) as e:
+    except (TypeError, ValueError):
         pass
     else:
         assert False, "Expected either a TypeError or a ValueError"

@@ -86,7 +86,7 @@ ARRAY_LOAD = {'datetime_mode': rj.DM_ISO8601,
 ])
 def test_leaks(value, dumps_options, loads_options):
     rc0 = sys.gettotalrefcount()
-    for i in range(1000):
+    for _ in range(1000):
         asjson = rj.dumps(value, **dumps_options)
         aspython = rj.loads(asjson, **loads_options)
         del asjson
@@ -95,7 +95,7 @@ def test_leaks(value, dumps_options, loads_options):
     assert (rc1 - rc0) < THRESHOLD
 
     rc0 = sys.gettotalrefcount()
-    for i in range(1000):
+    for _ in range(1000):
         stream = io.BytesIO()
         none = rj.dump(value, stream, **dumps_options)
         stream.seek(0)
@@ -132,7 +132,7 @@ def test_decoder_call_leaks():
 
     decoder = MyDecoder()
     rc0 = sys.gettotalrefcount()
-    for i in range(1000):
+    for _ in range(1000):
         value = decoder('["foo", {"foo": "bar"}]')
         del value
     rc1 = sys.gettotalrefcount()
@@ -155,7 +155,7 @@ def test_encoder_call_leaks(value):
     encoder = MyEncoder(value)
     foo = Foo()
     rc0 = sys.gettotalrefcount()
-    for i in range(1000):
+    for _ in range(1000):
         value = encoder(foo)
         del value
     rc1 = sys.gettotalrefcount()
@@ -166,7 +166,7 @@ def test_encoder_call_leaks(value):
 def test_rawjson_constructor():
     raw_json = rj.RawJSON('["foo", "bar"]')
     rc0 = sys.gettotalrefcount()
-    for i in range(1000):
+    for _ in range(1000):
         value = '"foobar"'
         raw_json.__init__(value)
         del value
@@ -177,7 +177,7 @@ def test_rawjson_constructor():
 @pytest.mark.skipif(not hasattr(sys, 'gettotalrefcount'), reason='Non-debug Python')
 def test_rawjson_new():
     rc0 = sys.gettotalrefcount()
-    for i in range(1000):
+    for _ in range(1000):
         raw_json = rj.RawJSON('["foo", "bar"]')
         del raw_json
     rc1 = sys.gettotalrefcount()
