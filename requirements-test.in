@@ -1,0 +1,12 @@
+# -*- coding: utf-8; mode: conf-unix -*-
+# :Project:   python-rapidjson -- CI (tox) tests requirements
+# :Author:    John Anderson <sontek@gmail.com>
+# :License:   MIT License
+# :Copyright: © 2015 John Anderson
+# :Copyright: © 2015 Ken Robbins
+# :Copyright: © 2015, 2017, 2018 Lele Gaifax
+#
+
+pytest
+pytz
+sphinx
