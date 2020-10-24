@@ -8,11 +8,11 @@
 environment:
   CIBW_TEST_REQUIRES: "pytest pytz"
   CIBW_TEST_COMMAND: "py.test {project}\\tests"
-  CIBW_SKIP: "cp2* cp33*"
+  CIBW_SKIP: "cp2* cp33* cp34* cp35*"
   TWINE_USERNAME: lelit
   # Note: TWINE_PASSWORD is set in Appveyor settings
   matrix:
-    - PYTHON: "C:\\Python35-x64\\python.exe"
+    - PYTHON: "C:\\Python38-x64\\python.exe"
 
 install: "git submodule update --init --recursive"
 
