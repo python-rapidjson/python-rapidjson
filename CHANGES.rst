@@ -4,16 +4,36 @@ Changes
 0.9.2 (unreleased)
 ~~~~~~~~~~~~~~~~~~
 
+* Use `current master`__ version of rapidjson
+
+  __ https://github.com/Tencent/rapidjson/commit/0ccdbf364c577803e2a751f5aededce935314313
+
+* Enable GH Actions-based test workflow, thanks to Martin Thoma (`PR #143`__)
+
+  __ https://github.com/python-rapidjson/python-rapidjson/issues/143
+
+* Produce Python 3.9 wheels, disable testing under Python < 3.6
+
+* Make the character used for indentation in pretty mode a parameter (`issue #135`__)
+
+  __ https://github.com/python-rapidjson/python-rapidjson/issues/135
+
 * Handle wider precision range in timestamps fractional seconds (`PR 133`__), thanks to
   Karl Seguin
 
   __ https://github.com/python-rapidjson/python-rapidjson/pull/133
 
+* Add comparison benchmarks against orjson and hyperjson (`issue #130` and `PR #131`__,
+  thanks to Sebastian Pipping)
+
+  __ https://github.com/python-rapidjson/python-rapidjson/issues/130
+  __ https://github.com/python-rapidjson/python-rapidjson/pull/131
+
 
 0.9.1 (2019-11-13)
 ~~~~~~~~~~~~~~~~~~
 
-* Fix memory leak in case of failed validation (`issue 126`__)
+* Fix memory leak in case of failed validation (`issue #126`__)
 
   __ https://github.com/python-rapidjson/python-rapidjson/issues/126
 
