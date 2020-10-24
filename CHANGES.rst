@@ -1,7 +1,7 @@
 Changes
 -------
 
-0.9.2 (unreleased)
+0.9.2 (2020-10-24)
 ~~~~~~~~~~~~~~~~~~
 
 * Use `current master`__ version of rapidjson
@@ -23,7 +23,7 @@ Changes
 
   __ https://github.com/python-rapidjson/python-rapidjson/pull/133
 
-* Add comparison benchmarks against orjson and hyperjson (`issue #130` and `PR #131`__,
+* Add comparison benchmarks against orjson and hyperjson (`issue #130`__ and `PR #131`__,
   thanks to Sebastian Pipping)
 
   __ https://github.com/python-rapidjson/python-rapidjson/issues/130
