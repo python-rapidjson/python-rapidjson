@@ -31,7 +31,7 @@ env:
   global:
     - CIBW_TEST_REQUIRES="pytest pytest-benchmark pytz"
     - CIBW_TEST_COMMAND="py.test {project}/tests"
-    - CIBW_SKIP="cp2* cp33* cp34* cp35*"
+    - CIBW_SKIP="cp2* cp33* cp34* cp35* pp*"
     - TWINE_USERNAME=lelit
       # Note: TWINE_PASSWORD is set in Travis settings
 
