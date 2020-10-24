@@ -1,7 +1,7 @@
 Changes
 -------
 
-0.9.3 (unreleased)
+0.9.3 (2020-10-24)
 ~~~~~~~~~~~~~~~~~~
 
 * Fix access to ``Encoder`` instance attributes (`issue #147`__)
