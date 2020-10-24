@@ -52,7 +52,8 @@ def test_load_surrogate(j, loads):
     '"\\udfff"',
 ])
 def test_unicode_decode_error(j, loads):
-    with pytest.raises(UnicodeDecodeError, match="'utf-8' codec can't decode byte"):
+    with pytest.raises(rapidjson.JSONDecodeError,
+                       match="The surrogate pair in string is invalid."):
         loads(j)
 
 
