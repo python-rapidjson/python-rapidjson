@@ -30,7 +30,8 @@
    :param bool ensure_ascii: whether the output should contain :ref:`only ASCII
                              characters <ensure-ascii>`
    :param int write_mode: enable particular :ref:`pretty print <write-mode>` behaviors
-   :param int indent: indentation width when `write_mode` is not :data:`WM_COMPACT`
+   :param indent: either an integer, the indentation width, or a string, that will be used
+                  as line separator, when `write_mode` is not :data:`WM_COMPACT`
    :param bool sort_keys: whether dictionary keys should be :ref:`sorted
                           alphabetically <sort-keys>`
    :param int number_mode: enable particular :ref:`behaviors in handling numbers
@@ -40,6 +41,69 @@
    :param int uuid_mode: how should :ref:`UUID instances be handled <dumps-uuid-mode>`
    :param int bytes_mode: how should :ref:`bytes instances be handled <dumps-bytes-mode>`
 
+   .. rubric:: Attributes
+
+   .. attribute:: bytes_mode
+
+      :type: int
+
+      How bytes values should be treated.
+
+   .. attribute:: datetime_mode
+
+      :type: int
+
+      Whether and how datetime values should be encoded.
+
+   .. attribute:: ensure_ascii
+
+      :type: bool
+
+      whether the output should contain only ASCII characters.
+
+   .. attribute:: indent_char
+
+      :type: str
+
+      What will be used as end-of-line character.
+
+   .. attribute:: indent_count
+
+      :type: int
+
+      The indentation width.
+
+   .. attribute:: number_mode
+
+      :type: int
+
+      The encoding behavior with regards to numeric values.
+
+   .. attribute:: skip_invalid_keys
+
+      :type: bool
+
+      Whether invalid keys shall be skipped.
+
+   .. attribute:: sort_keys
+
+      :type: bool
+
+      Whether dictionary keys shall be sorted alphabetically.
+
+   .. attribute:: uuid_mode
+
+      :type: int
+
+      Whether and how UUID values should be encoded
+
+   .. attribute:: write_mode
+
+      :type: int
+
+      Whether the output should be pretty printed or not.
+
+   .. rubric:: Methods
 
    .. method:: __call__(obj, stream=None, *, chunk_size=65536)
 

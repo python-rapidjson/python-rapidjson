@@ -707,3 +707,37 @@ def test_encoder_call():
     stream = io.StringIO()
     assert rj.Encoder()(o, stream=stream) is None
     assert stream.getvalue() == result
+
+
+def test_decoder_attrs():
+    d = rj.Decoder(
+        number_mode=rj.NM_NAN,
+        datetime_mode=rj.DM_ISO8601,
+        uuid_mode=rj.UM_CANONICAL,
+        parse_mode=rj.PM_COMMENTS)
+    assert d.number_mode == rj.NM_NAN
+    assert d.datetime_mode == rj.DM_ISO8601
+    assert d.uuid_mode == rj.UM_CANONICAL
+    assert d.parse_mode == rj.PM_COMMENTS
+
+
+def test_encoder_attrs():
+    e = rj.Encoder(
+        skip_invalid_keys=True,
+        ensure_ascii=True,
+        indent='\n',
+        sort_keys=True,
+        number_mode=rj.NM_NAN,
+        datetime_mode=rj.DM_ISO8601,
+        uuid_mode=rj.UM_CANONICAL,
+        bytes_mode=rj.BM_UTF8)
+    assert e.skip_invalid_keys
+    assert e.ensure_ascii
+    assert e.indent_char == '\n'
+    assert e.indent_count == 1
+    assert e.write_mode == rj.WM_PRETTY
+    assert e.sort_keys
+    assert e.number_mode == rj.NM_NAN
+    assert e.datetime_mode == rj.DM_ISO8601
+    assert e.uuid_mode == rj.UM_CANONICAL
+    assert e.bytes_mode == rj.BM_UTF8

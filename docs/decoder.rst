@@ -31,6 +31,33 @@
    :param int parse_mode: whether the parser should allow :ref:`non-standard JSON
                           extensions <loads-parse-mode>`
 
+   .. rubric:: Attributes
+
+   .. attribute:: datetime_mode
+
+      :type: int
+
+      The datetime mode, whether and how datetime literals will be recognized.
+
+   .. attribute:: number_mode
+
+      :type: int
+
+      The number mode, whether numeric literals will be decoded.
+
+   .. attribute:: parse_mode
+
+      :type: int
+
+      The parse mode, whether comments and trailing commas are allowed.
+
+   .. attribute:: uuid_mode
+
+      :type: int
+
+      The UUID mode, whether and how UUID literals will be recognized.
+
+   .. rubric:: Methods
 
    .. method:: __call__(json, *, chunk_size=65536)
 
