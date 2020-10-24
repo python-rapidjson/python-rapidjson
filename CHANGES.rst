@@ -1,6 +1,14 @@
 Changes
 -------
 
+0.9.3 (unreleased)
+~~~~~~~~~~~~~~~~~~
+
+* Fix access to ``Encoder`` instance attributes (`issue #147`__)
+
+  __ https://github.com/python-rapidjson/python-rapidjson/issues/147
+
+
 0.9.2 (2020-10-24)
 ~~~~~~~~~~~~~~~~~~
 
