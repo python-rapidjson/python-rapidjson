@@ -1,6 +1,14 @@
 Changes
 -------
 
+0.9.4 (unreleased)
+~~~~~~~~~~~~~~~~~~
+
+* Fix memory leak loading an invalid JSON (`issue #148`__)
+
+  __ https://github.com/python-rapidjson/python-rapidjson/issues/148
+
+
 0.9.3 (2020-10-24)
 ~~~~~~~~~~~~~~~~~~
 
