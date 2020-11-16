@@ -29,6 +29,6 @@ build:
   script:
     - git submodule update --init --recursive
     - python3 -m venv env
-    - env/bin/pip install cibuildwheel==1.6.3 twine
+    - env/bin/pip install cibuildwheel==1.6.4 twine
     - env/bin/cibuildwheel
     - env/bin/twine upload wheelhouse/*.whl
