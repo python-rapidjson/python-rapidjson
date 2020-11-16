@@ -600,6 +600,8 @@ struct PyHandler {
             const HandlerContext& ctx = stack.back();
             if (ctx.copiedKey)
                 PyMem_Free((void*) ctx.key);
+            if (ctx.object != NULL)
+                Py_DECREF(ctx.object);
             stack.pop_back();
         }
         Py_CLEAR(decoderStartObject);

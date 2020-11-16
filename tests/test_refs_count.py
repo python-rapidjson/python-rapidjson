@@ -2,7 +2,7 @@
 # :Project:   python-rapidjson -- Refs leaks tests
 # :Author:    Lele Gaifax <lele@metapensiero.it>
 # :License:   MIT License
-# :Copyright: © 2017, 2018 Lele Gaifax
+# :Copyright: © 2017, 2018, 2020 Lele Gaifax
 #
 
 # NB: this is a simplicistic test that uses sys.gettotalrefcount(), available
@@ -180,5 +180,20 @@ def test_rawjson_new():
     for _ in range(1000):
         raw_json = rj.RawJSON('["foo", "bar"]')
         del raw_json
+    rc1 = sys.gettotalrefcount()
+    assert (rc1 - rc0) < THRESHOLD
+
+
+@pytest.mark.skipif(not hasattr(sys, 'gettotalrefcount'), reason='Non-debug Python')
+def test_invalid_json_load_leaks():
+    # See issue #148
+    value = '{"a":{"b":}}'
+    rc0 = sys.gettotalrefcount()
+    for _ in range(1000):
+        try:
+            rj.loads(value)
+        except rj.JSONDecodeError:
+            pass
+    del _
     rc1 = sys.gettotalrefcount()
     assert (rc1 - rc0) < THRESHOLD
