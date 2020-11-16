@@ -1,7 +1,7 @@
 Changes
 -------
 
-0.9.4 (unreleased)
+0.9.4 (2020-11-16)
 ~~~~~~~~~~~~~~~~~~
 
 * Fix memory leak loading an invalid JSON (`issue #148`__)
