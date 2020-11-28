@@ -19,7 +19,8 @@
 .. function:: dump(obj, stream, *, skipkeys=False, ensure_ascii=True, \
                    write_mode=WM_COMPACT, indent=4, default=None, sort_keys=False, \
                    number_mode=None, datetime_mode=None, uuid_mode=None, \
-                   bytes_mode=BM_UTF8, chunk_size=65536, allow_nan=True)
+                   bytes_mode=BM_UTF8, iterable_mode=IM_ARRAY, chunk_size=65536, \
+                   allow_nan=True)
 
    Encode given Python `obj` instance into a ``JSON`` stream.
 
@@ -39,6 +40,7 @@
                              :class:`date` instances be handled
    :param int uuid_mode: how should :class:`UUID` instances be handled
    :param int bytes_mode: how should :class:`bytes` instances be handled
+   :param int iterable_mode: how should `iterable` values be handled
    :param int chunk_size: write the stream in chunks of this size at a time
    :param bool allow_nan: *compatibility* flag equivalent to ``number_mode=NM_NAN``
 

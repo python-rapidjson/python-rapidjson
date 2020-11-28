@@ -15,14 +15,15 @@
 
    from rapidjson import (dumps, loads, BM_NONE, BM_UTF8, DM_NONE, DM_ISO8601,
                           DM_UNIX_TIME, DM_ONLY_SECONDS, DM_IGNORE_TZ, DM_NAIVE_IS_UTC,
-                          DM_SHIFT_TO_UTC, UM_NONE, UM_CANONICAL, UM_HEX, NM_NATIVE,
-                          NM_DECIMAL, NM_NAN, PM_NONE, PM_COMMENTS, PM_TRAILING_COMMAS,
-                          WM_COMPACT, WM_PRETTY, WM_SINGLE_LINE_ARRAY)
+                          DM_SHIFT_TO_UTC, IM_NONE, IM_ARRAY, NM_NATIVE, NM_DECIMAL,
+                          NM_NAN, PM_NONE, PM_COMMENTS, PM_TRAILING_COMMAS, UM_NONE,
+                          UM_CANONICAL, UM_HEX, WM_COMPACT, WM_PRETTY,
+                          WM_SINGLE_LINE_ARRAY)
 
 .. function:: dumps(obj, *, skipkeys=False, ensure_ascii=True, write_mode=WM_COMPACT, \
                     indent=4, default=None, sort_keys=False, number_mode=None, \
                     datetime_mode=None, uuid_mode=None, bytes_mode=BM_UTF8, \
-                    allow_nan=True)
+                    iterable_mode=IM_ARRAY, allow_nan=True)
 
    Encode given Python `obj` instance into a ``JSON`` string.
 
@@ -41,6 +42,7 @@
                              :class:`date` instances be handled
    :param int uuid_mode: how should :class:`UUID` instances be handled
    :param int bytes_mode: how should :class:`bytes` instances be handled
+   :param int iterable_mode: how should `iterable` values be handled
    :param bool allow_nan: *compatibility* flag equivalent to ``number_mode=NM_NAN``
    :returns: A Python :class:`str` instance.
 
@@ -454,6 +456,58 @@
       >>> dumps([ascii_string, bytes_string, unicode_string],
       ...       bytes_mode=BM_NONE, default=my_bytes_handler)
       '["ciao","CIO\\u00C8","cio\\u00E8"]'
+
+
+   .. dumps-iterable-mode:
+   .. rubric:: `iterable_mode`
+
+   By default a value that implements the `iterable` protocol (**not** plain ``list``\ s)
+   gets encoded as a ``JSON`` array:
+
+   .. doctest::
+
+      >>> from time import localtime, struct_time
+      >>> lt = localtime()
+      >>> dumps(lt) # doctest: +SKIP
+      '[2020,11,28,19,55,40,5,333,0]'
+
+   When that's not appropriate, for example because you want to use a different way to
+   encode them, you may specify `iterable_mode` to ``IM_NONE`` (or equivalently to
+   ``None``):
+
+   .. doctest::
+
+      >>> dumps(lt, iterable_mode=IM_NONE)
+      Traceback (most recent call last):
+        File "<stdin>", line 1, in <module>
+      TypeError: <time.struct_time …> is not JSON serializable
+
+   and thus you can use the `default` argument:
+
+   .. doctest::
+
+      >>> def timestruct(obj):
+      ...   if isinstance(obj, struct_time):
+      ...     return {'__class__': 'time.struct_time',
+      ...             '__init__':[2020,11,28,19,55,40,5,333,0]}
+      ...   else:
+      ...     raise ValueError('%r is not JSON serializable' % obj)
+      >>> dumps(lt, iterable_mode=IM_NONE, default=timestruct)
+      '{"__class__":"time.struct_time","__init__":[2020,11,28,19,55,40,5,333,0]}'
+
+   Obviously, in such case the value returned by the `default` callable **must not**
+   be or contain a ``tuple``:
+
+      >>> def bad_timestruct(obj):
+      ...   if isinstance(obj, struct_time):
+      ...     return {'__class__': 'time.struct_time',
+      ...             '__init__':(2020,11,28,19,55,40,5,333,0)}
+      ...   else:
+      ...     raise ValueError('%r is not JSON serializable' % (obj,))
+      >>> dumps(lt, iterable_mode=IM_NONE, default=bad_timestruct)
+      Traceback (most recent call last):
+        File "<stdin>", line 1, in <module>
+      ValueError: (2020, 11, 28, 19, 55, 40, 5, 333, 0) is not JSON serializable
 
 
 .. _ISO 8601: https://en.wikipedia.org/wiki/ISO_8601

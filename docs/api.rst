@@ -160,6 +160,22 @@
    This is the default setting for `bytes_mode`: any :class:`bytes` instance will be
    assumed to be an ``UTF-8`` encoded string, and decoded accordingly.
 
+
+.. rubric:: `iterable_mode` related constants
+
+.. data:: IM_NONE
+
+   This disables the default handling mode (:data:`IM_ARRAY`) of `iterable` values (with
+   the exception of ``str``\ ings and ``list``\ s): they won't be treated in any special
+   way and will raise an ``TypeError`` exception when encountered. On the other hand, in
+   this mode they can be managed by a `default` handler.
+
+.. data:: IM_ARRAY
+
+   This is the default setting for `iterable_mode`: any iterable will be dumped as a
+   ``JSON`` array.
+
+
 .. rubric:: Exceptions
 
 .. exception:: JSONDecodeError

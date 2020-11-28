@@ -15,13 +15,14 @@
 
    from rapidjson import (Decoder, Encoder, BM_NONE, BM_UTF8, DM_NONE, DM_ISO8601,
                           DM_UNIX_TIME, DM_ONLY_SECONDS, DM_IGNORE_TZ, DM_NAIVE_IS_UTC,
-                          DM_SHIFT_TO_UTC, UM_NONE, UM_CANONICAL, UM_HEX, NM_NATIVE,
-                          NM_DECIMAL, NM_NAN, PM_NONE, PM_COMMENTS, PM_TRAILING_COMMAS,
-                          WM_COMPACT, WM_PRETTY, WM_SINGLE_LINE_ARRAY)
+                          DM_SHIFT_TO_UTC, IM_NONE, IM_ARRAY, NM_NATIVE, NM_DECIMAL,
+                          NM_NAN, PM_NONE, PM_COMMENTS, PM_TRAILING_COMMAS, UM_NONE,
+                          UM_CANONICAL, UM_HEX, WM_COMPACT, WM_PRETTY,
+                          WM_SINGLE_LINE_ARRAY)
 
 .. class:: Encoder(skip_invalid_keys=False, ensure_ascii=True, write_mode=WM_COMPACT, \
                    indent=4, sort_keys=False, number_mode=None, datetime_mode=None, \
-                   uuid_mode=None, bytes_mode=BM_UTF8)
+                   uuid_mode=None, bytes_mode=BM_UTF8, iterable_mode=IM_ARRAY)
 
    Class-based :func:`dumps`\ -like functionality.
 
@@ -40,6 +41,7 @@
                              <dumps-datetime-mode>`
    :param int uuid_mode: how should :ref:`UUID instances be handled <dumps-uuid-mode>`
    :param int bytes_mode: how should :ref:`bytes instances be handled <dumps-bytes-mode>`
+   :param int iterable_mode: how should `iterable` values be handled
 
    .. rubric:: Attributes
 
@@ -59,7 +61,7 @@
 
       :type: bool
 
-      whether the output should contain only ASCII characters.
+      Whether the output should contain only ASCII characters.
 
    .. attribute:: indent_char
 
@@ -72,6 +74,12 @@
       :type: int
 
       The indentation width.
+
+   .. attribute:: iterable_mode
+
+      :type: int
+
+      Whether `iterables` will be generically encoded as ``JSON`` arrays or not.
 
    .. attribute:: number_mode
 
@@ -163,3 +171,22 @@
          >>> hb = HexifyBytes(bytes_mode=BM_NONE)
          >>> hb(small_numbers)
          '"010203"'
+
+      Likewise, when you want full control on how an `iterable` such as a ``tuple`` should
+      be encoded, you can use :data:`IM_NONE` and implement a suitable ``default()``
+      method:
+
+      .. doctest::
+
+         >>> from time import localtime, struct_time
+         >>> class ObjectifyStructTime(Encoder):
+         ...   def default(self, obj):
+         ...     if isinstance(obj, struct_time):
+         ...       return {'__class__': 'time.struct_time',
+         ...               '__init__':[2020,11,28,19,55,40,5,333,0]}
+         ...     else:
+         ...       raise ValueError('%r is not JSON serializable' % obj)
+         ...
+         >>> obst = ObjectifyStructTime(iterable_mode=IM_NONE)
+         >>> obst(localtime()) # doctest: +SKIP
+         '[2020,11,28,19,55,40,5,333,0]'

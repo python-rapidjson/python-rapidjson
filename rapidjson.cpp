@@ -178,6 +178,11 @@ enum WriteMode {
     WM_SINGLE_LINE_ARRAY = 1<<1  // Format arrays on a single line
 };
 
+enum IterableMode {
+    IM_NONE = 0,
+    IM_ARRAY = 1<<0             // Dump as JSON array
+};
+
 //////////////////////////
 // Forward declarations //
 //////////////////////////
@@ -197,13 +202,14 @@ static PyObject* do_encode(PyObject* value, bool skipInvalidKeys, PyObject* defa
                            bool sortKeys, bool ensureAscii, WriteMode writeMode,
                            char indentChar, unsigned indentCount, NumberMode numberMode,
                            DatetimeMode datetimeMode, UuidMode uuidMode,
-                           BytesMode bytesMode);
+                           BytesMode bytesMode, IterableMode iterableMode);
 static PyObject* do_stream_encode(PyObject* value, PyObject* stream, size_t chunkSize,
                                   bool skipInvalidKeys, PyObject* defaultFn,
                                   bool sortKeys, bool ensureAscii, WriteMode writeMode,
                                   char indentChar, unsigned indentCount,
                                   NumberMode numberMode, DatetimeMode datetimeMode,
-                                  UuidMode uuidMode, BytesMode bytesMode);
+                                  UuidMode uuidMode, BytesMode bytesMode,
+                                  IterableMode iterableMode);
 static PyObject* encoder_call(PyObject* self, PyObject* args, PyObject* kwargs);
 static PyObject* encoder_new(PyTypeObject* type, PyObject* args, PyObject* kwargs);
 
@@ -2057,12 +2063,14 @@ dumps_internal(
     NumberMode numberMode,
     DatetimeMode datetimeMode,
     UuidMode uuidMode,
-    BytesMode bytesMode)
+    BytesMode bytesMode,
+    IterableMode iterableMode)
 {
     int is_decimal;
 
-#define RECURSE(v) dumps_internal(writer, v, skipKeys, defaultFn, sortKeys, \
-                                  numberMode, datetimeMode, uuidMode, bytesMode)
+#define RECURSE(v) dumps_internal(writer, v, skipKeys, defaultFn, sortKeys,      \
+                                  numberMode, datetimeMode, uuidMode, bytesMode, \
+                                  iterableMode)
 
 #define ASSERT_VALID_SIZE(l) do {                                       \
     if (l < 0 || l > UINT_MAX) {                                        \
@@ -2239,7 +2247,7 @@ dumps_internal(
         }
 
         writer->EndArray();
-    } else if (PyTuple_Check(object)) {
+    } else if (iterableMode == IM_ARRAY && PyTuple_Check(object)) {
         writer->StartArray();
 
         Py_ssize_t size = PyTuple_GET_SIZE(object);
@@ -2602,7 +2610,7 @@ dumps_internal(
         memcpy(quoted + 1, s, size);
         writer->RawValue(quoted, (SizeType) size + 2, kStringType);
         Py_DECREF(hexval);
-    } else if (PyIter_Check(object)) {
+    } else if (iterableMode == IM_ARRAY && PyIter_Check(object)) {
         PyObject* iterator = PyObject_GetIter(object);
         if (iterator == NULL)
             return false;
@@ -2678,13 +2686,15 @@ typedef struct {
     UuidMode uuidMode;
     NumberMode numberMode;
     BytesMode bytesMode;
+    IterableMode iterableMode;
 } EncoderObject;
 
 
 PyDoc_STRVAR(dumps_docstring,
              "dumps(obj, *, skipkeys=False, ensure_ascii=True, write_mode=WM_COMPACT,"
              " indent=4, default=None, sort_keys=False, number_mode=None,"
-             " datetime_mode=None, uuid_mode=None, bytes_mode=BM_UTF8, allow_nan=True)\n"
+             " datetime_mode=None, uuid_mode=None, bytes_mode=BM_UTF8,"
+             " iterable_mode=IM_ARRAY, allow_nan=True)\n"
              "\n"
              "Encode a Python object into a JSON string.");
 
@@ -2710,6 +2720,8 @@ dumps(PyObject* self, PyObject* args, PyObject* kwargs)
     BytesMode bytesMode = BM_UTF8;
     PyObject* writeModeObj = NULL;
     WriteMode writeMode = WM_COMPACT;
+    PyObject* iterableModeObj = NULL;
+    IterableMode iterableMode = IM_ARRAY;
     char indentChar = ' ';
     unsigned indentCount = 4;
     int allowNan = -1;
@@ -2725,6 +2737,7 @@ dumps(PyObject* self, PyObject* args, PyObject* kwargs)
         "uuid_mode",
         "bytes_mode",
         "write_mode",
+        "iterable_mode",
 
         /* compatibility with stdlib json */
         "allow_nan",
@@ -2732,7 +2745,7 @@ dumps(PyObject* self, PyObject* args, PyObject* kwargs)
         NULL
     };
 
-    if (!PyArg_ParseTupleAndKeywords(args, kwargs, "O|$ppOOpOOOOOp:rapidjson.dumps",
+    if (!PyArg_ParseTupleAndKeywords(args, kwargs, "O|$ppOOpOOOOOOp:rapidjson.dumps",
                                      (char**) kwlist,
                                      &value,
                                      &skipKeys,
@@ -2745,6 +2758,7 @@ dumps(PyObject* self, PyObject* args, PyObject* kwargs)
                                      &uuidModeObj,
                                      &bytesModeObj,
                                      &writeModeObj,
+                                     &iterableModeObj,
                                      &allowNan))
         return NULL;
 
@@ -2877,9 +2891,24 @@ dumps(PyObject* self, PyObject* args, PyObject* kwargs)
         }
     }
 
+    if (iterableModeObj) {
+        if (iterableModeObj == Py_None) {
+            iterableMode = IM_NONE;
+        } else if (PyLong_Check(iterableModeObj)) {
+            iterableMode = (IterableMode) PyLong_AsLong(iterableModeObj);
+            if (iterableMode < IM_NONE || iterableMode > IM_ARRAY) {
+                PyErr_SetString(PyExc_ValueError, "Invalid iterable_mode");
+                return NULL;
+            }
+        } else {
+            PyErr_SetString(PyExc_TypeError, "iterable_mode must be an integer value");
+            return NULL;
+        }
+    }
+
     return do_encode(value, skipKeys ? true : false, defaultFn, sortKeys ? true : false,
                      ensureAscii ? true : false, writeMode, indentChar, indentCount,
-                     numberMode, datetimeMode, uuidMode, bytesMode);
+                     numberMode, datetimeMode, uuidMode, bytesMode, iterableMode);
 }
 
 
@@ -2887,7 +2916,7 @@ PyDoc_STRVAR(dump_docstring,
              "dump(obj, stream, *, skipkeys=False, ensure_ascii=True,"
              " write_mode=WM_COMPACT, indent=4, default=None, sort_keys=False,"
              " number_mode=None, datetime_mode=None, uuid_mode=None, bytes_mode=BM_UTF8,"
-             " chunk_size=65536, allow_nan=True)\n"
+             " iterable_mode=IM_ARRAY, chunk_size=65536, allow_nan=True)\n"
              "\n"
              "Encode a Python object into a JSON stream.");
 
@@ -2914,6 +2943,8 @@ dump(PyObject* self, PyObject* args, PyObject* kwargs)
     BytesMode bytesMode = BM_UTF8;
     PyObject* writeModeObj = NULL;
     WriteMode writeMode = WM_COMPACT;
+    PyObject* iterableModeObj = NULL;
+    IterableMode iterableMode = IM_ARRAY;
     char indentChar = ' ';
     unsigned indentCount = 4;
     PyObject* chunkSizeObj = NULL;
@@ -2933,6 +2964,7 @@ dump(PyObject* self, PyObject* args, PyObject* kwargs)
         "bytes_mode",
         "chunk_size",
         "write_mode",
+        "iterable_mode",
 
         /* compatibility with stdlib json */
         "allow_nan",
@@ -2940,7 +2972,7 @@ dump(PyObject* self, PyObject* args, PyObject* kwargs)
         NULL
     };
 
-    if (!PyArg_ParseTupleAndKeywords(args, kwargs, "OO|$ppOOpOOOOOOp:rapidjson.dump",
+    if (!PyArg_ParseTupleAndKeywords(args, kwargs, "OO|$ppOOpOOOOOOOp:rapidjson.dump",
                                      (char**) kwlist,
                                      &value,
                                      &stream,
@@ -2955,6 +2987,7 @@ dump(PyObject* self, PyObject* args, PyObject* kwargs)
                                      &bytesModeObj,
                                      &chunkSizeObj,
                                      &writeModeObj,
+                                     &iterableModeObj,
                                      &allowNan))
         return NULL;
 
@@ -3103,17 +3136,33 @@ dump(PyObject* self, PyObject* args, PyObject* kwargs)
         }
     }
 
+    if (iterableModeObj) {
+        if (iterableModeObj == Py_None) {
+            iterableMode = IM_NONE;
+        } else if (PyLong_Check(iterableModeObj)) {
+            iterableMode = (IterableMode) PyLong_AsLong(iterableModeObj);
+            if (iterableMode < IM_NONE || iterableMode > IM_ARRAY) {
+                PyErr_SetString(PyExc_ValueError, "Invalid iterable_mode");
+                return NULL;
+            }
+        } else {
+            PyErr_SetString(PyExc_TypeError, "iterable_mode must be an integer value");
+            return NULL;
+        }
+    }
+
     return do_stream_encode(value, stream, chunkSize, skipKeys ? true : false,
                             defaultFn, sortKeys ? true : false,
                             ensureAscii ? true : false, writeMode, indentChar,
-                            indentCount, numberMode, datetimeMode, uuidMode, bytesMode);
+                            indentCount, numberMode, datetimeMode, uuidMode, bytesMode,
+                            iterableMode);
 }
 
 
 PyDoc_STRVAR(encoder_doc,
              "Encoder(skip_invalid_keys=False, ensure_ascii=True, write_mode=WM_COMPACT,"
              " indent=4, sort_keys=False, number_mode=None, datetime_mode=None,"
-             " uuid_mode=None, bytes_mode=None)\n\n"
+             " uuid_mode=None, bytes_mode=None, iterable_mode=IM_ARRAY)\n\n"
              "Create and return a new Encoder instance.");
 
 
@@ -3148,6 +3197,9 @@ static PyMemberDef encoder_members[] = {
     {"write_mode",
      T_UINT, offsetof(EncoderObject, writeMode), READONLY,
      "Whether the output should be pretty printed or not."},
+    {"iterable_mode",
+     T_UINT, offsetof(EncoderObject, iterableMode), READONLY,
+     "Whether iterable values shall be encoded as JSON arrays or not."},
     {NULL}
 };
 
@@ -3208,7 +3260,8 @@ static PyTypeObject Encoder_Type = {
                     numberMode,                         \
                     datetimeMode,                       \
                     uuidMode,                           \
-                    bytesMode)                          \
+                    bytesMode,                          \
+                    iterableMode)                       \
      ? PyUnicode_FromString(buf.GetString()) : NULL)
 
 
@@ -3216,7 +3269,7 @@ static PyObject*
 do_encode(PyObject* value, bool skipInvalidKeys, PyObject* defaultFn, bool sortKeys,
           bool ensureAscii, WriteMode writeMode, char indentChar, unsigned indentCount,
           NumberMode numberMode, DatetimeMode datetimeMode, UuidMode uuidMode,
-          BytesMode bytesMode)
+          BytesMode bytesMode, IterableMode iterableMode)
 {
     if (writeMode == WM_COMPACT) {
         if (ensureAscii) {
@@ -3257,7 +3310,8 @@ do_encode(PyObject* value, bool skipInvalidKeys, PyObject* defaultFn, bool sortK
                     numberMode,                 \
                     datetimeMode,               \
                     uuidMode,                   \
-                    bytesMode)                  \
+                    bytesMode,                  \
+                    iterableMode)               \
      ? Py_INCREF(Py_None), Py_None : NULL)
 
 
@@ -3266,7 +3320,7 @@ do_stream_encode(PyObject* value, PyObject* stream, size_t chunkSize,
                  bool skipInvalidKeys, PyObject* defaultFn, bool sortKeys,
                  bool ensureAscii, WriteMode writeMode, char indentChar,
                  unsigned indentCount, NumberMode numberMode, DatetimeMode datetimeMode,
-                 UuidMode uuidMode, BytesMode bytesMode)
+                 UuidMode uuidMode, BytesMode bytesMode, IterableMode iterableMode)
 {
     PyWriteStreamWrapper os(stream, chunkSize);
 
@@ -3347,13 +3401,15 @@ encoder_call(PyObject* self, PyObject* args, PyObject* kwargs)
             }
         }
         result = do_stream_encode(value, stream, chunkSize, e->skipInvalidKeys, defaultFn,
-                                  e->sortKeys, e->ensureAscii, e->writeMode, e->indentChar,
-                                  e->indentCount, e->numberMode, e->datetimeMode,
-                                  e->uuidMode, e->bytesMode);
+                                  e->sortKeys, e->ensureAscii, e->writeMode,
+                                  e->indentChar, e->indentCount, e->numberMode,
+                                  e->datetimeMode, e->uuidMode, e->bytesMode,
+                                  e->iterableMode);
     } else {
         result = do_encode(value, e->skipInvalidKeys, defaultFn, e->sortKeys,
                            e->ensureAscii, e->writeMode, e->indentChar, e->indentCount,
-                           e->numberMode, e->datetimeMode, e->uuidMode, e->bytesMode);
+                           e->numberMode, e->datetimeMode, e->uuidMode, e->bytesMode,
+                           e->iterableMode);
     }
 
     if (defaultFn != NULL)
@@ -3381,6 +3437,8 @@ encoder_new(PyTypeObject* type, PyObject* args, PyObject* kwargs)
     BytesMode bytesMode = BM_UTF8;
     PyObject* writeModeObj = NULL;
     WriteMode writeMode = WM_COMPACT;
+    PyObject* iterableModeObj = NULL;
+    IterableMode iterableMode = IM_ARRAY;
     char indentChar = ' ';
     unsigned indentCount = 4;
 
@@ -3394,10 +3452,11 @@ encoder_new(PyTypeObject* type, PyObject* args, PyObject* kwargs)
         "uuid_mode",
         "bytes_mode",
         "write_mode",
+        "iterable_mode",
         NULL
     };
 
-    if (!PyArg_ParseTupleAndKeywords(args, kwargs, "|ppOpOOOOO:Encoder",
+    if (!PyArg_ParseTupleAndKeywords(args, kwargs, "|ppOpOOOOOO:Encoder",
                                      (char**) kwlist,
                                      &skipInvalidKeys,
                                      &ensureAscii,
@@ -3407,7 +3466,8 @@ encoder_new(PyTypeObject* type, PyObject* args, PyObject* kwargs)
                                      &datetimeModeObj,
                                      &uuidModeObj,
                                      &bytesModeObj,
-                                     &writeModeObj))
+                                     &writeModeObj,
+                                     &iterableModeObj))
         return NULL;
 
     if (indent && indent != Py_None) {
@@ -3523,6 +3583,21 @@ encoder_new(PyTypeObject* type, PyObject* args, PyObject* kwargs)
         }
     }
 
+    if (iterableModeObj) {
+        if (iterableModeObj == Py_None) {
+            iterableMode = IM_NONE;
+        } else if (PyLong_Check(iterableModeObj)) {
+            iterableMode = (IterableMode) PyLong_AsLong(iterableModeObj);
+            if (iterableMode < IM_NONE || iterableMode > IM_ARRAY) {
+                PyErr_SetString(PyExc_ValueError, "Invalid iterable_mode");
+                return NULL;
+            }
+        } else {
+            PyErr_SetString(PyExc_TypeError, "iterable_mode must be an integer value");
+            return NULL;
+        }
+    }
+
     e = (EncoderObject*) type->tp_alloc(type, 0);
     if (e == NULL)
         return NULL;
@@ -3537,6 +3612,7 @@ encoder_new(PyTypeObject* type, PyObject* args, PyObject* kwargs)
     e->uuidMode = uuidMode;
     e->numberMode = numberMode;
     e->bytesMode = bytesMode;
+    e->iterableMode = iterableMode;
 
     return (PyObject*) e;
 }
@@ -3897,6 +3973,9 @@ module_exec(PyObject* m)
         || PyModule_AddIntConstant(m, "WM_COMPACT", WM_COMPACT)
         || PyModule_AddIntConstant(m, "WM_PRETTY", WM_PRETTY)
         || PyModule_AddIntConstant(m, "WM_SINGLE_LINE_ARRAY", WM_SINGLE_LINE_ARRAY)
+
+        || PyModule_AddIntConstant(m, "IM_NONE", IM_NONE)
+        || PyModule_AddIntConstant(m, "IM_ARRAY", IM_ARRAY)
 
         || PyModule_AddStringConstant(m, "__version__", STRINGIFY(PYTHON_RAPIDJSON_VERSION))
         || PyModule_AddStringConstant(m, "__author__", "Ken Robbins <ken@kenrobbins.com>")

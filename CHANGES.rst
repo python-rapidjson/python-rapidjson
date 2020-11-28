@@ -1,6 +1,15 @@
 Changes
 -------
 
+0.9.5 (unreleased)
+~~~~~~~~~~~~~~~~~~
+
+* New serialization option ``iterable_mode`` to control how iterables get encoded
+  (partial fix to `issue #149`__)
+
+  __ https://github.com/python-rapidjson/python-rapidjson/issues/149
+
+
 0.9.4 (2020-11-16)
 ~~~~~~~~~~~~~~~~~~
 
@@ -73,7 +82,7 @@ Changes
 0.8.0 (2019-08-09)
 ~~~~~~~~~~~~~~~~~~
 
-* New serialization option ``bytes_mode`` to control how bytes instances gets encoded
+* New serialization option ``bytes_mode`` to control how bytes instances get encoded
   (`issue #122`__)
 
   __ https://github.com/python-rapidjson/python-rapidjson/issues/122
