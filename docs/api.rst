@@ -151,7 +151,7 @@
 .. data:: BM_NONE
 
    This disables the default handling mode (:data:`BM_UTF8`) of :class:`bytes` instances:
-   they won't be treated in any special way and will raise an ``TypeError`` exception when
+   they won't be treated in any special way and will raise a ``TypeError`` exception when
    encountered. On the other hand, in this mode they can be managed by a `default`
    handler.
 
@@ -167,7 +167,7 @@
 
    This disables the default handling mode (:data:`IM_ARRAY`) of `iterable` values (with
    the exception of ``str``\ ings and ``list``\ s): they won't be treated in any special
-   way and will raise an ``TypeError`` exception when encountered. On the other hand, in
+   way and will raise a ``TypeError`` exception when encountered. On the other hand, in
    this mode they can be managed by a `default` handler.
 
 .. data:: IM_ARRAY
