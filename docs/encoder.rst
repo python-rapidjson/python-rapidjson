@@ -182,8 +182,7 @@
          >>> class ObjectifyStructTime(Encoder):
          ...   def default(self, obj):
          ...     if isinstance(obj, struct_time):
-         ...       return {'__class__': 'time.struct_time',
-         ...               '__init__':[2020,11,28,19,55,40,5,333,0]}
+         ...       return {'__class__': 'time.struct_time', '__init__': list(obj)}
          ...     else:
          ...       raise ValueError('%r is not JSON serializable' % obj)
          ...

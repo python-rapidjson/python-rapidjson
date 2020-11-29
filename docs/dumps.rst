@@ -488,11 +488,10 @@
 
       >>> def timestruct(obj):
       ...   if isinstance(obj, struct_time):
-      ...     return {'__class__': 'time.struct_time',
-      ...             '__init__':[2020,11,28,19,55,40,5,333,0]}
+      ...     return {'__class__': 'time.struct_time', '__init__': list(obj)}
       ...   else:
       ...     raise ValueError('%r is not JSON serializable' % obj)
-      >>> dumps(lt, iterable_mode=IM_NONE, default=timestruct)
+      >>> dumps(lt, iterable_mode=IM_NONE, default=timestruct) # doctest: +SKIP
       '{"__class__":"time.struct_time","__init__":[2020,11,28,19,55,40,5,333,0]}'
 
    Obviously, in such case the value returned by the `default` callable **must not**
@@ -500,14 +499,13 @@
 
       >>> def bad_timestruct(obj):
       ...   if isinstance(obj, struct_time):
-      ...     return {'__class__': 'time.struct_time',
-      ...             '__init__':(2020,11,28,19,55,40,5,333,0)}
+      ...     return {'__class__': 'time.struct_time', '__init__': tuple(obj)}
       ...   else:
       ...     raise ValueError('%r is not JSON serializable' % (obj,))
       >>> dumps(lt, iterable_mode=IM_NONE, default=bad_timestruct)
       Traceback (most recent call last):
         File "<stdin>", line 1, in <module>
-      ValueError: (2020, 11, 28, 19, 55, 40, 5, 333, 0) is not JSON serializable
+      ValueError: (…) is not JSON serializable
 
 
 .. _ISO 8601: https://en.wikipedia.org/wiki/ISO_8601
