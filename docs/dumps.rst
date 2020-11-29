@@ -15,15 +15,15 @@
 
    from rapidjson import (dumps, loads, BM_NONE, BM_UTF8, DM_NONE, DM_ISO8601,
                           DM_UNIX_TIME, DM_ONLY_SECONDS, DM_IGNORE_TZ, DM_NAIVE_IS_UTC,
-                          DM_SHIFT_TO_UTC, IM_NONE, IM_ARRAY, NM_NATIVE, NM_DECIMAL,
-                          NM_NAN, PM_NONE, PM_COMMENTS, PM_TRAILING_COMMAS, UM_NONE,
-                          UM_CANONICAL, UM_HEX, WM_COMPACT, WM_PRETTY,
-                          WM_SINGLE_LINE_ARRAY)
+                          DM_SHIFT_TO_UTC, IM_NONE, IM_ARRAY, MM_NONE, MM_OBJECT,
+                          NM_NATIVE, NM_DECIMAL, NM_NAN, PM_NONE, PM_COMMENTS,
+                          PM_TRAILING_COMMAS, UM_NONE, UM_CANONICAL, UM_HEX, WM_COMPACT,
+                          WM_PRETTY, WM_SINGLE_LINE_ARRAY)
 
 .. function:: dumps(obj, *, skipkeys=False, ensure_ascii=True, write_mode=WM_COMPACT, \
                     indent=4, default=None, sort_keys=False, number_mode=None, \
                     datetime_mode=None, uuid_mode=None, bytes_mode=BM_UTF8, \
-                    iterable_mode=IM_ARRAY, allow_nan=True)
+                    iterable_mode=IM_ARRAY, mapping_mode=MM_OBJECT, allow_nan=True)
 
    Encode given Python `obj` instance into a ``JSON`` string.
 
@@ -43,6 +43,7 @@
    :param int uuid_mode: how should :class:`UUID` instances be handled
    :param int bytes_mode: how should :class:`bytes` instances be handled
    :param int iterable_mode: how should `iterable` values be handled
+   :param int mapping_mode: how should `mapping` values be handled
    :param bool allow_nan: *compatibility* flag equivalent to ``number_mode=NM_NAN``
    :returns: A Python :class:`str` instance.
 
@@ -506,6 +507,57 @@
       Traceback (most recent call last):
         File "<stdin>", line 1, in <module>
       ValueError: (…) is not JSON serializable
+
+
+   .. dumps-mapping-mode:
+   .. rubric:: `mapping_mode`
+
+   By default a value that implements the `mapping` protocol (**not** plain ``dict``\ s)
+   gets encoded as a ``JSON`` object:
+
+   .. doctest::
+
+      >>> from collections import Counter
+      >>> c = Counter({"a":1,"b":2,"c":3})
+      >>> dumps(c)
+      '{"a":1,"b":2,"c":3}'
+
+   When that's not appropriate, for example because you want to use a different way to
+   encode them, you may specify `mapping_mode` to ``MM_NONE`` (or equivalently to
+   ``None``):
+
+   .. doctest::
+
+      >>> dumps(c, mapping_mode=MM_NONE)
+      Traceback (most recent call last):
+        File "<stdin>", line 1, in <module>
+      TypeError: Counter(…) is not JSON serializable
+
+   and thus you can use the `default` argument:
+
+   .. doctest::
+
+      >>> def counter(obj):
+      ...   if isinstance(obj, Counter):
+      ...     return {'__class__': 'collections.Counter', '__init__': dict(obj)}
+      ...   else:
+      ...     raise ValueError('%r is not JSON serializable' % obj)
+      >>> dumps(c, mapping_mode=IM_NONE, default=counter)
+      '{"__class__":"collections.Counter","__init__":{"a":1,"b":2,"c":3}}'
+
+   Obviously, in such case the value returned by the `default` callable **must not**
+   be or contain a mappings other than plain ``dict``\ s:
+
+      >>> from collections import OrderedDict
+      >>> def bad_counter(obj):
+      ...   if isinstance(obj, Counter):
+      ...     return {'__class__': 'time.struct_time', '__init__': OrderedDict(obj)}
+      ...   else:
+      ...     raise ValueError('%r is not JSON serializable' % (obj,))
+      >>> dumps(c, mapping_mode=MM_NONE, default=bad_counter)
+      Traceback (most recent call last):
+        File "<stdin>", line 1, in <module>
+      ValueError: OrderedDict([('a', 1), ('b', 2), ('c', 3)]) is not JSON serializable
 
 
 .. _ISO 8601: https://en.wikipedia.org/wiki/ISO_8601

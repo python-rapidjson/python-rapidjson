@@ -175,6 +175,20 @@
    This is the default setting for `iterable_mode`: any iterable will be dumped as a
    ``JSON`` array.
 
+.. rubric:: `mapping_mode` related constants
+
+.. data:: MM_NONE
+
+   This disables the default handling mode (:data:`MM_OBJECT`) of `mapping` values other
+   than plain ``dict``\ s: they won't be treated in any special way and will raise a
+   ``TypeError`` exception when encountered. On the other hand, in this mode they can be
+   managed by a `default` handler.
+
+.. data:: MM_ARRAY
+
+   This is the default setting for `mapping_mode`: any mapping will be dumped as a
+   ``JSON`` object.
+
 
 .. rubric:: Exceptions
 

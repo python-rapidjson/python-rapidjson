@@ -183,6 +183,11 @@ enum IterableMode {
     IM_ARRAY = 1<<0             // Dump as JSON array
 };
 
+enum MappingMode {
+    MM_NONE = 0,
+    MM_OBJECT = 1<<0            // Dump as JSON object
+};
+
 //////////////////////////
 // Forward declarations //
 //////////////////////////
@@ -202,14 +207,15 @@ static PyObject* do_encode(PyObject* value, bool skipInvalidKeys, PyObject* defa
                            bool sortKeys, bool ensureAscii, WriteMode writeMode,
                            char indentChar, unsigned indentCount, NumberMode numberMode,
                            DatetimeMode datetimeMode, UuidMode uuidMode,
-                           BytesMode bytesMode, IterableMode iterableMode);
+                           BytesMode bytesMode, IterableMode iterableMode,
+                           MappingMode mappingMode);
 static PyObject* do_stream_encode(PyObject* value, PyObject* stream, size_t chunkSize,
                                   bool skipInvalidKeys, PyObject* defaultFn,
                                   bool sortKeys, bool ensureAscii, WriteMode writeMode,
                                   char indentChar, unsigned indentCount,
                                   NumberMode numberMode, DatetimeMode datetimeMode,
                                   UuidMode uuidMode, BytesMode bytesMode,
-                                  IterableMode iterableMode);
+                                  IterableMode iterableMode, MappingMode mappingMode);
 static PyObject* encoder_call(PyObject* self, PyObject* args, PyObject* kwargs);
 static PyObject* encoder_new(PyTypeObject* type, PyObject* args, PyObject* kwargs);
 
@@ -2064,13 +2070,14 @@ dumps_internal(
     DatetimeMode datetimeMode,
     UuidMode uuidMode,
     BytesMode bytesMode,
-    IterableMode iterableMode)
+    IterableMode iterableMode,
+    MappingMode mappingMode)
 {
     int is_decimal;
 
 #define RECURSE(v) dumps_internal(writer, v, skipKeys, defaultFn, sortKeys,      \
                                   numberMode, datetimeMode, uuidMode, bytesMode, \
-                                  iterableMode)
+                                  iterableMode, mappingMode)
 
 #define ASSERT_VALID_SIZE(l) do {                                       \
     if (l < 0 || l > UINT_MAX) {                                        \
@@ -2263,7 +2270,9 @@ dumps_internal(
         }
 
         writer->EndArray();
-    } else if (PyDict_Check(object)) {
+    } else if ((mappingMode == MM_OBJECT && PyDict_Check(object))
+               ||
+               (mappingMode == MM_NONE && PyDict_CheckExact(object))) {
         writer->StartObject();
 
         Py_ssize_t pos = 0;
@@ -2687,6 +2696,7 @@ typedef struct {
     NumberMode numberMode;
     BytesMode bytesMode;
     IterableMode iterableMode;
+    MappingMode mappingMode;
 } EncoderObject;
 
 
@@ -2694,7 +2704,7 @@ PyDoc_STRVAR(dumps_docstring,
              "dumps(obj, *, skipkeys=False, ensure_ascii=True, write_mode=WM_COMPACT,"
              " indent=4, default=None, sort_keys=False, number_mode=None,"
              " datetime_mode=None, uuid_mode=None, bytes_mode=BM_UTF8,"
-             " iterable_mode=IM_ARRAY, allow_nan=True)\n"
+             " iterable_mode=IM_ARRAY, mapping_mode=MM_OBJECT, allow_nan=True)\n"
              "\n"
              "Encode a Python object into a JSON string.");
 
@@ -2722,6 +2732,8 @@ dumps(PyObject* self, PyObject* args, PyObject* kwargs)
     WriteMode writeMode = WM_COMPACT;
     PyObject* iterableModeObj = NULL;
     IterableMode iterableMode = IM_ARRAY;
+    PyObject* mappingModeObj = NULL;
+    MappingMode mappingMode = MM_OBJECT;
     char indentChar = ' ';
     unsigned indentCount = 4;
     int allowNan = -1;
@@ -2738,6 +2750,7 @@ dumps(PyObject* self, PyObject* args, PyObject* kwargs)
         "bytes_mode",
         "write_mode",
         "iterable_mode",
+        "mapping_mode",
 
         /* compatibility with stdlib json */
         "allow_nan",
@@ -2745,7 +2758,7 @@ dumps(PyObject* self, PyObject* args, PyObject* kwargs)
         NULL
     };
 
-    if (!PyArg_ParseTupleAndKeywords(args, kwargs, "O|$ppOOpOOOOOOp:rapidjson.dumps",
+    if (!PyArg_ParseTupleAndKeywords(args, kwargs, "O|$ppOOpOOOOOOOp:rapidjson.dumps",
                                      (char**) kwlist,
                                      &value,
                                      &skipKeys,
@@ -2759,6 +2772,7 @@ dumps(PyObject* self, PyObject* args, PyObject* kwargs)
                                      &bytesModeObj,
                                      &writeModeObj,
                                      &iterableModeObj,
+                                     &mappingModeObj,
                                      &allowNan))
         return NULL;
 
@@ -2906,9 +2920,25 @@ dumps(PyObject* self, PyObject* args, PyObject* kwargs)
         }
     }
 
+    if (mappingModeObj) {
+        if (mappingModeObj == Py_None) {
+            mappingMode = MM_NONE;
+        } else if (PyLong_Check(mappingModeObj)) {
+            mappingMode = (MappingMode) PyLong_AsLong(mappingModeObj);
+            if (mappingMode < MM_NONE || mappingMode > MM_OBJECT) {
+                PyErr_SetString(PyExc_ValueError, "Invalid mapping_mode");
+                return NULL;
+            }
+        } else {
+            PyErr_SetString(PyExc_TypeError, "mapping_mode must be an integer value");
+            return NULL;
+        }
+    }
+
     return do_encode(value, skipKeys ? true : false, defaultFn, sortKeys ? true : false,
                      ensureAscii ? true : false, writeMode, indentChar, indentCount,
-                     numberMode, datetimeMode, uuidMode, bytesMode, iterableMode);
+                     numberMode, datetimeMode, uuidMode, bytesMode, iterableMode,
+                     mappingMode);
 }
 
 
@@ -2916,7 +2946,8 @@ PyDoc_STRVAR(dump_docstring,
              "dump(obj, stream, *, skipkeys=False, ensure_ascii=True,"
              " write_mode=WM_COMPACT, indent=4, default=None, sort_keys=False,"
              " number_mode=None, datetime_mode=None, uuid_mode=None, bytes_mode=BM_UTF8,"
-             " iterable_mode=IM_ARRAY, chunk_size=65536, allow_nan=True)\n"
+             " iterable_mode=IM_ARRAY, mapping_mode=MM_OBJECT, chunk_size=65536,"
+             " allow_nan=True)\n"
              "\n"
              "Encode a Python object into a JSON stream.");
 
@@ -2945,6 +2976,8 @@ dump(PyObject* self, PyObject* args, PyObject* kwargs)
     WriteMode writeMode = WM_COMPACT;
     PyObject* iterableModeObj = NULL;
     IterableMode iterableMode = IM_ARRAY;
+    PyObject* mappingModeObj = NULL;
+    MappingMode mappingMode = MM_OBJECT;
     char indentChar = ' ';
     unsigned indentCount = 4;
     PyObject* chunkSizeObj = NULL;
@@ -2965,6 +2998,7 @@ dump(PyObject* self, PyObject* args, PyObject* kwargs)
         "chunk_size",
         "write_mode",
         "iterable_mode",
+        "mapping_mode",
 
         /* compatibility with stdlib json */
         "allow_nan",
@@ -2972,7 +3006,7 @@ dump(PyObject* self, PyObject* args, PyObject* kwargs)
         NULL
     };
 
-    if (!PyArg_ParseTupleAndKeywords(args, kwargs, "OO|$ppOOpOOOOOOOp:rapidjson.dump",
+    if (!PyArg_ParseTupleAndKeywords(args, kwargs, "OO|$ppOOpOOOOOOOOp:rapidjson.dump",
                                      (char**) kwlist,
                                      &value,
                                      &stream,
@@ -2988,6 +3022,7 @@ dump(PyObject* self, PyObject* args, PyObject* kwargs)
                                      &chunkSizeObj,
                                      &writeModeObj,
                                      &iterableModeObj,
+                                     &mappingModeObj,
                                      &allowNan))
         return NULL;
 
@@ -3151,18 +3186,34 @@ dump(PyObject* self, PyObject* args, PyObject* kwargs)
         }
     }
 
+    if (mappingModeObj) {
+        if (mappingModeObj == Py_None) {
+            mappingMode = MM_NONE;
+        } else if (PyLong_Check(mappingModeObj)) {
+            mappingMode = (MappingMode) PyLong_AsLong(mappingModeObj);
+            if (mappingMode < MM_NONE || mappingMode > MM_OBJECT) {
+                PyErr_SetString(PyExc_ValueError, "Invalid mapping_mode");
+                return NULL;
+            }
+        } else {
+            PyErr_SetString(PyExc_TypeError, "mapping_mode must be an integer value");
+            return NULL;
+        }
+    }
+
     return do_stream_encode(value, stream, chunkSize, skipKeys ? true : false,
                             defaultFn, sortKeys ? true : false,
                             ensureAscii ? true : false, writeMode, indentChar,
                             indentCount, numberMode, datetimeMode, uuidMode, bytesMode,
-                            iterableMode);
+                            iterableMode, mappingMode);
 }
 
 
 PyDoc_STRVAR(encoder_doc,
              "Encoder(skip_invalid_keys=False, ensure_ascii=True, write_mode=WM_COMPACT,"
              " indent=4, sort_keys=False, number_mode=None, datetime_mode=None,"
-             " uuid_mode=None, bytes_mode=None, iterable_mode=IM_ARRAY)\n\n"
+             " uuid_mode=None, bytes_mode=None, iterable_mode=IM_ARRAY,"
+             " mapping_mode=MM_OBJECT)\n\n"
              "Create and return a new Encoder instance.");
 
 
@@ -3199,7 +3250,10 @@ static PyMemberDef encoder_members[] = {
      "Whether the output should be pretty printed or not."},
     {"iterable_mode",
      T_UINT, offsetof(EncoderObject, iterableMode), READONLY,
-     "Whether iterable values shall be encoded as JSON arrays or not."},
+     "Whether iterable values other than lists shall be encoded as JSON arrays or not."},
+    {"mapping_mode",
+     T_UINT, offsetof(EncoderObject, mappingMode), READONLY,
+     "Whether mapping values other than dicts shall be encoded as JSON objects or not."},
     {NULL}
 };
 
@@ -3261,7 +3315,8 @@ static PyTypeObject Encoder_Type = {
                     datetimeMode,                       \
                     uuidMode,                           \
                     bytesMode,                          \
-                    iterableMode)                       \
+                    iterableMode,                       \
+                    mappingMode)                        \
      ? PyUnicode_FromString(buf.GetString()) : NULL)
 
 
@@ -3269,7 +3324,7 @@ static PyObject*
 do_encode(PyObject* value, bool skipInvalidKeys, PyObject* defaultFn, bool sortKeys,
           bool ensureAscii, WriteMode writeMode, char indentChar, unsigned indentCount,
           NumberMode numberMode, DatetimeMode datetimeMode, UuidMode uuidMode,
-          BytesMode bytesMode, IterableMode iterableMode)
+          BytesMode bytesMode, IterableMode iterableMode, MappingMode mappingMode)
 {
     if (writeMode == WM_COMPACT) {
         if (ensureAscii) {
@@ -3311,7 +3366,8 @@ do_encode(PyObject* value, bool skipInvalidKeys, PyObject* defaultFn, bool sortK
                     datetimeMode,               \
                     uuidMode,                   \
                     bytesMode,                  \
-                    iterableMode)               \
+                    iterableMode,               \
+                    mappingMode)                \
      ? Py_INCREF(Py_None), Py_None : NULL)
 
 
@@ -3320,7 +3376,8 @@ do_stream_encode(PyObject* value, PyObject* stream, size_t chunkSize,
                  bool skipInvalidKeys, PyObject* defaultFn, bool sortKeys,
                  bool ensureAscii, WriteMode writeMode, char indentChar,
                  unsigned indentCount, NumberMode numberMode, DatetimeMode datetimeMode,
-                 UuidMode uuidMode, BytesMode bytesMode, IterableMode iterableMode)
+                 UuidMode uuidMode, BytesMode bytesMode, IterableMode iterableMode,
+                 MappingMode mappingMode)
 {
     PyWriteStreamWrapper os(stream, chunkSize);
 
@@ -3404,12 +3461,12 @@ encoder_call(PyObject* self, PyObject* args, PyObject* kwargs)
                                   e->sortKeys, e->ensureAscii, e->writeMode,
                                   e->indentChar, e->indentCount, e->numberMode,
                                   e->datetimeMode, e->uuidMode, e->bytesMode,
-                                  e->iterableMode);
+                                  e->iterableMode, e->mappingMode);
     } else {
         result = do_encode(value, e->skipInvalidKeys, defaultFn, e->sortKeys,
                            e->ensureAscii, e->writeMode, e->indentChar, e->indentCount,
                            e->numberMode, e->datetimeMode, e->uuidMode, e->bytesMode,
-                           e->iterableMode);
+                           e->iterableMode, e->mappingMode);
     }
 
     if (defaultFn != NULL)
@@ -3439,6 +3496,8 @@ encoder_new(PyTypeObject* type, PyObject* args, PyObject* kwargs)
     WriteMode writeMode = WM_COMPACT;
     PyObject* iterableModeObj = NULL;
     IterableMode iterableMode = IM_ARRAY;
+    PyObject* mappingModeObj = NULL;
+    MappingMode mappingMode = MM_OBJECT;
     char indentChar = ' ';
     unsigned indentCount = 4;
 
@@ -3453,10 +3512,11 @@ encoder_new(PyTypeObject* type, PyObject* args, PyObject* kwargs)
         "bytes_mode",
         "write_mode",
         "iterable_mode",
+        "mapping_mode",
         NULL
     };
 
-    if (!PyArg_ParseTupleAndKeywords(args, kwargs, "|ppOpOOOOOO:Encoder",
+    if (!PyArg_ParseTupleAndKeywords(args, kwargs, "|ppOpOOOOOOO:Encoder",
                                      (char**) kwlist,
                                      &skipInvalidKeys,
                                      &ensureAscii,
@@ -3467,7 +3527,8 @@ encoder_new(PyTypeObject* type, PyObject* args, PyObject* kwargs)
                                      &uuidModeObj,
                                      &bytesModeObj,
                                      &writeModeObj,
-                                     &iterableModeObj))
+                                     &iterableModeObj,
+                                     &mappingModeObj))
         return NULL;
 
     if (indent && indent != Py_None) {
@@ -3598,6 +3659,21 @@ encoder_new(PyTypeObject* type, PyObject* args, PyObject* kwargs)
         }
     }
 
+    if (mappingModeObj) {
+        if (mappingModeObj == Py_None) {
+            mappingMode = MM_NONE;
+        } else if (PyLong_Check(mappingModeObj)) {
+            mappingMode = (MappingMode) PyLong_AsLong(mappingModeObj);
+            if (mappingMode < MM_NONE || mappingMode > MM_OBJECT) {
+                PyErr_SetString(PyExc_ValueError, "Invalid mapping_mode");
+                return NULL;
+            }
+        } else {
+            PyErr_SetString(PyExc_TypeError, "mapping_mode must be an integer value");
+            return NULL;
+        }
+    }
+
     e = (EncoderObject*) type->tp_alloc(type, 0);
     if (e == NULL)
         return NULL;
@@ -3613,6 +3689,7 @@ encoder_new(PyTypeObject* type, PyObject* args, PyObject* kwargs)
     e->numberMode = numberMode;
     e->bytesMode = bytesMode;
     e->iterableMode = iterableMode;
+    e->mappingMode = mappingMode;
 
     return (PyObject*) e;
 }
@@ -3976,6 +4053,9 @@ module_exec(PyObject* m)
 
         || PyModule_AddIntConstant(m, "IM_NONE", IM_NONE)
         || PyModule_AddIntConstant(m, "IM_ARRAY", IM_ARRAY)
+
+        || PyModule_AddIntConstant(m, "MM_NONE", MM_NONE)
+        || PyModule_AddIntConstant(m, "MM_OBJECT", MM_OBJECT)
 
         || PyModule_AddStringConstant(m, "__version__", STRINGIFY(PYTHON_RAPIDJSON_VERSION))
         || PyModule_AddStringConstant(m, "__author__", "Ken Robbins <ken@kenrobbins.com>")

@@ -15,10 +15,10 @@
 
    from rapidjson import (Decoder, Encoder, BM_NONE, BM_UTF8, DM_NONE, DM_ISO8601,
                           DM_UNIX_TIME, DM_ONLY_SECONDS, DM_IGNORE_TZ, DM_NAIVE_IS_UTC,
-                          DM_SHIFT_TO_UTC, IM_NONE, IM_ARRAY, NM_NATIVE, NM_DECIMAL,
-                          NM_NAN, PM_NONE, PM_COMMENTS, PM_TRAILING_COMMAS, UM_NONE,
-                          UM_CANONICAL, UM_HEX, WM_COMPACT, WM_PRETTY,
-                          WM_SINGLE_LINE_ARRAY)
+                          DM_SHIFT_TO_UTC, IM_NONE, IM_ARRAY, MM_NONE, MM_OBJECT,
+                          NM_NATIVE, NM_DECIMAL, NM_NAN, PM_NONE, PM_COMMENTS,
+                          PM_TRAILING_COMMAS, UM_NONE, UM_CANONICAL, UM_HEX, WM_COMPACT,
+                          WM_PRETTY, WM_SINGLE_LINE_ARRAY)
 
 .. class:: Encoder(skip_invalid_keys=False, ensure_ascii=True, write_mode=WM_COMPACT, \
                    indent=4, sort_keys=False, number_mode=None, datetime_mode=None, \
@@ -42,6 +42,7 @@
    :param int uuid_mode: how should :ref:`UUID instances be handled <dumps-uuid-mode>`
    :param int bytes_mode: how should :ref:`bytes instances be handled <dumps-bytes-mode>`
    :param int iterable_mode: how should `iterable` values be handled
+   :param int mapping_mode: how should `mapping` values be handled
 
    .. rubric:: Attributes
 
@@ -80,6 +81,12 @@
       :type: int
 
       Whether `iterables` will be generically encoded as ``JSON`` arrays or not.
+
+   .. attribute:: mapping_mode
+
+      :type: int
+
+      Whether `mappings` will be generically encoded as ``JSON`` objects or not.
 
    .. attribute:: number_mode
 
@@ -189,3 +196,21 @@
          >>> obst = ObjectifyStructTime(iterable_mode=IM_NONE)
          >>> obst(localtime()) # doctest: +SKIP
          '[2020,11,28,19,55,40,5,333,0]'
+
+      Similarly, when you want full control on how a `mapping` other than plain ``dict``
+      should be encoded, you can use :data:`MM_NONE` and implement a ``default()`` method:
+
+      .. doctest::
+
+         >>> from collections import OrderedDict
+         >>> class ObjectifyOrderedDict(Encoder):
+         ...   def default(self, obj):
+         ...     if isinstance(obj, OrderedDict):
+         ...       return {'__class__': 'collections.OrderedDict',
+         ...               '__init__': list(obj.items())}
+         ...     else:
+         ...       raise ValueError('%r is not JSON serializable' % obj)
+         ...
+         >>> ood = ObjectifyOrderedDict(mapping_mode=MM_NONE)
+         >>> ood(OrderedDict((('a', 1), ('b', 2))))
+         '{"__class__":"collections.OrderedDict","__init__":[["a",1],["b",2]]}'
