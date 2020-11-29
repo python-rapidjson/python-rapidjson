@@ -4058,7 +4058,9 @@ module_exec(PyObject* m)
         || PyModule_AddIntConstant(m, "MM_OBJECT", MM_OBJECT)
 
         || PyModule_AddStringConstant(m, "__version__", STRINGIFY(PYTHON_RAPIDJSON_VERSION))
-        || PyModule_AddStringConstant(m, "__author__", "Ken Robbins <ken@kenrobbins.com>")
+        || PyModule_AddStringConstant(m, "__author__",
+                                      "Ken Robbins <ken@kenrobbins.com>"
+                                      ", Lele Gaifax <lele@metapensiero.it>")
         || PyModule_AddStringConstant(m, "__rapidjson_version__", RAPIDJSON_VERSION_STRING))
         return -1;
 
