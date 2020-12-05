@@ -187,8 +187,8 @@ enum MappingMode {
     MM_NONE = 0,
     MM_OBJECT = 1<<0,                  // Dump as JSON object
     MM_COERCE_KEYS_TO_STRINGS = 1<<1,  // Convert keys to strings
-    MM_OBJECT_COERCE_KEYS_TO_STRINGS = MM_OBJECT + MM_COERCE_KEYS_TO_STRINGS // Dump as JSON object and convert keys to strings
-    MM_CHECK_STRING_KEYS = 1<<2        // Check for the presence of non-string keys
+    MM_OBJECT_COERCE_KEYS_TO_STRINGS = MM_OBJECT + MM_COERCE_KEYS_TO_STRINGS, // Dump as JSON object and convert keys to strings
+    MM_CHECK_STRING_KEYS = 1<<2,        // Check for the presence of non-string keys
     MM_OBJECT_CHECK_STRING_KEYS = MM_OBJECT + MM_CHECK_STRING_KEYS // Dump as JSON object and check for the presence of non-string keys
 };
 
