@@ -2708,15 +2708,6 @@ dumps_internal(
         PyObject* retval = PyObject_CallFunctionObjArgs(defaultFn, object, NULL);
         if (retval == NULL)
             return false;
-        if (mappingMode & MM_CHECK_STRING_KEYS
-            &&
-            PyDict_Check(retval)
-            && !all_keys_are_string(retval)) {
-            PyErr_Format(PyExc_ValueError,
-                         "default function result %R contains non-string keys", retval);
-            Py_DECREF(retval);
-            return false;
-        }
         if (Py_EnterRecursiveCall(" while JSONifying default function result")) {
             Py_DECREF(retval);
             return false;
@@ -2981,7 +2972,7 @@ dumps(PyObject* self, PyObject* args, PyObject* kwargs)
             mappingMode = MM_NONE;
         } else if (PyLong_Check(mappingModeObj)) {
             mappingMode = (MappingMode) PyLong_AsLong(mappingModeObj);
-            if (mappingMode < MM_NONE || mappingMode > MM_CHECK_STRING_KEYS + MM_OBJECT) {
+            if (mappingMode < MM_NONE || mappingMode > MM_OBJECT_CHECK_STRING_KEYS) {
                 PyErr_SetString(PyExc_ValueError, "Invalid mapping_mode");
                 return NULL;
             }
@@ -3247,7 +3238,7 @@ dump(PyObject* self, PyObject* args, PyObject* kwargs)
             mappingMode = MM_NONE;
         } else if (PyLong_Check(mappingModeObj)) {
             mappingMode = (MappingMode) PyLong_AsLong(mappingModeObj);
-            if (mappingMode < MM_NONE || mappingMode > MM_CHECK_STRING_KEYS + MM_OBJECT) {
+            if (mappingMode < MM_NONE || mappingMode > MM_OBJECT_CHECK_STRING_KEYS) {
                 PyErr_SetString(PyExc_ValueError, "Invalid mapping_mode");
                 return NULL;
             }
@@ -3720,7 +3711,7 @@ encoder_new(PyTypeObject* type, PyObject* args, PyObject* kwargs)
             mappingMode = MM_NONE;
         } else if (PyLong_Check(mappingModeObj)) {
             mappingMode = (MappingMode) PyLong_AsLong(mappingModeObj);
-            if (mappingMode < MM_NONE || mappingMode > MM_CHECK_STRING_KEYS + MM_OBJECT) {
+            if (mappingMode < MM_NONE || mappingMode > MM_OBJECT_CHECK_STRING_KEYS) {
                 PyErr_SetString(PyExc_ValueError, "Invalid mapping_mode");
                 return NULL;
             }
