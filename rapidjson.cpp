@@ -2327,6 +2327,9 @@ dumps_internal(
                     }
                 } else if (!skipKeys) {
                     PyErr_SetString(PyExc_TypeError, "keys must be strings");
+                    // No need to dispose coercedKey here, because it can be set *only*
+                    // when mapping_mode is MM_COERCE_KEYS_TO_STRINGS
+                    assert(!coercedKey);
                     return false;
                 }
                 Py_CLEAR(coercedKey);
@@ -2352,6 +2355,7 @@ dumps_internal(
                     items.push_back(DictItem(key_str, l, item));
                 } else if (!skipKeys) {
                     PyErr_SetString(PyExc_TypeError, "keys must be strings");
+                    assert(!coercedKey);
                     return false;
                 }
                 Py_CLEAR(coercedKey);
