@@ -3,7 +3,7 @@
 .. :Author:    Ken Robbins <ken@kenrobbins.com>
 .. :License:   MIT License
 .. :Copyright: © 2015 Ken Robbins
-.. :Copyright: © 2016, 2017, 2018 Lele Gaifax
+.. :Copyright: © 2016, 2017, 2018, 2020 Lele Gaifax
 ..
 
 ==================
@@ -127,7 +127,8 @@ not to support:
 Coercing keys when dumping
   ``json`` will stringify a ``True`` dictionary key as ``"true"`` if you dump it out but
   when you load it back in it'll still be a string. We want the dump and load to return
-  the exact same objects so we have decided not to do this coercion.
+  the exact same objects so we have decided not to do this coercion by default; you can
+  however use ``MM_COERCE_KEYS_TO_STRINGS`` or ``MM_CHECK_STRING_KEYS`` to mimic that.
 
 Arbitrary encodings
   ``json.loads()`` accepts an ``encoding`` kwarg determining the encoding of its input,

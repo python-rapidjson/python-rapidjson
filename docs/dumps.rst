@@ -16,9 +16,10 @@
    from rapidjson import (dumps, loads, BM_NONE, BM_UTF8, DM_NONE, DM_ISO8601,
                           DM_UNIX_TIME, DM_ONLY_SECONDS, DM_IGNORE_TZ, DM_NAIVE_IS_UTC,
                           DM_SHIFT_TO_UTC, IM_NONE, IM_ARRAY, MM_NONE, MM_OBJECT,
-                          NM_NATIVE, NM_DECIMAL, NM_NAN, PM_NONE, PM_COMMENTS,
-                          PM_TRAILING_COMMAS, UM_NONE, UM_CANONICAL, UM_HEX, WM_COMPACT,
-                          WM_PRETTY, WM_SINGLE_LINE_ARRAY)
+                          MM_COERCE_KEYS_TO_STRINGS, MM_CHECK_STRING_KEYS, NM_NATIVE,
+                          NM_DECIMAL, NM_NAN, PM_NONE, PM_COMMENTS, PM_TRAILING_COMMAS,
+                          UM_NONE, UM_CANONICAL, UM_HEX, WM_COMPACT, WM_PRETTY,
+                          WM_SINGLE_LINE_ARRAY)
 
 .. function:: dumps(obj, *, skipkeys=False, ensure_ascii=True, write_mode=WM_COMPACT, \
                     indent=4, default=None, sort_keys=False, number_mode=None, \
@@ -546,7 +547,7 @@
       '{"__class__":"collections.Counter","__init__":{"a":1,"b":2,"c":3}}'
 
    Obviously, in such case the value returned by the `default` callable **must not**
-   be or contain a mappings other than plain ``dict``\ s:
+   be or contain mappings other than plain ``dict``\ s:
 
       >>> from collections import OrderedDict
       >>> def bad_counter(obj):
@@ -559,6 +560,63 @@
         File "<stdin>", line 1, in <module>
       ValueError: OrderedDict([('a', 1), ('b', 2), ('c', 3)]) is not JSON serializable
 
+   Normally, dumping a dictionary containing *non-string* keys raises a ``TypeError``
+   exception:
+
+   .. doctest::
+
+      >>> dumps({1: 'one'})
+      Traceback (most recent call last):
+        File "<stdin>", line 1, in <module>
+      TypeError: keys must be strings
+
+   Setting `mapping_mode` to ``MM_COERCE_KEYS_TO_STRINGS`` such keys will be converted to
+   their string representation, like the default behaviour of the standard library
+   ``json`` module:
+
+   .. doctest::
+
+      >>> dumps({1: 'one'}, mapping_mode=MM_COERCE_KEYS_TO_STRINGS)
+      '{"1":"one"}'
+
+   Paying a little performance price, with ``MM_CHECK_STRING_KEYS`` you can determine how
+   they should be handled:
+
+   .. doctest::
+
+      >>> def mimic_stdlib_json(obj):
+      ...   if isinstance(obj, dict):
+      ...     result = {}
+      ...     for key in obj:
+      ...       if key is True:
+      ...         result['true'] = obj[key]
+      ...       elif key is False:
+      ...         result['false'] = obj[key]
+      ...       elif key is None:
+      ...         result['none'] = obj[key]
+      ...       elif isinstance(key, (int, float)):
+      ...         result[str(key)] = obj[key]
+      ...       else:
+      ...         raise TypeError('keys must be str, int, float, bool or None')
+      ...     return result
+      ...   else:
+      ...     raise ValueError('%r is not JSON serializable' % (obj,))
+      >>> dumps({True: 'vero', False: 'falso'},
+      ...       default=mimic_stdlib_json,
+      ...       mapping_mode=MM_CHECK_STRING_KEYS)
+      '{"true":"vero","false":"falso"}'
+
+   The result cannot be a dictionary containing non-string keys, because that would cause
+   an infinite recursion:
+
+   .. doctest::
+
+      >>> dumps({True: 'vero', False: 'falso'},
+      ...       default=lambda map: map,
+      ...       mapping_mode=MM_CHECK_STRING_KEYS)
+      Traceback (most recent call last):
+        File "<stdin>", line 1, in <module>
+      ValueError: default function result {…} contains non-string keys
 
 .. _ISO 8601: https://en.wikipedia.org/wiki/ISO_8601
 .. _RapidJSON: http://rapidjson.org/

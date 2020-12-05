@@ -185,7 +185,9 @@ enum IterableMode {
 
 enum MappingMode {
     MM_NONE = 0,
-    MM_OBJECT = 1<<0            // Dump as JSON object
+    MM_OBJECT = 1<<0,                  // Dump as JSON object
+    MM_COERCE_KEYS_TO_STRINGS = 1<<2,  // Convert keys to strings
+    MM_CHECK_STRING_KEYS = 1<<3        // Check for the presence of non-string keys
 };
 
 //////////////////////////
@@ -2058,6 +2060,18 @@ struct DictItem {
 };
 
 
+static inline bool
+all_keys_are_string(PyObject* dict) {
+    Py_ssize_t pos = 0;
+    PyObject* key;
+
+    while (PyDict_Next(dict, &pos, &key, NULL))
+        if (!PyUnicode_Check(key))
+            return false;
+    return true;
+}
+
+
 template<typename WriterT>
 static bool
 dumps_internal(
@@ -2270,50 +2284,77 @@ dumps_internal(
         }
 
         writer->EndArray();
-    } else if ((mappingMode == MM_OBJECT && PyDict_Check(object))
-               ||
-               (mappingMode == MM_NONE && PyDict_CheckExact(object))) {
+    } else if (((mappingMode != MM_NONE && PyDict_Check(object))
+                ||
+                (mappingMode == MM_NONE && PyDict_CheckExact(object)))
+               &&
+               (!(mappingMode & MM_CHECK_STRING_KEYS)
+                ||
+                all_keys_are_string(object))) {
         writer->StartObject();
 
         Py_ssize_t pos = 0;
         PyObject* key;
         PyObject* item;
+        PyObject* coercedKey = NULL;
 
         if (!sortKeys) {
             while (PyDict_Next(object, &pos, &key, &item)) {
-                if (PyUnicode_Check(key)) {
+                if (mappingMode & MM_COERCE_KEYS_TO_STRINGS) {
+                    coercedKey = PyObject_Str(key);
+                    if (coercedKey == NULL)
+                        return false;
+                    key = coercedKey;
+                }
+                if (mappingMode & MM_COERCE_KEYS_TO_STRINGS || PyUnicode_Check(key)) {
                     Py_ssize_t l;
                     const char* key_str = PyUnicode_AsUTF8AndSize(key, &l);
-                    if (key_str == NULL)
+                    if (key_str == NULL) {
+                        Py_XDECREF(coercedKey);
                         return false;
+                    }
                     ASSERT_VALID_SIZE(l);
                     writer->Key(key_str, (SizeType) l);
-                    if (Py_EnterRecursiveCall(" while JSONifying dict object"))
+                    if (Py_EnterRecursiveCall(" while JSONifying dict object")) {
+                        Py_XDECREF(coercedKey);
                         return false;
+                    }
                     bool r = RECURSE(item);
                     Py_LeaveRecursiveCall();
-                    if (!r)
+                    if (!r) {
+                        Py_XDECREF(coercedKey);
                         return false;
+                    }
                 } else if (!skipKeys) {
                     PyErr_SetString(PyExc_TypeError, "keys must be strings");
                     return false;
                 }
+                Py_CLEAR(coercedKey);
             }
         } else {
             std::vector<DictItem> items;
 
             while (PyDict_Next(object, &pos, &key, &item)) {
-                if (PyUnicode_Check(key)) {
+                if (mappingMode & MM_COERCE_KEYS_TO_STRINGS) {
+                    coercedKey = PyObject_Str(key);
+                    if (coercedKey == NULL)
+                        return false;
+                    key = coercedKey;
+                }
+                if (mappingMode & MM_COERCE_KEYS_TO_STRINGS || PyUnicode_Check(key)) {
                     Py_ssize_t l;
                     const char* key_str = PyUnicode_AsUTF8AndSize(key, &l);
-                    if (key_str == NULL)
+                    if (key_str == NULL) {
+                        Py_XDECREF(coercedKey);
                         return false;
+                    }
                     ASSERT_VALID_SIZE(l);
                     items.push_back(DictItem(key_str, l, item));
                 } else if (!skipKeys) {
                     PyErr_SetString(PyExc_TypeError, "keys must be strings");
                     return false;
                 }
+                Py_CLEAR(coercedKey);
             }
 
             std::sort(items.begin(), items.end());
@@ -2661,6 +2702,15 @@ dumps_internal(
         PyObject* retval = PyObject_CallFunctionObjArgs(defaultFn, object, NULL);
         if (retval == NULL)
             return false;
+        if (mappingMode & MM_CHECK_STRING_KEYS
+            &&
+            PyDict_Check(retval)
+            && !all_keys_are_string(retval)) {
+            PyErr_Format(PyExc_ValueError,
+                         "default function result %R contains non-string keys", retval);
+            Py_DECREF(retval);
+            return false;
+        }
         if (Py_EnterRecursiveCall(" while JSONifying default function result")) {
             Py_DECREF(retval);
             return false;
@@ -2925,7 +2975,7 @@ dumps(PyObject* self, PyObject* args, PyObject* kwargs)
             mappingMode = MM_NONE;
         } else if (PyLong_Check(mappingModeObj)) {
             mappingMode = (MappingMode) PyLong_AsLong(mappingModeObj);
-            if (mappingMode < MM_NONE || mappingMode > MM_OBJECT) {
+            if (mappingMode < MM_NONE || mappingMode > MM_CHECK_STRING_KEYS) {
                 PyErr_SetString(PyExc_ValueError, "Invalid mapping_mode");
                 return NULL;
             }
@@ -3191,7 +3241,7 @@ dump(PyObject* self, PyObject* args, PyObject* kwargs)
             mappingMode = MM_NONE;
         } else if (PyLong_Check(mappingModeObj)) {
             mappingMode = (MappingMode) PyLong_AsLong(mappingModeObj);
-            if (mappingMode < MM_NONE || mappingMode > MM_OBJECT) {
+            if (mappingMode < MM_NONE || mappingMode > MM_CHECK_STRING_KEYS) {
                 PyErr_SetString(PyExc_ValueError, "Invalid mapping_mode");
                 return NULL;
             }
@@ -3664,7 +3714,7 @@ encoder_new(PyTypeObject* type, PyObject* args, PyObject* kwargs)
             mappingMode = MM_NONE;
         } else if (PyLong_Check(mappingModeObj)) {
             mappingMode = (MappingMode) PyLong_AsLong(mappingModeObj);
-            if (mappingMode < MM_NONE || mappingMode > MM_OBJECT) {
+            if (mappingMode < MM_NONE || mappingMode > MM_CHECK_STRING_KEYS) {
                 PyErr_SetString(PyExc_ValueError, "Invalid mapping_mode");
                 return NULL;
             }
@@ -4056,6 +4106,8 @@ module_exec(PyObject* m)
 
         || PyModule_AddIntConstant(m, "MM_NONE", MM_NONE)
         || PyModule_AddIntConstant(m, "MM_OBJECT", MM_OBJECT)
+        || PyModule_AddIntConstant(m, "MM_COERCE_KEYS_TO_STRINGS", MM_COERCE_KEYS_TO_STRINGS)
+        || PyModule_AddIntConstant(m, "MM_CHECK_STRING_KEYS", MM_CHECK_STRING_KEYS)
 
         || PyModule_AddStringConstant(m, "__version__", STRINGIFY(PYTHON_RAPIDJSON_VERSION))
         || PyModule_AddStringConstant(m, "__author__",

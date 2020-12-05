@@ -189,6 +189,17 @@
    This is the default setting for `mapping_mode`: any mapping will be dumped as a
    ``JSON`` object.
 
+.. data:: MM_COERCE_KEYS_TO_STRINGS
+
+   By default, when a dictionary contains a *non-string* key a ``TypeError`` exception is
+   raised, because that ``JSON`` objects require that all keys must be of type string; in
+   some cases however you may prefer the behaviour of the standard library ``json``
+   module, that stringify all keys.
+
+.. data:: MM_CHECK_STRING_KEYS
+
+   In other cases, you may want to handle *non-string* keys your own way: in this mode
+   such dictionaries will be managed by the `default` handler.
 
 .. rubric:: Exceptions
 
