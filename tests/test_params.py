@@ -606,6 +606,14 @@ def test_invalid_loads_params(posargs, kwargs, loads):
         ( ([],), { 'uuid_mode': 1.0 } ),
         ( ([],), { 'uuid_mode': -100 } ),
         ( ([],), { 'uuid_mode': 100 } ),
+        ( ([],), { 'iterable_mode': 'no'} ),
+        ( ([],), { 'iterable_mode': 1.0} ),
+        ( ([],), { 'iterable_mode': -100} ),
+        ( ([],), { 'iterable_mode': 100} ),
+        ( ([],), { 'mapping_mode': 'no'} ),
+        ( ([],), { 'mapping_mode': 1.0} ),
+        ( ([],), { 'mapping_mode': -100} ),
+        ( ([],), { 'mapping_mode': 100} ),
     ))
 def test_invalid_dumps_params(posargs, kwargs, dumps):
     try:
