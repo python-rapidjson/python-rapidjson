@@ -16,7 +16,7 @@ try:
         import packaging.specifiers
     except ImportError:
         pass
-    other_setup_options = {'python_requires': '>=3.4'}
+    other_setup_options = {'python_requires': '>=3.6'}
 except ImportError:
     from distutils.core import setup, Extension
     other_setup_options = {}
@@ -24,8 +24,8 @@ except ImportError:
 from distutils import sysconfig
 
 
-if sys.version_info < (3,):
-    raise NotImplementedError("Only Python 3+ is supported.")
+if sys.version_info < (3, 6):
+    raise NotImplementedError("Only Python 3.6+ is supported.")
 
 ROOT_PATH = os.path.abspath(os.path.dirname(__file__))
 

@@ -4,6 +4,8 @@ Changes
 0.9.5 (unreleased)
 ~~~~~~~~~~~~~~~~~~
 
+* Require Python 3.6 or greater
+
 * New serialization option ``iterable_mode`` to control how iterables get encoded
   (partial fix to `issue #149`__)
 

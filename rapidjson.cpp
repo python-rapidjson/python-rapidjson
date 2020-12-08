@@ -26,18 +26,6 @@
 using namespace rapidjson;
 
 
-/* Python < 3.6 compatibility */
-
-#ifndef Py_SETREF
-#define Py_SETREF(op, op2)                      \
-    do {                                        \
-        PyObject* _py_tmp = (PyObject*) (op);   \
-        (op) = (op2);                           \
-        Py_DECREF(_py_tmp);                     \
-    } while (0)
-#endif
-
-
 /* On some MacOS combo, using Py_IS_XXX() macros does not work (see
    https://github.com/python-rapidjson/python-rapidjson/issues/78).
    OTOH, MSVC < 2015 does not have std::isxxx() (see
