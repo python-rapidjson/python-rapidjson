@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# :Project:   python-rapidjson -- Configuration to build and upload manylinux1 wheels to PyPI
+# :Project:   python-rapidjson -- Configuration to build and upload wheels to PyPI
 # :Author:    Lele Gaifax <lele@metapensiero.it>
 # :License:   MIT License
 # :Copyright: © 2017, 2018, 2019, 2020 Lele Gaifax
@@ -8,9 +8,7 @@
 # Here we execute the Python 3.6 tests; Python 3.7, 3.8 and 3.9 tests are run by
 # cibuildwheel, inside the manylinux1 Docker image.
 #
-# We also run tests for memory leaks (which require a debug build of python)
-# using python3.5. Specifically we install python3.5-dbg, the only python3
-# runtime with debug support present on the Ubuntu Xenial.
+# We also run tests for memory leaks, which require a debug build of Python.
 
 dist: bionic
 
