@@ -2,7 +2,7 @@
 .. :Project:   python-rapidjson -- Benchmark tables
 .. :Author:    Lele Gaifax <lele@metapensiero.it>
 .. :License:   MIT License
-.. :Copyright: © 2016, 2017, 2018 Lele Gaifax
+.. :Copyright: © 2016, 2017, 2018, 2020 Lele Gaifax
 ..
 
 =============
@@ -70,4 +70,4 @@ executing:
    $ make benchmarks PYTEST_OPTIONS=--benchmark-compare=0001
 
 __ https://pypi.org/project/pytest-benchmark/
-__ http://pytest-benchmark.readthedocs.org/en/latest/comparing.html
+__ https://pytest-benchmark.readthedocs.org/en/latest/comparing.html

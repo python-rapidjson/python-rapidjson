@@ -2,7 +2,7 @@
 .. :Project:   python-rapidjson -- Sphinx documentation
 .. :Author:    Lele Gaifax <lele@metapensiero.it>
 .. :License:   MIT License
-.. :Copyright: © 2016, 2017 Lele Gaifax
+.. :Copyright: © 2016, 2017, 2020 Lele Gaifax
 ..
 
 ==================
@@ -26,7 +26,7 @@ Contents:
    api
 
 .. _RapidJSON: http://rapidjson.org/
-.. _JSON: http://json.org/
+.. _JSON: https://www.json.org/
 
 
 Indices and tables

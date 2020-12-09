@@ -243,8 +243,8 @@ Changes
 
 * Implemented the streaming interface, see `load()`__ and `dump()`__ (`issue #80`__)
 
-  __ http://python-rapidjson.readthedocs.io/en/latest/load.html
-  __ http://python-rapidjson.readthedocs.io/en/latest/dump.html
+  __ https://python-rapidjson.readthedocs.io/en/latest/load.html
+  __ https://python-rapidjson.readthedocs.io/en/latest/dump.html
   __ https://github.com/python-rapidjson/python-rapidjson/issues/80
 
   **Backward incompatibility**: now the *flags* arguments on all the functions are

@@ -33,7 +33,7 @@ capabilities.
 Latest version documentation is automatically rendered by `Read the Docs`__.
 
 __ http://json-schema.org/documentation.html
-__ http://python-rapidjson.readthedocs.io/en/latest/
+__ https://python-rapidjson.readthedocs.io/en/latest/
 
 
 Getting Started
@@ -110,7 +110,7 @@ compatible with the ``json`` module.
 
 See the `this section`__ in the documentation for a comparison with other JSON libraries.
 
-__ http://python-rapidjson.readthedocs.io/en/latest/benchmarks.html
+__ https://python-rapidjson.readthedocs.io/en/latest/benchmarks.html
 
 
 Incompatibility
