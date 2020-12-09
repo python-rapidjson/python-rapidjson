@@ -6,10 +6,11 @@ Changes
 
 * Require Python 3.6 or greater
 
-* New serialization option ``iterable_mode`` to control how iterables get encoded
-  (partial fix to `issue #149`__)
+* New serialization options, ``iterable_mode`` and ``mapping_mode``, to give some control
+  on how generic iterables and mappings get encoded (fix `issue #149`__ and `issue #150`)
 
   __ https://github.com/python-rapidjson/python-rapidjson/issues/149
+  __ https://github.com/python-rapidjson/python-rapidjson/issues/150
 
 
 0.9.4 (2020-11-16)

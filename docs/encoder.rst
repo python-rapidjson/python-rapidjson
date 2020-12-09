@@ -15,15 +15,15 @@
 
    from rapidjson import (Decoder, Encoder, BM_NONE, BM_UTF8, DM_NONE, DM_ISO8601,
                           DM_UNIX_TIME, DM_ONLY_SECONDS, DM_IGNORE_TZ, DM_NAIVE_IS_UTC,
-                          DM_SHIFT_TO_UTC, IM_NONE, IM_ARRAY, MM_NONE, MM_OBJECT,
-                          NM_NATIVE, NM_DECIMAL, NM_NAN, PM_NONE, PM_COMMENTS,
-                          PM_TRAILING_COMMAS, UM_NONE, UM_CANONICAL, UM_HEX, WM_COMPACT,
-                          WM_PRETTY, WM_SINGLE_LINE_ARRAY)
+                          DM_SHIFT_TO_UTC, IM_ANY_ITERABLE, IM_ONLY_LISTS, MM_ANY_MAPPING,
+                          MM_ONLY_DICTS, NM_NATIVE, NM_DECIMAL, NM_NAN, PM_NONE,
+                          PM_COMMENTS, PM_TRAILING_COMMAS, UM_NONE, UM_CANONICAL, UM_HEX,
+                          WM_COMPACT, WM_PRETTY, WM_SINGLE_LINE_ARRAY)
 
 .. class:: Encoder(skip_invalid_keys=False, ensure_ascii=True, write_mode=WM_COMPACT, \
                    indent=4, sort_keys=False, number_mode=None, datetime_mode=None, \
-                   uuid_mode=None, bytes_mode=BM_UTF8, iterable_mode=IM_ARRAY, \
-                   mapping_mode=MM_OBJECT)
+                   uuid_mode=None, bytes_mode=BM_UTF8, iterable_mode=IM_ANY_ITERABLE, \
+                   mapping_mode=MM_ANY_MAPPING)
 
    Class-based :func:`dumps`\ -like functionality.
 
@@ -101,11 +101,17 @@
 
       Whether invalid keys shall be skipped.
 
+      .. note:: `skip_invalid_keys` is a backward compatible alias of new
+                ``MM_SKIP_NON_STRING_KEYS`` :ref:`mapping mode <mapping_mode>`.
+
    .. attribute:: sort_keys
 
       :type: bool
 
       Whether dictionary keys shall be sorted alphabetically.
+
+      .. note:: `sort_keys` is a backward compatible alias of new ``MM_SORT_KEYS``
+                :ref:`mapping mode <mapping_mode>`.
 
    .. attribute:: uuid_mode
 
@@ -181,7 +187,7 @@
          '"010203"'
 
       Likewise, when you want full control on how an `iterable` such as a ``tuple`` should
-      be encoded, you can use :data:`IM_NONE` and implement a suitable ``default()``
+      be encoded, you can use :data:`IM_ONLY_LISTS` and implement a suitable ``default()``
       method:
 
       .. doctest::
@@ -194,12 +200,13 @@
          ...     else:
          ...       raise ValueError('%r is not JSON serializable' % obj)
          ...
-         >>> obst = ObjectifyStructTime(iterable_mode=IM_NONE)
+         >>> obst = ObjectifyStructTime(iterable_mode=IM_ONLY_LISTS)
          >>> obst(localtime()) # doctest: +SKIP
          '[2020,11,28,19,55,40,5,333,0]'
 
       Similarly, when you want full control on how a `mapping` other than plain ``dict``
-      should be encoded, you can use :data:`MM_NONE` and implement a ``default()`` method:
+      should be encoded, you can use :data:`MM_ONLY_DICTS` and implement a ``default()``
+      method:
 
       .. doctest::
 
@@ -212,6 +219,6 @@
          ...     else:
          ...       raise ValueError('%r is not JSON serializable' % obj)
          ...
-         >>> ood = ObjectifyOrderedDict(mapping_mode=MM_NONE)
+         >>> ood = ObjectifyOrderedDict(mapping_mode=MM_ONLY_DICTS)
          >>> ood(OrderedDict((('a', 1), ('b', 2))))
          '{"__class__":"collections.OrderedDict","__init__":[["a",1],["b",2]]}'

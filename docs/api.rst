@@ -163,43 +163,51 @@
 
 .. rubric:: `iterable_mode` related constants
 
-.. data:: IM_NONE
-
-   This disables the default handling mode (:data:`IM_ARRAY`) of `iterable` values (with
-   the exception of ``str``\ ings and ``list``\ s): they won't be treated in any special
-   way and will raise a ``TypeError`` exception when encountered. On the other hand, in
-   this mode they can be managed by a `default` handler.
-
-.. data:: IM_ARRAY
+.. data:: IM_ANY_ITERABLE
 
    This is the default setting for `iterable_mode`: any iterable will be dumped as a
    ``JSON`` array.
 
+.. data:: IM_ONLY_LISTS
+
+   This disables the default handling mode (:data:`IM_ANY_ITERABLE`) of `iterable` values
+   (with the exception of ``str``\ ings and ``list``\ s): they won't be treated in any
+   special way and will raise a ``TypeError`` exception when encountered. On the other
+   hand, in this mode they can be managed by a `default` handler.
+
+.. _mapping_mode:
 .. rubric:: `mapping_mode` related constants
 
-.. data:: MM_NONE
-
-   This disables the default handling mode (:data:`MM_OBJECT`) of `mapping` values other
-   than plain ``dict``\ s: they won't be treated in any special way and will raise a
-   ``TypeError`` exception when encountered. On the other hand, in this mode they can be
-   managed by a `default` handler.
-
-.. data:: MM_ARRAY
+.. data:: MM_ANY_MAPPING
 
    This is the default setting for `mapping_mode`: any mapping will be dumped as a
    ``JSON`` object.
 
+.. data:: MM_ONLY_DICTS
+
+   This disables the default handling mode (:data:`MM_ANY_MAPPING`) of generic `mapping`
+   values, they won't be treated like ``dict``\ s and will raise a ``TypeError`` exception
+   when encountered. On the other hand, in this mode they can be managed by a `default`
+   handler.
+
 .. data:: MM_COERCE_KEYS_TO_STRINGS
 
-   By default, when a dictionary contains a *non-string* key a ``TypeError`` exception is
-   raised, because that ``JSON`` objects require that all keys must be of type string; in
-   some cases however you may prefer the behaviour of the standard library ``json``
-   module, that stringify all keys.
+   Since ``JSON`` objects require that all keys must be of type string, when a mapping
+   contains *non-string* keys, it will be processed by the `default` handler if available,
+   otherwise a ``TypeError`` exception is raised.
 
-.. data:: MM_CHECK_STRING_KEYS
+   Alternatively, you can use the this option to automatically render such keys as their
+   ``str()`` representation.
 
-   In other cases, you may want to handle *non-string* keys your own way: in this mode
-   such dictionaries will be managed by the `default` handler.
+.. data:: MM_SKIP_NON_STRING_KEYS
+
+   In this mode, dict keys that are not of a basic type (:class:`str`, :class:`int`,
+   :class:`float`, :class:`bool`, ``None``) will be skipped instead of raising a
+   :exc:`TypeError`.
+
+.. data:: MM_SORT_KEYS
+
+   Alphabetically order dictionary keys.
 
 .. rubric:: Exceptions
 

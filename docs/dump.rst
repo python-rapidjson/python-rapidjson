@@ -19,8 +19,8 @@
 .. function:: dump(obj, stream, *, skipkeys=False, ensure_ascii=True, \
                    write_mode=WM_COMPACT, indent=4, default=None, sort_keys=False, \
                    number_mode=None, datetime_mode=None, uuid_mode=None, \
-                   bytes_mode=BM_UTF8, iterable_mode=IM_ARRAY, mapping_mode=MM_OBJECT, \
-                   chunk_size=65536, allow_nan=True)
+                   bytes_mode=BM_UTF8, iterable_mode=IM_ANY_ITERABLE, \
+                   mapping_mode=MM_ANY_MAPPING, chunk_size=65536, allow_nan=True)
 
    Encode given Python `obj` instance into a ``JSON`` stream.
 

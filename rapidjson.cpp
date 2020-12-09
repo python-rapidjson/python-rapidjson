@@ -95,7 +95,8 @@ enum DatetimeMode {
     DM_ONLY_SECONDS = 1<<4, // Truncate values to the whole second, ignoring micro seconds
     DM_IGNORE_TZ = 1<<5,    // Ignore timezones
     DM_NAIVE_IS_UTC = 1<<6, // Assume naive datetime are in UTC timezone
-    DM_SHIFT_TO_UTC = 1<<7  // Shift to/from UTC
+    DM_SHIFT_TO_UTC = 1<<7, // Shift to/from UTC
+    DM_MAX = 1<<8
 };
 
 
@@ -103,16 +104,17 @@ enum DatetimeMode {
 
 
 static inline int
-datetime_mode_format(DatetimeMode mode) {
+datetime_mode_format(unsigned mode) {
     return mode & DATETIME_MODE_FORMATS_MASK;
 }
 
 
 static inline bool
 valid_datetime_mode(int mode) {
-    return (mode >= 0
-            && ((mode & DATETIME_MODE_FORMATS_MASK) <= DM_UNIX_TIME)
-            && (mode == 0 || (mode & DATETIME_MODE_FORMATS_MASK) != 0));
+    int format = datetime_mode_format(mode);
+    return (mode >= 0 && mode < DM_MAX
+            && (format <= DM_UNIX_TIME)
+            && (mode == 0 || format > 0));
 }
 
 
@@ -136,7 +138,8 @@ days_per_month(int year, int month) {
 enum UuidMode {
     UM_NONE = 0,
     UM_CANONICAL = 1<<0, // 4-dashed 32 hex chars: xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
-    UM_HEX = 1<<1        // canonical OR 32 hex chars in a row
+    UM_HEX = 1<<1,       // canonical OR 32 hex chars in a row
+    UM_MAX = 1<<2
 };
 
 
@@ -144,39 +147,50 @@ enum NumberMode {
     NM_NONE = 0,
     NM_NAN = 1<<0,     // allow "not-a-number" values
     NM_DECIMAL = 1<<1, // serialize Decimal instances, deserialize floats as Decimal
-    NM_NATIVE = 1<<2   // use faster native C library number handling
+    NM_NATIVE = 1<<2,  // use faster native C library number handling
+    NM_MAX = 1<<3
 };
 
 
 enum BytesMode {
     BM_NONE = 0,
-    BM_UTF8 = 1<<0     // try to convert to UTF-8
+    BM_UTF8 = 1<<0,             // try to convert to UTF-8
+    BM_MAX = 1<<1
 };
 
 
 enum ParseMode {
     PM_NONE = 0,
-    PM_COMMENTS = 1<<0,       // Allow one-line // ... and multi-line /* ... */ comments
-    PM_TRAILING_COMMAS = 1<<1 // allow trailing commas at the end of objects and arrays
+    PM_COMMENTS = 1<<0,         // Allow one-line // ... and multi-line /* ... */ comments
+    PM_TRAILING_COMMAS = 1<<1,  // allow trailing commas at the end of objects and arrays
+    PM_MAX = 1<<2
 };
+
 
 enum WriteMode {
     WM_COMPACT = 0,
     WM_PRETTY = 1<<0,            // Use PrettyWriter
-    WM_SINGLE_LINE_ARRAY = 1<<1  // Format arrays on a single line
+    WM_SINGLE_LINE_ARRAY = 1<<1, // Format arrays on a single line
+    WM_MAX = 1<<2
 };
+
 
 enum IterableMode {
-    IM_NONE = 0,
-    IM_ARRAY = 1<<0             // Dump as JSON array
+    IM_ANY_ITERABLE = 0,        // Default, any iterable is dumped as JSON array
+    IM_ONLY_LISTS = 1<<0,       // Only list instances are dumped as JSON arrays
+    IM_MAX = 1<<1
 };
 
+
 enum MappingMode {
-    MM_NONE = 0,
-    MM_OBJECT = 1<<0,                  // Dump as JSON object
-    MM_COERCE_KEYS_TO_STRINGS = 1<<2,  // Convert keys to strings
-    MM_CHECK_STRING_KEYS = 1<<3        // Check for the presence of non-string keys
+    MM_ANY_MAPPING = 0,                // Default, any mapping is dumped as JSON object
+    MM_ONLY_DICTS = 1<<0,              // Only dict instances are dumped as JSON objects
+    MM_COERCE_KEYS_TO_STRINGS = 1<<1,  // Convert keys to strings
+    MM_SKIP_NON_STRING_KEYS = 1<<2,    // Ignore non-string keys
+    MM_SORT_KEYS = 1<<3,               // Sort keys
+    MM_MAX = 1<<4
 };
+
 
 //////////////////////////
 // Forward declarations //
@@ -187,25 +201,24 @@ static PyObject* do_decode(PyObject* decoder,
                            const char* jsonStr, Py_ssize_t jsonStrlen,
                            PyObject* jsonStream, size_t chunkSize,
                            PyObject* objectHook,
-                           NumberMode numberMode, DatetimeMode datetimeMode,
-                           UuidMode uuidMode, ParseMode parseMode);
+                           unsigned numberMode, unsigned datetimeMode,
+                           unsigned uuidMode, unsigned parseMode);
 static PyObject* decoder_call(PyObject* self, PyObject* args, PyObject* kwargs);
 static PyObject* decoder_new(PyTypeObject* type, PyObject* args, PyObject* kwargs);
 
 
-static PyObject* do_encode(PyObject* value, bool skipInvalidKeys, PyObject* defaultFn,
-                           bool sortKeys, bool ensureAscii, WriteMode writeMode,
-                           char indentChar, unsigned indentCount, NumberMode numberMode,
-                           DatetimeMode datetimeMode, UuidMode uuidMode,
-                           BytesMode bytesMode, IterableMode iterableMode,
-                           MappingMode mappingMode);
+static PyObject* do_encode(PyObject* value, PyObject* defaultFn, bool ensureAscii,
+                           unsigned writeMode, char indentChar, unsigned indentCount,
+                           unsigned numberMode, unsigned datetimeMode,
+                           unsigned uuidMode, unsigned bytesMode,
+                           unsigned iterableMode, unsigned mappingMode);
 static PyObject* do_stream_encode(PyObject* value, PyObject* stream, size_t chunkSize,
-                                  bool skipInvalidKeys, PyObject* defaultFn,
-                                  bool sortKeys, bool ensureAscii, WriteMode writeMode,
-                                  char indentChar, unsigned indentCount,
-                                  NumberMode numberMode, DatetimeMode datetimeMode,
-                                  UuidMode uuidMode, BytesMode bytesMode,
-                                  IterableMode iterableMode, MappingMode mappingMode);
+                                  PyObject* defaultFn, bool ensureAscii,
+                                  unsigned writeMode, char indentChar,
+                                  unsigned indentCount, unsigned numberMode,
+                                  unsigned datetimeMode, unsigned uuidMode,
+                                  unsigned bytesMode, unsigned iterableMode,
+                                  unsigned mappingMode);
 static PyObject* encoder_call(PyObject* self, PyObject* args, PyObject* kwargs);
 static PyObject* encoder_new(PyTypeObject* type, PyObject* args, PyObject* kwargs);
 
@@ -525,6 +538,239 @@ static PyTypeObject RawJSON_Type = {
 };
 
 
+
+static bool
+accept_indent_arg(PyObject* arg, unsigned &write_mode, unsigned &indent_count,
+                   char &indent_char)
+{
+    if (arg != NULL && arg != Py_None) {
+        write_mode = WM_PRETTY;
+
+        if (PyLong_Check(arg) && PyLong_AsLong(arg) >= 0) {
+            indent_count = PyLong_AsUnsignedLong(arg);
+        } else if (PyUnicode_Check(arg)) {
+            Py_ssize_t len;
+            const char* indentStr = PyUnicode_AsUTF8AndSize(arg, &len);
+
+            indent_count = len;
+            if (indent_count) {
+                indent_char = '\0';
+                while (len--) {
+                    char ch = indentStr[len];
+
+                    if (ch == '\n' || ch == ' ' || ch == '\t' || ch == '\r') {
+                        if (indent_char == '\0') {
+                            indent_char = ch;
+                        } else if (indent_char != ch) {
+                            PyErr_SetString(
+                                PyExc_TypeError,
+                                "indent string cannot contains different chars");
+                            return false;
+                        }
+                    } else {
+                        PyErr_SetString(PyExc_TypeError,
+                                        "non-whitespace char in indent string");
+                        return false;
+                    }
+                }
+            }
+        } else {
+            PyErr_SetString(PyExc_TypeError,
+                            "indent must be a non-negative int or a string");
+            return false;
+        }
+    }
+    return true;
+}
+
+static bool
+accept_write_mode_arg(PyObject* arg, unsigned &write_mode)
+{
+    if (arg != NULL && arg != Py_None) {
+        if (PyLong_Check(arg)) {
+            long mode = PyLong_AsLong(arg);
+            if (mode < 0 || mode >= WM_MAX) {
+                PyErr_SetString(PyExc_ValueError, "Invalid write_mode");
+                return false;
+            }
+            if (mode == WM_COMPACT) {
+                write_mode = WM_COMPACT;
+            } else if (mode & WM_SINGLE_LINE_ARRAY) {
+                write_mode = (unsigned) (write_mode | WM_SINGLE_LINE_ARRAY);
+            }
+        } else {
+            PyErr_SetString(PyExc_TypeError,
+                            "write_mode must be a non-negative int");
+            return false;
+        }
+    }
+    return true;
+}
+
+static bool
+accept_number_mode_arg(PyObject* arg, int allow_nan, unsigned &number_mode)
+{
+    if (arg != NULL) {
+        if (arg == Py_None)
+            number_mode = NM_NONE;
+        else if (PyLong_Check(arg)) {
+            long mode = PyLong_AsLong(arg);
+            if (mode < 0 || mode >= NM_MAX) {
+                PyErr_SetString(PyExc_ValueError, "Invalid number_mode, out of range");
+                return false;
+            }
+            number_mode = (unsigned) mode;
+        } else {
+            PyErr_SetString(PyExc_TypeError,
+                            "number_mode must be a non-negative int");
+            return false;
+        }
+    }
+    if (allow_nan != -1) {
+        if (allow_nan)
+            number_mode |= NM_NAN;
+        else
+            number_mode &= ~NM_NAN;
+    }
+    return true;
+}
+
+static bool
+accept_datetime_mode_arg(PyObject* arg, unsigned &datetime_mode)
+{
+    if (arg != NULL && arg != Py_None) {
+        if (PyLong_Check(arg)) {
+            long mode = PyLong_AsLong(arg);
+            if (!valid_datetime_mode(mode)) {
+                PyErr_SetString(PyExc_ValueError, "Invalid datetime_mode, out of range");
+                return false;
+            }
+            datetime_mode = (unsigned) mode;
+        } else {
+            PyErr_SetString(PyExc_TypeError,
+                            "datetime_mode must be a non-negative int");
+            return false;
+        }
+    }
+    return true;
+}
+
+static bool
+accept_uuid_mode_arg(PyObject* arg, unsigned &uuid_mode)
+{
+    if (arg != NULL && arg != Py_None) {
+        if (PyLong_Check(arg)) {
+            long mode = PyLong_AsLong(arg);
+            if (mode < 0 || mode >= UM_MAX) {
+                PyErr_SetString(PyExc_ValueError, "Invalid uuid_mode, out of range");
+                return false;
+            }
+            uuid_mode = (unsigned) mode;
+        } else {
+            PyErr_SetString(PyExc_TypeError, "uuid_mode must be a non-negative int");
+            return false;
+        }
+    }
+    return true;
+}
+
+static bool
+accept_bytes_mode_arg(PyObject* arg, unsigned &bytes_mode)
+{
+    if (arg != NULL && arg != Py_None) {
+        if (PyLong_Check(arg)) {
+            long mode = PyLong_AsLong(arg);
+            if (mode < 0 || mode >= BM_MAX) {
+                PyErr_SetString(PyExc_ValueError, "Invalid bytes_mode, out of range");
+                return false;
+            }
+            bytes_mode = (unsigned) mode;
+        } else {
+            PyErr_SetString(PyExc_TypeError, "bytes_mode must be a non-negative int");
+            return false;
+        }
+    }
+    return true;
+}
+
+static bool
+accept_iterable_mode_arg(PyObject* arg, unsigned &iterable_mode)
+{
+    if (arg != NULL && arg != Py_None) {
+        if (PyLong_Check(arg)) {
+            long mode = PyLong_AsLong(arg);
+            if (mode < 0 || mode >= IM_MAX) {
+                PyErr_SetString(PyExc_ValueError, "Invalid iterable_mode, out of range");
+                return false;
+            }
+            iterable_mode = (unsigned) mode;
+        } else {
+            PyErr_SetString(PyExc_TypeError, "iterable_mode must be a non-negative int");
+            return false;
+        }
+    }
+    return true;
+}
+
+static bool
+accept_mapping_mode_arg(PyObject* arg, unsigned &mapping_mode)
+{
+    if (arg != NULL && arg != Py_None) {
+        if (PyLong_Check(arg)) {
+            long mode = PyLong_AsLong(arg);
+            if (mode < 0 || mode >= MM_MAX) {
+                PyErr_SetString(PyExc_ValueError, "Invalid mapping_mode, out of range");
+                return false;
+            }
+            mapping_mode = (unsigned) mode;
+        } else {
+            PyErr_SetString(PyExc_TypeError, "mapping_mode must be a non-negative int");
+            return false;
+        }
+    }
+    return true;
+}
+
+static bool
+accept_chunk_size_arg(PyObject* arg, size_t &chunk_size)
+{
+    if (arg != NULL && arg != Py_None) {
+        if (PyLong_Check(arg)) {
+            Py_ssize_t size = PyNumber_AsSsize_t(arg, PyExc_ValueError);
+            if (PyErr_Occurred() || size < 4 || size > UINT_MAX) {
+                PyErr_SetString(PyExc_ValueError, "Invalid chunk_size, out of range");
+                return false;
+            }
+            chunk_size = (size_t) size;
+        } else {
+            PyErr_SetString(PyExc_TypeError,
+                            "chunk_size must be a non-negative int");
+            return false;
+        }
+    }
+    return true;
+}
+
+static bool
+accept_parse_mode_arg(PyObject* arg, unsigned &parse_mode)
+{
+    if (arg != NULL && arg != Py_None) {
+        if (PyLong_Check(arg)) {
+            long mode = PyLong_AsLong(arg);
+            if (mode < 0 || mode >= PM_MAX) {
+                PyErr_SetString(PyExc_ValueError, "Invalid parse_mode, out of range");
+                return false;
+            }
+            parse_mode = (unsigned) mode;
+        } else {
+            PyErr_SetString(PyExc_TypeError,
+                            "parse_mode must be a non-negative int");
+            return false;
+        }
+    }
+    return true;
+}
+
 /////////////
 // Decoder //
 /////////////
@@ -559,16 +805,16 @@ struct PyHandler {
     PyObject* decoderString;
     PyObject* root;
     PyObject* objectHook;
-    DatetimeMode datetimeMode;
-    UuidMode uuidMode;
-    NumberMode numberMode;
+    unsigned datetimeMode;
+    unsigned uuidMode;
+    unsigned numberMode;
     std::vector<HandlerContext> stack;
 
     PyHandler(PyObject* decoder,
               PyObject* hook,
-              DatetimeMode dm,
-              UuidMode um,
-              NumberMode nm)
+              unsigned dm,
+              unsigned um,
+              unsigned nm)
         : decoderStartObject(NULL),
           decoderEndObject(NULL),
           decoderEndArray(NULL),
@@ -1249,10 +1495,10 @@ struct PyHandler {
 
 typedef struct {
     PyObject_HEAD
-    DatetimeMode datetimeMode;
-    UuidMode uuidMode;
-    NumberMode numberMode;
-    ParseMode parseMode;
+    unsigned datetimeMode;
+    unsigned uuidMode;
+    unsigned numberMode;
+    unsigned parseMode;
 } DecoderObject;
 
 
@@ -1284,13 +1530,13 @@ loads(PyObject* self, PyObject* args, PyObject* kwargs)
     PyObject* jsonObject;
     PyObject* objectHook = NULL;
     PyObject* datetimeModeObj = NULL;
-    DatetimeMode datetimeMode = DM_NONE;
+    unsigned datetimeMode = DM_NONE;
     PyObject* uuidModeObj = NULL;
-    UuidMode uuidMode = UM_NONE;
+    unsigned uuidMode = UM_NONE;
     PyObject* numberModeObj = NULL;
-    NumberMode numberMode = NM_NAN;
+    unsigned numberMode = NM_NAN;
     PyObject* parseModeObj = NULL;
-    ParseMode parseMode = PM_NONE;
+    unsigned parseMode = PM_NONE;
     int allowNan = -1;
 
     if (!PyArg_ParseTupleAndKeywords(args, kwargs, "O|$OOOOOp:rapidjson.loads",
@@ -1313,86 +1559,29 @@ loads(PyObject* self, PyObject* args, PyObject* kwargs)
         }
     }
 
-    if (numberModeObj) {
-        if (numberModeObj == Py_None) {
-            numberMode = NM_NONE;
-        } else if (PyLong_Check(numberModeObj)) {
-            int mode = PyLong_AsLong(numberModeObj);
-            if (mode < 0 || mode >= 1<<3) {
-                PyErr_SetString(PyExc_ValueError, "Invalid number_mode");
-                return NULL;
-            }
-            numberMode = (NumberMode) mode;
-            if (numberMode & NM_DECIMAL && numberMode & NM_NATIVE) {
-                PyErr_SetString(PyExc_ValueError,
-                                "Combining NM_NATIVE with NM_DECIMAL is not supported");
-                return NULL;
-            }
-        }
-    }
-    if (allowNan != -1) {
-        if (allowNan)
-            numberMode = (NumberMode) (numberMode | NM_NAN);
-        else
-            numberMode = (NumberMode) (numberMode & ~NM_NAN);
+    if (!accept_number_mode_arg(numberModeObj, allowNan, numberMode))
+        return NULL;
+    if (numberMode & NM_DECIMAL && numberMode & NM_NATIVE) {
+        PyErr_SetString(PyExc_ValueError,
+                        "Invalid number_mode, combining NM_NATIVE with NM_DECIMAL"
+                        " is not supported");
+        return NULL;
     }
 
-    if (datetimeModeObj) {
-        if (datetimeModeObj == Py_None) {
-            datetimeMode = DM_NONE;
-        } else if (PyLong_Check(datetimeModeObj)) {
-            int mode = PyLong_AsLong(datetimeModeObj);
-            if (!valid_datetime_mode(mode)) {
-                PyErr_SetString(PyExc_ValueError, "Invalid datetime_mode");
-                return NULL;
-            }
-            datetimeMode = (DatetimeMode) mode;
-            if (datetimeMode && datetime_mode_format(datetimeMode) != DM_ISO8601) {
-                PyErr_SetString(PyExc_ValueError,
-                                "Invalid datetime_mode, can deserialize only from"
-                                " ISO8601");
-                return NULL;
-            }
-        } else {
-            PyErr_SetString(PyExc_TypeError,
-                            "datetime_mode must be a non-negative integer value or None");
-            return NULL;
-        }
+    if (!accept_datetime_mode_arg(datetimeModeObj, datetimeMode))
+        return NULL;
+    if (datetimeMode && datetime_mode_format(datetimeMode) != DM_ISO8601) {
+        PyErr_SetString(PyExc_ValueError,
+                        "Invalid datetime_mode, can deserialize only from"
+                        " ISO8601");
+        return NULL;
     }
 
-    if (uuidModeObj) {
-        if (uuidModeObj == Py_None) {
-            uuidMode = UM_NONE;
-        } else if (PyLong_Check(uuidModeObj)) {
-            int mode = PyLong_AsLong(uuidModeObj);
-            if (mode < 0 || mode >= 1<<2) {
-                PyErr_SetString(PyExc_ValueError, "Invalid uuid_mode");
-                return NULL;
-            }
-            uuidMode = (UuidMode) mode;
-        } else {
-            PyErr_SetString(PyExc_TypeError,
-                            "uuid_mode must be an integer value or None");
-            return NULL;
-        }
-    }
+    if (!accept_uuid_mode_arg(uuidModeObj, uuidMode))
+        return NULL;
 
-    if (parseModeObj) {
-        if (parseModeObj == Py_None) {
-            parseMode = PM_NONE;
-        } else if (PyLong_Check(parseModeObj)) {
-            int mode = PyLong_AsLong(parseModeObj);
-            if (mode < 0 || mode >= 1<<2) {
-                PyErr_SetString(PyExc_ValueError, "Invalid parse_mode");
-                return NULL;
-            }
-            parseMode = (ParseMode) mode;
-        } else {
-            PyErr_SetString(PyExc_TypeError,
-                            "parse_mode must be an integer value or None");
-            return NULL;
-        }
-    }
+    if (!accept_parse_mode_arg(parseModeObj, parseMode))
+        return NULL;
 
     Py_ssize_t jsonStrLen;
     const char* jsonStr;
@@ -1457,13 +1646,13 @@ load(PyObject* self, PyObject* args, PyObject* kwargs)
     PyObject* jsonObject;
     PyObject* objectHook = NULL;
     PyObject* datetimeModeObj = NULL;
-    DatetimeMode datetimeMode = DM_NONE;
+    unsigned datetimeMode = DM_NONE;
     PyObject* uuidModeObj = NULL;
-    UuidMode uuidMode = UM_NONE;
+    unsigned uuidMode = UM_NONE;
     PyObject* numberModeObj = NULL;
-    NumberMode numberMode = NM_NAN;
+    unsigned numberMode = NM_NAN;
     PyObject* parseModeObj = NULL;
-    ParseMode parseMode = PM_NONE;
+    unsigned parseMode = PM_NONE;
     PyObject* chunkSizeObj = NULL;
     size_t chunkSize = 65536;
     int allowNan = -1;
@@ -1503,7 +1692,7 @@ load(PyObject* self, PyObject* args, PyObject* kwargs)
                 PyErr_SetString(PyExc_ValueError, "Invalid number_mode");
                 return NULL;
             }
-            numberMode = (NumberMode) mode;
+            numberMode = (unsigned) mode;
             if (numberMode & NM_DECIMAL && numberMode & NM_NATIVE) {
                 PyErr_SetString(PyExc_ValueError,
                                 "Combining NM_NATIVE with NM_DECIMAL is not supported");
@@ -1513,9 +1702,9 @@ load(PyObject* self, PyObject* args, PyObject* kwargs)
     }
     if (allowNan != -1) {
         if (allowNan)
-            numberMode = (NumberMode) (numberMode | NM_NAN);
+            numberMode |= NM_NAN;
         else
-            numberMode = (NumberMode) (numberMode & ~NM_NAN);
+            numberMode &= ~NM_NAN;
     }
 
     if (datetimeModeObj) {
@@ -1527,7 +1716,7 @@ load(PyObject* self, PyObject* args, PyObject* kwargs)
                 PyErr_SetString(PyExc_ValueError, "Invalid datetime_mode");
                 return NULL;
             }
-            datetimeMode = (DatetimeMode) mode;
+            datetimeMode = (unsigned) mode;
             if (datetimeMode && datetime_mode_format(datetimeMode) != DM_ISO8601) {
                 PyErr_SetString(PyExc_ValueError,
                                 "Invalid datetime_mode, can deserialize only from"
@@ -1550,7 +1739,7 @@ load(PyObject* self, PyObject* args, PyObject* kwargs)
                 PyErr_SetString(PyExc_ValueError, "Invalid uuid_mode");
                 return NULL;
             }
-            uuidMode = (UuidMode) mode;
+            uuidMode = (unsigned) mode;
         } else {
             PyErr_SetString(PyExc_TypeError,
                             "uuid_mode must be an integer value or None");
@@ -1567,7 +1756,7 @@ load(PyObject* self, PyObject* args, PyObject* kwargs)
                 PyErr_SetString(PyExc_ValueError, "Invalid parse_mode");
                 return NULL;
             }
-            parseMode = (ParseMode) mode;
+            parseMode = (unsigned) mode;
         } else {
             PyErr_SetString(PyExc_TypeError,
                             "parse_mode must be an integer value or None");
@@ -1769,8 +1958,8 @@ static PyTypeObject Decoder_Type = {
 static PyObject*
 do_decode(PyObject* decoder, const char* jsonStr, Py_ssize_t jsonStrLen,
           PyObject* jsonStream, size_t chunkSize, PyObject* objectHook,
-          NumberMode numberMode, DatetimeMode datetimeMode, UuidMode uuidMode,
-          ParseMode parseMode)
+          unsigned numberMode, unsigned datetimeMode, unsigned uuidMode,
+          unsigned parseMode)
 {
     PyHandler handler(decoder, objectHook, datetimeMode, uuidMode, numberMode);
     Reader reader;
@@ -1910,13 +2099,13 @@ decoder_new(PyTypeObject* type, PyObject* args, PyObject* kwargs)
 {
     DecoderObject* d;
     PyObject* datetimeModeObj = NULL;
-    DatetimeMode datetimeMode = DM_NONE;
+    unsigned datetimeMode = DM_NONE;
     PyObject* uuidModeObj = NULL;
-    UuidMode uuidMode = UM_NONE;
+    unsigned uuidMode = UM_NONE;
     PyObject* numberModeObj = NULL;
-    NumberMode numberMode = NM_NAN;
+    unsigned numberMode = NM_NAN;
     PyObject* parseModeObj = NULL;
-    ParseMode parseMode = PM_NONE;
+    unsigned parseMode = PM_NONE;
     static char const* kwlist[] = {
         "number_mode",
         "datetime_mode",
@@ -1942,7 +2131,7 @@ decoder_new(PyTypeObject* type, PyObject* args, PyObject* kwargs)
                 PyErr_SetString(PyExc_ValueError, "Invalid number_mode");
                 return NULL;
             }
-            numberMode = (NumberMode) mode;
+            numberMode = (unsigned) mode;
             if (numberMode & NM_DECIMAL && numberMode & NM_NATIVE) {
                 PyErr_SetString(PyExc_ValueError,
                                 "Combining NM_NATIVE with NM_DECIMAL is not supported");
@@ -1960,7 +2149,7 @@ decoder_new(PyTypeObject* type, PyObject* args, PyObject* kwargs)
                 PyErr_SetString(PyExc_ValueError, "Invalid datetime_mode");
                 return NULL;
             }
-            datetimeMode = (DatetimeMode) mode;
+            datetimeMode = (unsigned) mode;
             if (datetimeMode && datetime_mode_format(datetimeMode) != DM_ISO8601) {
                 PyErr_SetString(PyExc_ValueError,
                                 "Invalid datetime_mode, can deserialize only from"
@@ -1983,7 +2172,7 @@ decoder_new(PyTypeObject* type, PyObject* args, PyObject* kwargs)
                 PyErr_SetString(PyExc_ValueError, "Invalid uuid_mode");
                 return NULL;
             }
-            uuidMode = (UuidMode) mode;
+            uuidMode = (unsigned) mode;
         } else {
             PyErr_SetString(PyExc_TypeError,
                             "uuid_mode must be an integer value or None");
@@ -2000,7 +2189,7 @@ decoder_new(PyTypeObject* type, PyObject* args, PyObject* kwargs)
                 PyErr_SetString(PyExc_ValueError, "Invalid parse_mode");
                 return NULL;
             }
-            parseMode = (ParseMode) mode;
+            parseMode = (unsigned) mode;
         } else {
             PyErr_SetString(PyExc_TypeError,
                             "parse_mode must be an integer value or None");
@@ -2065,21 +2254,19 @@ static bool
 dumps_internal(
     WriterT* writer,
     PyObject* object,
-    bool skipKeys,
     PyObject* defaultFn,
-    bool sortKeys,
-    NumberMode numberMode,
-    DatetimeMode datetimeMode,
-    UuidMode uuidMode,
-    BytesMode bytesMode,
-    IterableMode iterableMode,
-    MappingMode mappingMode)
+    unsigned numberMode,
+    unsigned datetimeMode,
+    unsigned uuidMode,
+    unsigned bytesMode,
+    unsigned iterableMode,
+    unsigned mappingMode)
 {
     int is_decimal;
 
-#define RECURSE(v) dumps_internal(writer, v, skipKeys, defaultFn, sortKeys,      \
-                                  numberMode, datetimeMode, uuidMode, bytesMode, \
-                                  iterableMode, mappingMode)
+#define RECURSE(v) dumps_internal(writer, v, defaultFn,                 \
+                                  numberMode, datetimeMode, uuidMode,   \
+                                  bytesMode, iterableMode, mappingMode)
 
 #define ASSERT_VALID_SIZE(l) do {                                       \
     if (l < 0 || l > UINT_MAX) {                                        \
@@ -2256,7 +2443,7 @@ dumps_internal(
         }
 
         writer->EndArray();
-    } else if (iterableMode == IM_ARRAY && PyTuple_Check(object)) {
+    } else if (!(iterableMode & IM_ONLY_LISTS) && PyTuple_Check(object)) {
         writer->StartArray();
 
         Py_ssize_t size = PyTuple_GET_SIZE(object);
@@ -2272,11 +2459,13 @@ dumps_internal(
         }
 
         writer->EndArray();
-    } else if (((mappingMode != MM_NONE && PyDict_Check(object))
+    } else if (((!(mappingMode & MM_ONLY_DICTS) && PyDict_Check(object))
                 ||
-                (mappingMode == MM_NONE && PyDict_CheckExact(object)))
+                PyDict_CheckExact(object))
                &&
-               (!(mappingMode & MM_CHECK_STRING_KEYS)
+               ((mappingMode & MM_SKIP_NON_STRING_KEYS)
+                ||
+                (mappingMode & MM_COERCE_KEYS_TO_STRINGS)
                 ||
                 all_keys_are_string(object))) {
         writer->StartObject();
@@ -2286,15 +2475,17 @@ dumps_internal(
         PyObject* item;
         PyObject* coercedKey = NULL;
 
-        if (!sortKeys) {
+        if (!(mappingMode & MM_SORT_KEYS)) {
             while (PyDict_Next(object, &pos, &key, &item)) {
                 if (mappingMode & MM_COERCE_KEYS_TO_STRINGS) {
-                    coercedKey = PyObject_Str(key);
-                    if (coercedKey == NULL)
-                        return false;
-                    key = coercedKey;
+                    if (!PyUnicode_Check(key)) {
+                        coercedKey = PyObject_Str(key);
+                        if (coercedKey == NULL)
+                            return false;
+                        key = coercedKey;
+                    }
                 }
-                if (mappingMode & MM_COERCE_KEYS_TO_STRINGS || PyUnicode_Check(key)) {
+                if (coercedKey || PyUnicode_Check(key)) {
                     Py_ssize_t l;
                     const char* key_str = PyUnicode_AsUTF8AndSize(key, &l);
                     if (key_str == NULL) {
@@ -2313,7 +2504,7 @@ dumps_internal(
                         Py_XDECREF(coercedKey);
                         return false;
                     }
-                } else if (!skipKeys) {
+                } else if (!(mappingMode & MM_SKIP_NON_STRING_KEYS)) {
                     PyErr_SetString(PyExc_TypeError, "keys must be strings");
                     // No need to dispose coercedKey here, because it can be set *only*
                     // when mapping_mode is MM_COERCE_KEYS_TO_STRINGS
@@ -2327,12 +2518,14 @@ dumps_internal(
 
             while (PyDict_Next(object, &pos, &key, &item)) {
                 if (mappingMode & MM_COERCE_KEYS_TO_STRINGS) {
-                    coercedKey = PyObject_Str(key);
-                    if (coercedKey == NULL)
-                        return false;
-                    key = coercedKey;
+                    if (!PyUnicode_Check(key)) {
+                        coercedKey = PyObject_Str(key);
+                        if (coercedKey == NULL)
+                            return false;
+                        key = coercedKey;
+                    }
                 }
-                if (mappingMode & MM_COERCE_KEYS_TO_STRINGS || PyUnicode_Check(key)) {
+                if (coercedKey || PyUnicode_Check(key)) {
                     Py_ssize_t l;
                     const char* key_str = PyUnicode_AsUTF8AndSize(key, &l);
                     if (key_str == NULL) {
@@ -2341,7 +2534,7 @@ dumps_internal(
                     }
                     ASSERT_VALID_SIZE(l);
                     items.push_back(DictItem(key_str, l, item));
-                } else if (!skipKeys) {
+                } else if (!(mappingMode & MM_SKIP_NON_STRING_KEYS)) {
                     PyErr_SetString(PyExc_TypeError, "keys must be strings");
                     assert(!coercedKey);
                     return false;
@@ -2365,7 +2558,7 @@ dumps_internal(
         writer->EndObject();
     } else if (datetimeMode != DM_NONE
                && (PyTime_Check(object) || PyDateTime_Check(object))) {
-        unsigned int year, month, day, hour, min, sec, microsec;
+        unsigned year, month, day, hour, min, sec, microsec;
         PyObject* dtObject = object;
         PyObject* asUTC = NULL;
 
@@ -2463,8 +2656,8 @@ dumps_internal(
                         seconds_from_utc = -seconds_from_utc;
                     }
 
-                    unsigned int tz_hour = seconds_from_utc / 3600;
-                    unsigned int tz_min = (seconds_from_utc % 3600) / 60;
+                    unsigned tz_hour = seconds_from_utc / 3600;
+                    unsigned tz_min = (seconds_from_utc % 3600) / 60;
 
                     snprintf(timeZone, TIMEZONE_LEN-1, "%c%02u:%02u",
                              sign, tz_hour, tz_min);
@@ -2565,9 +2758,9 @@ dumps_internal(
         }
         Py_XDECREF(asUTC);
     } else if (datetimeMode != DM_NONE && PyDate_Check(object)) {
-        unsigned int year = PyDateTime_GET_YEAR(object);
-        unsigned int month = PyDateTime_GET_MONTH(object);
-        unsigned int day = PyDateTime_GET_DAY(object);
+        unsigned year = PyDateTime_GET_YEAR(object);
+        unsigned month = PyDateTime_GET_MONTH(object);
+        unsigned day = PyDateTime_GET_DAY(object);
 
         if (datetime_mode_format(datetimeMode) == DM_ISO8601) {
             const int ISOFORMAT_LEN = 18;
@@ -2652,7 +2845,7 @@ dumps_internal(
         memcpy(quoted + 1, s, size);
         writer->RawValue(quoted, (SizeType) size + 2, kStringType);
         Py_DECREF(hexval);
-    } else if (iterableMode == IM_ARRAY && PyIter_Check(object)) {
+    } else if (!(iterableMode & IM_ONLY_LISTS) && PyIter_Check(object)) {
         PyObject* iterator = PyObject_GetIter(object);
         if (iterator == NULL)
             return false;
@@ -2694,15 +2887,6 @@ dumps_internal(
         PyObject* retval = PyObject_CallFunctionObjArgs(defaultFn, object, NULL);
         if (retval == NULL)
             return false;
-        if (mappingMode & MM_CHECK_STRING_KEYS
-            &&
-            PyDict_Check(retval)
-            && !all_keys_are_string(retval)) {
-            PyErr_Format(PyExc_ValueError,
-                         "default function result %R contains non-string keys", retval);
-            Py_DECREF(retval);
-            return false;
-        }
         if (Py_EnterRecursiveCall(" while JSONifying default function result")) {
             Py_DECREF(retval);
             return false;
@@ -2727,18 +2911,16 @@ dumps_internal(
 
 typedef struct {
     PyObject_HEAD
-    bool skipInvalidKeys;
     bool ensureAscii;
-    WriteMode writeMode;
+    unsigned writeMode;
     char indentChar;
     unsigned indentCount;
-    bool sortKeys;
-    DatetimeMode datetimeMode;
-    UuidMode uuidMode;
-    NumberMode numberMode;
-    BytesMode bytesMode;
-    IterableMode iterableMode;
-    MappingMode mappingMode;
+    unsigned datetimeMode;
+    unsigned uuidMode;
+    unsigned numberMode;
+    unsigned bytesMode;
+    unsigned iterableMode;
+    unsigned mappingMode;
 } EncoderObject;
 
 
@@ -2746,7 +2928,8 @@ PyDoc_STRVAR(dumps_docstring,
              "dumps(obj, *, skipkeys=False, ensure_ascii=True, write_mode=WM_COMPACT,"
              " indent=4, default=None, sort_keys=False, number_mode=None,"
              " datetime_mode=None, uuid_mode=None, bytes_mode=BM_UTF8,"
-             " iterable_mode=IM_ARRAY, mapping_mode=MM_OBJECT, allow_nan=True)\n"
+             " iterable_mode=IM_ANY_ITERABLE, mapping_mode=MM_ANY_MAPPING,"
+             " allow_nan=True)\n"
              "\n"
              "Encode a Python object into a JSON string.");
 
@@ -2757,35 +2940,32 @@ dumps(PyObject* self, PyObject* args, PyObject* kwargs)
     /* Converts a Python object to a JSON-encoded string. */
 
     PyObject* value;
-    int skipKeys = false;
     int ensureAscii = true;
     PyObject* indent = NULL;
     PyObject* defaultFn = NULL;
-    int sortKeys = false;
     PyObject* numberModeObj = NULL;
-    NumberMode numberMode = NM_NAN;
+    unsigned numberMode = NM_NAN;
     PyObject* datetimeModeObj = NULL;
-    DatetimeMode datetimeMode = DM_NONE;
+    unsigned datetimeMode = DM_NONE;
     PyObject* uuidModeObj = NULL;
-    UuidMode uuidMode = UM_NONE;
+    unsigned uuidMode = UM_NONE;
     PyObject* bytesModeObj = NULL;
-    BytesMode bytesMode = BM_UTF8;
+    unsigned bytesMode = BM_UTF8;
     PyObject* writeModeObj = NULL;
-    WriteMode writeMode = WM_COMPACT;
+    unsigned writeMode = WM_COMPACT;
     PyObject* iterableModeObj = NULL;
-    IterableMode iterableMode = IM_ARRAY;
+    unsigned iterableMode = IM_ANY_ITERABLE;
     PyObject* mappingModeObj = NULL;
-    MappingMode mappingMode = MM_OBJECT;
+    unsigned mappingMode = MM_ANY_MAPPING;
     char indentChar = ' ';
     unsigned indentCount = 4;
-    int allowNan = -1;
     static char const* kwlist[] = {
         "obj",
-        "skipkeys",
+        "skipkeys",             // alias of MM_SKIP_NON_STRING_KEYS
         "ensure_ascii",
         "indent",
         "default",
-        "sort_keys",
+        "sort_keys",            // alias of MM_SORT_KEYS
         "number_mode",
         "datetime_mode",
         "uuid_mode",
@@ -2799,6 +2979,9 @@ dumps(PyObject* self, PyObject* args, PyObject* kwargs)
 
         NULL
     };
+    int skipKeys = false;
+    int sortKeys = false;
+    int allowNan = -1;
 
     if (!PyArg_ParseTupleAndKeywords(args, kwargs, "O|$ppOOpOOOOOOOp:rapidjson.dumps",
                                      (char**) kwlist,
@@ -2827,160 +3010,39 @@ dumps(PyObject* self, PyObject* args, PyObject* kwargs)
         }
     }
 
-    if (indent && indent != Py_None) {
-        writeMode = WM_PRETTY;
+    if (!accept_indent_arg(indent, writeMode, indentCount, indentChar))
+        return NULL;
 
-        if (PyLong_Check(indent) && PyLong_AsLong(indent) >= 0) {
-            indentCount = PyLong_AsUnsignedLong(indent);
-        } else if (PyUnicode_Check(indent)) {
-            Py_ssize_t len;
-            const char* indentStr = PyUnicode_AsUTF8AndSize(indent, &len);
+    if (!accept_write_mode_arg(writeModeObj, writeMode))
+        return NULL;
 
-            indentCount = len;
-            if (indentCount) {
-                indentChar = '\0';
-                while (len--) {
-                    char ch = indentStr[len];
+    if (!accept_number_mode_arg(numberModeObj, allowNan, numberMode))
+        return NULL;
 
-                    if (ch == '\n' || ch == ' ' || ch == '\t' || ch == '\r') {
-                        if (indentChar == '\0') {
-                            indentChar = ch;
-                        } else if (indentChar != ch) {
-                            PyErr_SetString(
-                                PyExc_TypeError,
-                                "indent string cannot contains different chars");
-                            return NULL;
-                        }
-                    } else {
-                        PyErr_SetString(PyExc_TypeError,
-                                        "non-whitespace char in indent string");
-                        return NULL;
-                    }
-                }
-            }
-        } else {
-            PyErr_SetString(PyExc_TypeError,
-                            "indent must be a non-negative int or a string");
-            return NULL;
-        }
-    }
-    if (writeModeObj) {
-        if (writeModeObj == Py_None) {
-            writeMode = WM_COMPACT;
-        } else if (PyLong_Check(writeModeObj)) {
-            int mode = PyLong_AsLong(writeModeObj);
-            if (mode < 0 || mode >= 1<<2) {
-                PyErr_SetString(PyExc_ValueError, "Invalid write_mode");
-                return NULL;
-            }
-            if (mode == WM_COMPACT) {
-                writeMode = WM_COMPACT;
-            } else if (mode & WM_SINGLE_LINE_ARRAY) {
-                writeMode = (WriteMode) (writeMode | WM_SINGLE_LINE_ARRAY);
-            }
-        }
-    }
+    if (!accept_datetime_mode_arg(datetimeModeObj, datetimeMode))
+        return NULL;
 
-    if (numberModeObj) {
-        if (numberModeObj == Py_None) {
-            numberMode = NM_NONE;
-        } else if (PyLong_Check(numberModeObj)) {
-            int mode = PyLong_AsLong(numberModeObj);
-            if (mode < 0 || mode >= 1<<3) {
-                PyErr_SetString(PyExc_ValueError, "Invalid number_mode");
-                return NULL;
-            }
-            numberMode = (NumberMode) mode;
-        }
-    }
-    if (allowNan != -1) {
-        if (allowNan)
-            numberMode = (NumberMode) (numberMode | NM_NAN);
-        else
-            numberMode = (NumberMode) (numberMode & ~NM_NAN);
-    }
+    if (!accept_uuid_mode_arg(uuidModeObj, uuidMode))
+        return NULL;
 
-    if (datetimeModeObj) {
-        if (datetimeModeObj == Py_None) {
-            datetimeMode = DM_NONE;
-        } else if (PyLong_Check(datetimeModeObj)) {
-            int mode = PyLong_AsLong(datetimeModeObj);
-            if (!valid_datetime_mode(mode)) {
-                PyErr_SetString(PyExc_ValueError, "Invalid datetime_mode");
-                return NULL;
-            }
-            datetimeMode = (DatetimeMode) mode;
-        } else {
-            PyErr_SetString(PyExc_TypeError,
-                            "datetime_mode must be a non-negative integer value or None");
-            return NULL;
-        }
-    }
+    if (!accept_bytes_mode_arg(bytesModeObj, bytesMode))
+        return NULL;
 
-    if (uuidModeObj) {
-        if (uuidModeObj == Py_None) {
-            uuidMode = UM_NONE;
-        } else if (PyLong_Check(uuidModeObj)) {
-            uuidMode = (UuidMode) PyLong_AsLong(uuidModeObj);
-            if (uuidMode < UM_NONE || uuidMode > UM_HEX) {
-                PyErr_SetString(PyExc_ValueError, "Invalid uuid_mode");
-                return NULL;
-            }
-        } else {
-            PyErr_SetString(PyExc_TypeError, "uuid_mode must be an integer value");
-            return NULL;
-        }
-    }
+    if (!accept_iterable_mode_arg(iterableModeObj, iterableMode))
+        return NULL;
 
-    if (bytesModeObj) {
-        if (bytesModeObj == Py_None) {
-            bytesMode = BM_NONE;
-        } else if (PyLong_Check(bytesModeObj)) {
-            bytesMode = (BytesMode) PyLong_AsLong(bytesModeObj);
-            if (bytesMode < BM_NONE || bytesMode > BM_UTF8) {
-                PyErr_SetString(PyExc_ValueError, "Invalid bytes_mode");
-                return NULL;
-            }
-        } else {
-            PyErr_SetString(PyExc_TypeError, "bytes_mode must be an integer value");
-            return NULL;
-        }
-    }
+    if (!accept_mapping_mode_arg(mappingModeObj, mappingMode))
+        return NULL;
 
-    if (iterableModeObj) {
-        if (iterableModeObj == Py_None) {
-            iterableMode = IM_NONE;
-        } else if (PyLong_Check(iterableModeObj)) {
-            iterableMode = (IterableMode) PyLong_AsLong(iterableModeObj);
-            if (iterableMode < IM_NONE || iterableMode > IM_ARRAY) {
-                PyErr_SetString(PyExc_ValueError, "Invalid iterable_mode");
-                return NULL;
-            }
-        } else {
-            PyErr_SetString(PyExc_TypeError, "iterable_mode must be an integer value");
-            return NULL;
-        }
-    }
+    if (skipKeys)
+        mappingMode |= MM_SKIP_NON_STRING_KEYS;
 
-    if (mappingModeObj) {
-        if (mappingModeObj == Py_None) {
-            mappingMode = MM_NONE;
-        } else if (PyLong_Check(mappingModeObj)) {
-            mappingMode = (MappingMode) PyLong_AsLong(mappingModeObj);
-            if (mappingMode < MM_NONE || mappingMode > MM_CHECK_STRING_KEYS) {
-                PyErr_SetString(PyExc_ValueError, "Invalid mapping_mode");
-                return NULL;
-            }
-        } else {
-            PyErr_SetString(PyExc_TypeError, "mapping_mode must be an integer value");
-            return NULL;
-        }
-    }
+    if (sortKeys)
+        mappingMode |= MM_SORT_KEYS;
 
-    return do_encode(value, skipKeys ? true : false, defaultFn, sortKeys ? true : false,
-                     ensureAscii ? true : false, writeMode, indentChar, indentCount,
-                     numberMode, datetimeMode, uuidMode, bytesMode, iterableMode,
-                     mappingMode);
+    return do_encode(value, defaultFn, ensureAscii ? true : false, writeMode, indentChar,
+                     indentCount, numberMode, datetimeMode, uuidMode, bytesMode,
+                     iterableMode, mappingMode);
 }
 
 
@@ -2988,8 +3050,8 @@ PyDoc_STRVAR(dump_docstring,
              "dump(obj, stream, *, skipkeys=False, ensure_ascii=True,"
              " write_mode=WM_COMPACT, indent=4, default=None, sort_keys=False,"
              " number_mode=None, datetime_mode=None, uuid_mode=None, bytes_mode=BM_UTF8,"
-             " iterable_mode=IM_ARRAY, mapping_mode=MM_OBJECT, chunk_size=65536,"
-             " allow_nan=True)\n"
+             " iterable_mode=IM_ANY_ITERABLE, mapping_mode=MM_ANY_MAPPING,"
+             " chunk_size=65536, allow_nan=True)\n"
              "\n"
              "Encode a Python object into a JSON stream.");
 
@@ -3001,25 +3063,23 @@ dump(PyObject* self, PyObject* args, PyObject* kwargs)
 
     PyObject* value;
     PyObject* stream;
-    int skipKeys = false;
     int ensureAscii = true;
     PyObject* indent = NULL;
     PyObject* defaultFn = NULL;
-    int sortKeys = false;
     PyObject* numberModeObj = NULL;
-    NumberMode numberMode = NM_NAN;
+    unsigned numberMode = NM_NAN;
     PyObject* datetimeModeObj = NULL;
-    DatetimeMode datetimeMode = DM_NONE;
+    unsigned datetimeMode = DM_NONE;
     PyObject* uuidModeObj = NULL;
-    UuidMode uuidMode = UM_NONE;
+    unsigned uuidMode = UM_NONE;
     PyObject* bytesModeObj = NULL;
-    BytesMode bytesMode = BM_UTF8;
+    unsigned bytesMode = BM_UTF8;
     PyObject* writeModeObj = NULL;
-    WriteMode writeMode = WM_COMPACT;
+    unsigned writeMode = WM_COMPACT;
     PyObject* iterableModeObj = NULL;
-    IterableMode iterableMode = IM_ARRAY;
+    unsigned iterableMode = IM_ANY_ITERABLE;
     PyObject* mappingModeObj = NULL;
-    MappingMode mappingMode = MM_OBJECT;
+    unsigned mappingMode = MM_ANY_MAPPING;
     char indentChar = ' ';
     unsigned indentCount = 4;
     PyObject* chunkSizeObj = NULL;
@@ -3028,11 +3088,11 @@ dump(PyObject* self, PyObject* args, PyObject* kwargs)
     static char const* kwlist[] = {
         "obj",
         "stream",
-        "skipkeys",
+        "skipkeys",             // alias of MM_SKIP_NON_STRING_KEYS
         "ensure_ascii",
         "indent",
         "default",
-        "sort_keys",
+        "sort_keys",            // alias of MM_SORT_KEYS
         "number_mode",
         "datetime_mode",
         "uuid_mode",
@@ -3047,6 +3107,8 @@ dump(PyObject* self, PyObject* args, PyObject* kwargs)
 
         NULL
     };
+    int skipKeys = false;
+    int sortKeys = false;
 
     if (!PyArg_ParseTupleAndKeywords(args, kwargs, "OO|$ppOOpOOOOOOOOp:rapidjson.dump",
                                      (char**) kwlist,
@@ -3077,174 +3139,40 @@ dump(PyObject* self, PyObject* args, PyObject* kwargs)
         }
     }
 
-    if (indent && indent != Py_None) {
-        writeMode = WM_PRETTY;
+    if (!accept_indent_arg(indent, writeMode, indentCount, indentChar))
+        return NULL;
 
-        if (PyLong_Check(indent) && PyLong_AsLong(indent) >= 0) {
-            indentCount = PyLong_AsUnsignedLong(indent);
-        } else if (PyUnicode_Check(indent)) {
-            Py_ssize_t len;
-            const char* indentStr = PyUnicode_AsUTF8AndSize(indent, &len);
+    if (!accept_write_mode_arg(writeModeObj, writeMode))
+        return NULL;
 
-            indentCount = len;
-            if (indentCount) {
-                indentChar = '\0';
-                while (len--) {
-                    char ch = indentStr[len];
+    if (!accept_number_mode_arg(numberModeObj, allowNan, numberMode))
+        return NULL;
 
-                    if (ch == '\n' || ch == ' ' || ch == '\t' || ch == '\r') {
-                        if (indentChar == '\0') {
-                            indentChar = ch;
-                        } else if (indentChar != ch) {
-                            PyErr_SetString(
-                                PyExc_TypeError,
-                                "indent string cannot contains different chars");
-                            return NULL;
-                        }
-                    } else {
-                        PyErr_SetString(PyExc_TypeError,
-                                        "non-whitespace char in indent string");
-                        return NULL;
-                    }
-                }
-            }
-        } else {
-            PyErr_SetString(PyExc_TypeError,
-                            "indent must be a non-negative int or a string");
-            return NULL;
-        }
-    }
-    if (writeModeObj) {
-        if (writeModeObj == Py_None) {
-            writeMode = WM_COMPACT;
-        } else if (PyLong_Check(writeModeObj)) {
-            int mode = PyLong_AsLong(writeModeObj);
-            if (mode < 0 || mode >= 1<<2) {
-                PyErr_SetString(PyExc_ValueError, "Invalid write_mode");
-                return NULL;
-            }
-            if (mode == WM_COMPACT) {
-                writeMode = WM_COMPACT;
-            } else if (mode & WM_SINGLE_LINE_ARRAY)
-                writeMode = (WriteMode) (writeMode | WM_SINGLE_LINE_ARRAY);
-        }
-    }
+    if (!accept_datetime_mode_arg(datetimeModeObj, datetimeMode))
+        return NULL;
 
-    if (numberModeObj) {
-        if (numberModeObj == Py_None) {
-            numberMode = NM_NONE;
-        } else if (PyLong_Check(numberModeObj)) {
-            int mode = PyLong_AsLong(numberModeObj);
-            if (mode < 0 || mode >= 1<<3) {
-                PyErr_SetString(PyExc_ValueError, "Invalid number_mode");
-                return NULL;
-            }
-            numberMode = (NumberMode) mode;
-        }
-    }
-    if (allowNan != -1) {
-        if (allowNan)
-            numberMode = (NumberMode) (numberMode | NM_NAN);
-        else
-            numberMode = (NumberMode) (numberMode & ~NM_NAN);
-    }
+    if (!accept_uuid_mode_arg(uuidModeObj, uuidMode))
+        return NULL;
 
-    if (datetimeModeObj) {
-        if (datetimeModeObj == Py_None) {
-            datetimeMode = DM_NONE;
-        } else if (PyLong_Check(datetimeModeObj)) {
-            int mode = PyLong_AsLong(datetimeModeObj);
-            if (!valid_datetime_mode(mode)) {
-                PyErr_SetString(PyExc_ValueError, "Invalid datetime_mode");
-                return NULL;
-            }
-            datetimeMode = (DatetimeMode) mode;
-        } else {
-            PyErr_SetString(PyExc_TypeError,
-                            "datetime_mode must be a non-negative integer value or None");
-            return NULL;
-        }
-    }
+    if (!accept_bytes_mode_arg(bytesModeObj, bytesMode))
+        return NULL;
 
-    if (uuidModeObj) {
-        if (uuidModeObj == Py_None) {
-            uuidMode = UM_NONE;
-        } else if (PyLong_Check(uuidModeObj)) {
-            uuidMode = (UuidMode) PyLong_AsLong(uuidModeObj);
-            if (uuidMode < UM_NONE || uuidMode > UM_HEX) {
-                PyErr_SetString(PyExc_ValueError, "Invalid uuid_mode");
-                return NULL;
-            }
-        } else {
-            PyErr_SetString(PyExc_TypeError, "uuid_mode must be an integer value");
-            return NULL;
-        }
-    }
+    if (!accept_chunk_size_arg(chunkSizeObj, chunkSize))
+        return NULL;
 
-    if (bytesModeObj) {
-        if (bytesModeObj == Py_None) {
-            bytesMode = BM_NONE;
-        } else if (PyLong_Check(bytesModeObj)) {
-            bytesMode = (BytesMode) PyLong_AsLong(bytesModeObj);
-            if (bytesMode < BM_NONE || bytesMode > BM_UTF8) {
-                PyErr_SetString(PyExc_ValueError, "Invalid bytes_mode");
-                return NULL;
-            }
-        } else {
-            PyErr_SetString(PyExc_TypeError, "bytes_mode must be an integer value");
-            return NULL;
-        }
-    }
+    if (!accept_iterable_mode_arg(iterableModeObj, iterableMode))
+        return NULL;
 
-    if (chunkSizeObj && chunkSizeObj != Py_None) {
-        if (PyLong_Check(chunkSizeObj)) {
-            Py_ssize_t size = PyNumber_AsSsize_t(chunkSizeObj, PyExc_ValueError);
-            if (PyErr_Occurred() || size < 4 || size > UINT_MAX) {
-                PyErr_SetString(PyExc_ValueError,
-                                "Invalid chunk_size, must be an integer between 4 and"
-                                " UINT_MAX");
-                return NULL;
-            }
-            chunkSize = (size_t) size;
-        } else {
-            PyErr_SetString(PyExc_TypeError,
-                            "chunk_size must be an unsigned integer value or None");
-            return NULL;
-        }
-    }
+    if (!accept_mapping_mode_arg(mappingModeObj, mappingMode))
+        return NULL;
 
-    if (iterableModeObj) {
-        if (iterableModeObj == Py_None) {
-            iterableMode = IM_NONE;
-        } else if (PyLong_Check(iterableModeObj)) {
-            iterableMode = (IterableMode) PyLong_AsLong(iterableModeObj);
-            if (iterableMode < IM_NONE || iterableMode > IM_ARRAY) {
-                PyErr_SetString(PyExc_ValueError, "Invalid iterable_mode");
-                return NULL;
-            }
-        } else {
-            PyErr_SetString(PyExc_TypeError, "iterable_mode must be an integer value");
-            return NULL;
-        }
-    }
+    if (skipKeys)
+        mappingMode |= MM_SKIP_NON_STRING_KEYS;
 
-    if (mappingModeObj) {
-        if (mappingModeObj == Py_None) {
-            mappingMode = MM_NONE;
-        } else if (PyLong_Check(mappingModeObj)) {
-            mappingMode = (MappingMode) PyLong_AsLong(mappingModeObj);
-            if (mappingMode < MM_NONE || mappingMode > MM_CHECK_STRING_KEYS) {
-                PyErr_SetString(PyExc_ValueError, "Invalid mapping_mode");
-                return NULL;
-            }
-        } else {
-            PyErr_SetString(PyExc_TypeError, "mapping_mode must be an integer value");
-            return NULL;
-        }
-    }
+    if (sortKeys)
+        mappingMode |= MM_SORT_KEYS;
 
-    return do_stream_encode(value, stream, chunkSize, skipKeys ? true : false,
-                            defaultFn, sortKeys ? true : false,
+    return do_stream_encode(value, stream, chunkSize, defaultFn,
                             ensureAscii ? true : false, writeMode, indentChar,
                             indentCount, numberMode, datetimeMode, uuidMode, bytesMode,
                             iterableMode, mappingMode);
@@ -3254,15 +3182,12 @@ dump(PyObject* self, PyObject* args, PyObject* kwargs)
 PyDoc_STRVAR(encoder_doc,
              "Encoder(skip_invalid_keys=False, ensure_ascii=True, write_mode=WM_COMPACT,"
              " indent=4, sort_keys=False, number_mode=None, datetime_mode=None,"
-             " uuid_mode=None, bytes_mode=None, iterable_mode=IM_ARRAY,"
-             " mapping_mode=MM_OBJECT)\n\n"
+             " uuid_mode=None, bytes_mode=None, iterable_mode=IM_ANY_ITERABLE,"
+             " mapping_mode=MM_ANY_MAPPING)\n\n"
              "Create and return a new Encoder instance.");
 
 
 static PyMemberDef encoder_members[] = {
-    {"skip_invalid_keys",
-     T_BOOL, offsetof(EncoderObject, skipInvalidKeys), READONLY,
-     "Whether invalid keys shall be skipped."},
     {"ensure_ascii",
      T_BOOL, offsetof(EncoderObject, ensureAscii), READONLY,
      "whether the output should contain only ASCII characters."},
@@ -3272,9 +3197,6 @@ static PyMemberDef encoder_members[] = {
     {"indent_count",
      T_UINT, offsetof(EncoderObject, indentCount), READONLY,
      "The indentation width."},
-    {"sort_keys",
-     T_BOOL, offsetof(EncoderObject, sortKeys), READONLY,
-     "Whether dictionary keys shall be sorted alphabetically."},
     {"datetime_mode",
      T_UINT, offsetof(EncoderObject, datetimeMode), READONLY,
      "Whether and how datetime values should be encoded."},
@@ -3299,6 +3221,28 @@ static PyMemberDef encoder_members[] = {
     {NULL}
 };
 
+
+static PyObject*
+encoder_get_skip_invalid_keys(EncoderObject* e, void* closure)
+{
+    return PyBool_FromLong(e->mappingMode & MM_SKIP_NON_STRING_KEYS);
+}
+
+static PyObject*
+encoder_get_sort_keys(EncoderObject* e, void* closure)
+{
+    return PyBool_FromLong(e->mappingMode & MM_SORT_KEYS);
+}
+
+// Backward compatibility, previously they were members of EncoderObject
+
+static PyGetSetDef encoder_props[] = {
+    {"skip_invalid_keys", (getter) encoder_get_skip_invalid_keys, NULL,
+     "Whether invalid keys shall be skipped."},
+    {"sort_keys", (getter) encoder_get_sort_keys, NULL,
+     "Whether dictionary keys shall be sorted alphabetically."},
+    {NULL}
+};
 
 static PyTypeObject Encoder_Type = {
     PyVarObject_HEAD_INIT(NULL, 0)
@@ -3330,7 +3274,7 @@ static PyTypeObject Encoder_Type = {
     0,                                        /* tp_iternext */
     0,                                        /* tp_methods */
     encoder_members,                          /* tp_members */
-    0,                                        /* tp_getset */
+    encoder_props,                            /* tp_getset */
     0,                                        /* tp_base */
     0,                                        /* tp_dict */
     0,                                        /* tp_descr_get */
@@ -3350,9 +3294,7 @@ static PyTypeObject Encoder_Type = {
 #define DUMPS_INTERNAL_CALL                             \
     (dumps_internal(&writer,                            \
                     value,                              \
-                    skipInvalidKeys,                    \
                     defaultFn,                          \
-                    sortKeys,                           \
                     numberMode,                         \
                     datetimeMode,                       \
                     uuidMode,                           \
@@ -3363,10 +3305,10 @@ static PyTypeObject Encoder_Type = {
 
 
 static PyObject*
-do_encode(PyObject* value, bool skipInvalidKeys, PyObject* defaultFn, bool sortKeys,
-          bool ensureAscii, WriteMode writeMode, char indentChar, unsigned indentCount,
-          NumberMode numberMode, DatetimeMode datetimeMode, UuidMode uuidMode,
-          BytesMode bytesMode, IterableMode iterableMode, MappingMode mappingMode)
+do_encode(PyObject* value, PyObject* defaultFn, bool ensureAscii, unsigned writeMode,
+          char indentChar, unsigned indentCount, unsigned numberMode,
+          unsigned datetimeMode, unsigned uuidMode, unsigned bytesMode,
+          unsigned iterableMode, unsigned mappingMode)
 {
     if (writeMode == WM_COMPACT) {
         if (ensureAscii) {
@@ -3401,9 +3343,7 @@ do_encode(PyObject* value, bool skipInvalidKeys, PyObject* defaultFn, bool sortK
 #define DUMP_INTERNAL_CALL                      \
     (dumps_internal(&writer,                    \
                     value,                      \
-                    skipInvalidKeys,            \
                     defaultFn,                  \
-                    sortKeys,                   \
                     numberMode,                 \
                     datetimeMode,               \
                     uuidMode,                   \
@@ -3414,12 +3354,11 @@ do_encode(PyObject* value, bool skipInvalidKeys, PyObject* defaultFn, bool sortK
 
 
 static PyObject*
-do_stream_encode(PyObject* value, PyObject* stream, size_t chunkSize,
-                 bool skipInvalidKeys, PyObject* defaultFn, bool sortKeys,
-                 bool ensureAscii, WriteMode writeMode, char indentChar,
-                 unsigned indentCount, NumberMode numberMode, DatetimeMode datetimeMode,
-                 UuidMode uuidMode, BytesMode bytesMode, IterableMode iterableMode,
-                 MappingMode mappingMode)
+do_stream_encode(PyObject* value, PyObject* stream, size_t chunkSize, PyObject* defaultFn,
+                 bool ensureAscii, unsigned writeMode, char indentChar,
+                 unsigned indentCount, unsigned numberMode, unsigned datetimeMode,
+                 unsigned uuidMode, unsigned bytesMode, unsigned iterableMode,
+                 unsigned mappingMode)
 {
     PyWriteStreamWrapper os(stream, chunkSize);
 
@@ -3474,41 +3413,31 @@ encoder_call(PyObject* self, PyObject* args, PyObject* kwargs)
 
     EncoderObject* e = (EncoderObject*) self;
 
-    if (PyObject_HasAttr(self, default_name)) {
-        defaultFn = PyObject_GetAttr(self, default_name);
-    }
-
     if (stream != NULL && stream != Py_None) {
         if (!PyObject_HasAttr(stream, write_name)) {
             PyErr_SetString(PyExc_TypeError, "Expected a writable stream");
             return NULL;
         }
-        if (chunkSizeObj && chunkSizeObj != Py_None) {
-            if (PyLong_Check(chunkSizeObj)) {
-                Py_ssize_t size = PyNumber_AsSsize_t(chunkSizeObj, PyExc_ValueError);
-                if (PyErr_Occurred() || size < 4 || size > UINT_MAX) {
-                    PyErr_SetString(PyExc_ValueError,
-                                    "Invalid chunk_size, must be an integer between 4 and"
-                                    " UINT_MAX");
-                    return NULL;
-                }
-                chunkSize = (size_t) size;
-            } else {
-                PyErr_SetString(PyExc_TypeError,
-                                "chunk_size must be an unsigned integer value or None");
-                return NULL;
-            }
+
+        if (!accept_chunk_size_arg(chunkSizeObj, chunkSize))
+            return NULL;
+
+        if (PyObject_HasAttr(self, default_name)) {
+            defaultFn = PyObject_GetAttr(self, default_name);
         }
-        result = do_stream_encode(value, stream, chunkSize, e->skipInvalidKeys, defaultFn,
-                                  e->sortKeys, e->ensureAscii, e->writeMode,
-                                  e->indentChar, e->indentCount, e->numberMode,
-                                  e->datetimeMode, e->uuidMode, e->bytesMode,
-                                  e->iterableMode, e->mappingMode);
+
+        result = do_stream_encode(value, stream, chunkSize, defaultFn, e->ensureAscii,
+                                  e->writeMode, e->indentChar, e->indentCount,
+                                  e->numberMode, e->datetimeMode, e->uuidMode,
+                                  e->bytesMode, e->iterableMode, e->mappingMode);
     } else {
-        result = do_encode(value, e->skipInvalidKeys, defaultFn, e->sortKeys,
-                           e->ensureAscii, e->writeMode, e->indentChar, e->indentCount,
-                           e->numberMode, e->datetimeMode, e->uuidMode, e->bytesMode,
-                           e->iterableMode, e->mappingMode);
+        if (PyObject_HasAttr(self, default_name)) {
+            defaultFn = PyObject_GetAttr(self, default_name);
+        }
+
+        result = do_encode(value, defaultFn, e->ensureAscii, e->writeMode, e->indentChar,
+                           e->indentCount, e->numberMode, e->datetimeMode, e->uuidMode,
+                           e->bytesMode, e->iterableMode, e->mappingMode);
     }
 
     if (defaultFn != NULL)
@@ -3522,32 +3451,29 @@ static PyObject*
 encoder_new(PyTypeObject* type, PyObject* args, PyObject* kwargs)
 {
     EncoderObject* e;
-    int skipInvalidKeys = false;
     int ensureAscii = true;
     PyObject* indent = NULL;
-    int sortKeys = false;
     PyObject* numberModeObj = NULL;
-    NumberMode numberMode = NM_NAN;
+    unsigned numberMode = NM_NAN;
     PyObject* datetimeModeObj = NULL;
-    DatetimeMode datetimeMode = DM_NONE;
+    unsigned datetimeMode = DM_NONE;
     PyObject* uuidModeObj = NULL;
-    UuidMode uuidMode = UM_NONE;
+    unsigned uuidMode = UM_NONE;
     PyObject* bytesModeObj = NULL;
-    BytesMode bytesMode = BM_UTF8;
+    unsigned bytesMode = BM_UTF8;
     PyObject* writeModeObj = NULL;
-    WriteMode writeMode = WM_COMPACT;
+    unsigned writeMode = WM_COMPACT;
     PyObject* iterableModeObj = NULL;
-    IterableMode iterableMode = IM_ARRAY;
+    unsigned iterableMode = IM_ANY_ITERABLE;
     PyObject* mappingModeObj = NULL;
-    MappingMode mappingMode = MM_OBJECT;
+    unsigned mappingMode = MM_ANY_MAPPING;
     char indentChar = ' ';
     unsigned indentCount = 4;
-
     static char const* kwlist[] = {
-        "skip_invalid_keys",
+        "skip_invalid_keys",    // alias of MM_SKIP_NON_STRING_KEYS
         "ensure_ascii",
         "indent",
-        "sort_keys",
+        "sort_keys",            // alias of MM_SORT_KEYS
         "number_mode",
         "datetime_mode",
         "uuid_mode",
@@ -3557,6 +3483,8 @@ encoder_new(PyTypeObject* type, PyObject* args, PyObject* kwargs)
         "mapping_mode",
         NULL
     };
+    int skipInvalidKeys = false;
+    int sortKeys = false;
 
     if (!PyArg_ParseTupleAndKeywords(args, kwargs, "|ppOpOOOOOOO:Encoder",
                                      (char**) kwlist,
@@ -3573,159 +3501,44 @@ encoder_new(PyTypeObject* type, PyObject* args, PyObject* kwargs)
                                      &mappingModeObj))
         return NULL;
 
-    if (indent && indent != Py_None) {
-        writeMode = WM_PRETTY;
+    if (!accept_indent_arg(indent, writeMode, indentCount, indentChar))
+        return NULL;
 
-        if (PyLong_Check(indent) && PyLong_AsLong(indent) >= 0) {
-            indentCount = PyLong_AsUnsignedLong(indent);
-        } else if (PyUnicode_Check(indent)) {
-            Py_ssize_t len;
-            const char* indentStr = PyUnicode_AsUTF8AndSize(indent, &len);
+    if (!accept_write_mode_arg(writeModeObj, writeMode))
+        return NULL;
 
-            indentCount = len;
-            if (indentCount) {
-                indentChar = '\0';
-                while (len--) {
-                    char ch = indentStr[len];
+    if (!accept_number_mode_arg(numberModeObj, -1, numberMode))
+        return NULL;
 
-                    if (ch == '\n' || ch == ' ' || ch == '\t' || ch == '\r') {
-                        if (indentChar == '\0') {
-                            indentChar = ch;
-                        } else if (indentChar != ch) {
-                            PyErr_SetString(
-                                PyExc_TypeError,
-                                "indent string cannot contains different chars");
-                            return NULL;
-                        }
-                    } else {
-                        PyErr_SetString(PyExc_TypeError,
-                                        "non-whitespace char in indent string");
-                        return NULL;
-                    }
-                }
-            }
-        } else {
-            PyErr_SetString(PyExc_TypeError,
-                            "indent must be a non-negative int or a string");
-            return NULL;
-        }
-    }
-    if (writeModeObj) {
-        if (writeModeObj == Py_None) {
-            writeMode = WM_COMPACT;
-        } else if (PyLong_Check(writeModeObj)) {
-            int mode = PyLong_AsLong(writeModeObj);
-            if (mode < 0 || mode >= 1<<2) {
-                PyErr_SetString(PyExc_ValueError, "Invalid write_mode");
-                return NULL;
-            }
-            if (mode == WM_COMPACT) {
-                writeMode = WM_COMPACT;
-            } else if (mode & WM_SINGLE_LINE_ARRAY)
-                writeMode = (WriteMode) (writeMode | WM_SINGLE_LINE_ARRAY);
-        }
-    }
+    if (!accept_datetime_mode_arg(datetimeModeObj, datetimeMode))
+        return NULL;
 
-    if (numberModeObj) {
-        if (numberModeObj == Py_None) {
-            numberMode = NM_NONE;
-        } else if (PyLong_Check(numberModeObj)) {
-            int mode = PyLong_AsLong(numberModeObj);
-            if (mode < 0 || mode >= 1<<3) {
-                PyErr_SetString(PyExc_ValueError, "Invalid number_mode");
-                return NULL;
-            }
-            numberMode = (NumberMode) mode;
-        }
-    }
+    if (!accept_uuid_mode_arg(uuidModeObj, uuidMode))
+        return NULL;
 
-    if (datetimeModeObj) {
-        if (datetimeModeObj == Py_None) {
-            datetimeMode = DM_NONE;
-        } else if (PyLong_Check(datetimeModeObj)) {
-            int mode = PyLong_AsLong(datetimeModeObj);
-            if (!valid_datetime_mode(mode)) {
-                PyErr_SetString(PyExc_ValueError, "Invalid datetime_mode");
-                return NULL;
-            }
-            datetimeMode = (DatetimeMode) mode;
-        } else {
-            PyErr_SetString(PyExc_TypeError,
-                            "datetime_mode must be a non-negative integer value or None");
-            return NULL;
-        }
-    }
+    if (!accept_bytes_mode_arg(bytesModeObj, bytesMode))
+        return NULL;
 
-    if (uuidModeObj) {
-        if (uuidModeObj == Py_None) {
-            uuidMode = UM_NONE;
-        } else if (PyLong_Check(uuidModeObj)) {
-            uuidMode = (UuidMode) PyLong_AsLong(uuidModeObj);
-            if (uuidMode < UM_NONE || uuidMode > UM_HEX) {
-                PyErr_SetString(PyExc_ValueError, "Invalid uuid_mode");
-                return NULL;
-            }
-        } else {
-            PyErr_SetString(PyExc_TypeError, "uuid_mode must be an integer value");
-            return NULL;
-        }
-    }
+    if (!accept_iterable_mode_arg(iterableModeObj, iterableMode))
+        return NULL;
 
-    if (bytesModeObj) {
-        if (bytesModeObj == Py_None) {
-            bytesMode = BM_NONE;
-        } else if (PyLong_Check(bytesModeObj)) {
-            bytesMode = (BytesMode) PyLong_AsLong(bytesModeObj);
-            if (bytesMode < BM_NONE || bytesMode > BM_UTF8) {
-                PyErr_SetString(PyExc_ValueError, "Invalid bytes_mode");
-                return NULL;
-            }
-        } else {
-            PyErr_SetString(PyExc_TypeError, "bytes_mode must be an integer value");
-            return NULL;
-        }
-    }
+    if (!accept_mapping_mode_arg(mappingModeObj, mappingMode))
+        return NULL;
 
-    if (iterableModeObj) {
-        if (iterableModeObj == Py_None) {
-            iterableMode = IM_NONE;
-        } else if (PyLong_Check(iterableModeObj)) {
-            iterableMode = (IterableMode) PyLong_AsLong(iterableModeObj);
-            if (iterableMode < IM_NONE || iterableMode > IM_ARRAY) {
-                PyErr_SetString(PyExc_ValueError, "Invalid iterable_mode");
-                return NULL;
-            }
-        } else {
-            PyErr_SetString(PyExc_TypeError, "iterable_mode must be an integer value");
-            return NULL;
-        }
-    }
+    if (skipInvalidKeys)
+        mappingMode |= MM_SKIP_NON_STRING_KEYS;
 
-    if (mappingModeObj) {
-        if (mappingModeObj == Py_None) {
-            mappingMode = MM_NONE;
-        } else if (PyLong_Check(mappingModeObj)) {
-            mappingMode = (MappingMode) PyLong_AsLong(mappingModeObj);
-            if (mappingMode < MM_NONE || mappingMode > MM_CHECK_STRING_KEYS) {
-                PyErr_SetString(PyExc_ValueError, "Invalid mapping_mode");
-                return NULL;
-            }
-        } else {
-            PyErr_SetString(PyExc_TypeError, "mapping_mode must be an integer value");
-            return NULL;
-        }
-    }
+    if (sortKeys)
+        mappingMode |= MM_SORT_KEYS;
 
     e = (EncoderObject*) type->tp_alloc(type, 0);
     if (e == NULL)
         return NULL;
 
-    e->skipInvalidKeys = skipInvalidKeys ? true : false;
     e->ensureAscii = ensureAscii ? true : false;
     e->writeMode = writeMode;
     e->indentChar = indentChar;
     e->indentCount = indentCount;
-    e->sortKeys = sortKeys ? true : false;
     e->datetimeMode = datetimeMode;
     e->uuidMode = uuidMode;
     e->numberMode = numberMode;
@@ -4093,13 +3906,14 @@ module_exec(PyObject* m)
         || PyModule_AddIntConstant(m, "WM_PRETTY", WM_PRETTY)
         || PyModule_AddIntConstant(m, "WM_SINGLE_LINE_ARRAY", WM_SINGLE_LINE_ARRAY)
 
-        || PyModule_AddIntConstant(m, "IM_NONE", IM_NONE)
-        || PyModule_AddIntConstant(m, "IM_ARRAY", IM_ARRAY)
+        || PyModule_AddIntConstant(m, "IM_ANY_ITERABLE", IM_ANY_ITERABLE)
+        || PyModule_AddIntConstant(m, "IM_ONLY_LISTS", IM_ONLY_LISTS)
 
-        || PyModule_AddIntConstant(m, "MM_NONE", MM_NONE)
-        || PyModule_AddIntConstant(m, "MM_OBJECT", MM_OBJECT)
+        || PyModule_AddIntConstant(m, "MM_ANY_MAPPING", MM_ANY_MAPPING)
+        || PyModule_AddIntConstant(m, "MM_ONLY_DICTS", MM_ONLY_DICTS)
         || PyModule_AddIntConstant(m, "MM_COERCE_KEYS_TO_STRINGS", MM_COERCE_KEYS_TO_STRINGS)
-        || PyModule_AddIntConstant(m, "MM_CHECK_STRING_KEYS", MM_CHECK_STRING_KEYS)
+        || PyModule_AddIntConstant(m, "MM_SKIP_NON_STRING_KEYS", MM_SKIP_NON_STRING_KEYS)
+        || PyModule_AddIntConstant(m, "MM_SORT_KEYS", MM_SORT_KEYS)
 
         || PyModule_AddStringConstant(m, "__version__", STRINGIFY(PYTHON_RAPIDJSON_VERSION))
         || PyModule_AddStringConstant(m, "__author__",

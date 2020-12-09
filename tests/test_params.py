@@ -27,6 +27,14 @@ def test_skipkeys():
         rj.dumps(o, skipkeys=False)
 
     assert rj.dumps(o, skipkeys=True) == '{}'
+    assert rj.dumps(o, mapping_mode=rj.MM_SKIP_NON_STRING_KEYS) == '{}'
+
+
+def test_coerce_keys():
+    o = {True: False, -1: 1, 1.1: 1.1, (1,2): "foo", b"asdf": 1, None: None}
+    expected = '{"True":false,"-1":1,"1.1":1.1,"(1, 2)":"foo","b\'asdf\'":1,"None":null}'
+    assert rj.dumps(o, mapping_mode=rj.MM_COERCE_KEYS_TO_STRINGS) == expected
+    assert rj.Encoder(mapping_mode=rj.MM_COERCE_KEYS_TO_STRINGS)(o) == expected
 
 
 def test_skip_invalid_keys():
@@ -39,6 +47,7 @@ def test_skip_invalid_keys():
         rj.Encoder(skip_invalid_keys=False)(o)
 
     assert rj.Encoder(skip_invalid_keys=True)(o) == '{}'
+    assert rj.Encoder(mapping_mode=rj.MM_SKIP_NON_STRING_KEYS)(o) == '{}'
 
 
 def test_ensure_ascii(dumps):
@@ -201,6 +210,7 @@ def test_sort_keys(dumps):
     assert dumps(o, sort_keys=True) == expected1
     assert dumps(o, sort_keys=True, indent=4) == expected2
     assert dumps(o, sort_keys=True, indent=0) == expected0
+    assert dumps(o, mapping_mode=rj.MM_SORT_KEYS, indent=0) == expected0
 
     o = {'a0': 'a0', 'a': 'a', 'a1': 'a1', 'a\x00b': 'a\x00b'}
     assert sorted(o.keys()) == ['a', 'a\x00b', 'a0', 'a1']
@@ -749,3 +759,7 @@ def test_encoder_attrs():
     assert e.datetime_mode == rj.DM_ISO8601
     assert e.uuid_mode == rj.UM_CANONICAL
     assert e.bytes_mode == rj.BM_UTF8
+
+    e = rj.Encoder(mapping_mode=rj.MM_SKIP_NON_STRING_KEYS|rj.MM_SORT_KEYS)
+    assert e.skip_invalid_keys
+    assert e.sort_keys
