@@ -12,6 +12,10 @@ Changes
   __ https://github.com/python-rapidjson/python-rapidjson/issues/149
   __ https://github.com/python-rapidjson/python-rapidjson/issues/150
 
+* Internal refactorings, folding "skipkeys" and "sort_keys" arguments into the
+  mapping_mode options, respectively as MM_SKIP_NON_STRING_KEYS and MM_SORT_KEYS: "old"
+  arguments kept for backward compatibility
+
 
 0.9.4 (2020-11-16)
 ~~~~~~~~~~~~~~~~~~
