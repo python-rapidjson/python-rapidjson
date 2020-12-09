@@ -2427,7 +2427,9 @@ dumps_internal(
         ASSERT_VALID_SIZE(l);
         writer->String(s, (SizeType) l);
         Py_DECREF(unicodeObj);
-    } else if (PyList_Check(object)) {
+    } else if ((!(iterableMode & IM_ONLY_LISTS) && PyList_Check(object))
+               ||
+               PyList_CheckExact(object)) {
         writer->StartArray();
 
         Py_ssize_t size = PyList_GET_SIZE(object);

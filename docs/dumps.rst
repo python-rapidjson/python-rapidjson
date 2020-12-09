@@ -469,8 +469,8 @@
    .. dumps-iterable-mode:
    .. rubric:: `iterable_mode`
 
-   By default a value that implements the `iterable` protocol (**not** plain ``list``\ s)
-   gets encoded as a ``JSON`` array:
+   By default a value that implements the `iterable` protocol gets encoded as a ``JSON``
+   array:
 
    .. doctest::
 
@@ -478,10 +478,14 @@
       >>> lt = localtime()
       >>> dumps(lt) # doctest: +SKIP
       '[2020,11,28,19,55,40,5,333,0]'
+      >>> class MyList(list):
+      ...   pass
+      >>> ml = MyList((1,2,3))
+      >>> dumps(ml)
+      '[1,2,3]'
 
    When that's not appropriate, for example because you want to use a different way to
-   encode them, you may specify `iterable_mode` to ``IM_ONLY_LISTS`` (or equivalently to
-   ``None``):
+   encode them, you may specify `iterable_mode` to ``IM_ONLY_LISTS``:
 
    .. doctest::
 
@@ -489,18 +493,26 @@
       Traceback (most recent call last):
         File "<stdin>", line 1, in <module>
       TypeError: <time.struct_time …> is not JSON serializable
+      >>> dumps(ml, iterable_mode=IM_ONLY_LISTS)
+      Traceback (most recent call last):
+        ...
+      TypeError: [1, 2, 3] is not JSON serializable
 
    and thus you can use the `default` argument:
 
    .. doctest::
 
-      >>> def timestruct(obj):
+      >>> def ts_or_ml(obj):
       ...   if isinstance(obj, struct_time):
       ...     return {'__class__': 'time.struct_time', '__init__': list(obj)}
+      ...   elif isinstance(obj, MyList):
+      ...     return [i*2 for i in obj]
       ...   else:
       ...     raise ValueError('%r is not JSON serializable' % obj)
-      >>> dumps(lt, iterable_mode=IM_ONLY_LISTS, default=timestruct) # doctest: +SKIP
+      >>> dumps(lt, iterable_mode=IM_ONLY_LISTS, default=ts_or_ml) # doctest: +SKIP
       '{"__class__":"time.struct_time","__init__":[2020,11,28,19,55,40,5,333,0]}'
+      >>> dumps(ml, iterable_mode=IM_ONLY_LISTS, default=ts_or_ml)
+      '[2,4,6]'
 
    Obviously, in such case the value returned by the `default` callable **must not**
    be or contain a ``tuple``:
