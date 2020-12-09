@@ -172,7 +172,8 @@ Here are things in the standard ``json`` library that we have decided not to sup
 Coercing keys when dumping
   ``json`` will stringify a ``True`` dictionary key as ``"true"`` if you dump it out but
   when you load it back in it'll still be a string. We want the dump and load to return
-  the exact same objects so we have decided not to do this coercion.
+  the exact same objects so we have decided not to do this coercion by default; you can
+  however use ``MM_COERCE_KEYS_TO_STRINGS`` or a ``default`` function to mimic that.
 
 Arbitrary encodings
   ``json.loads()`` accepts an ``encoding`` kwarg determining the encoding of its input,
@@ -180,6 +181,36 @@ Arbitrary encodings
   cope with several different encodings, we currently supports only the recommended one,
   ``UTF-8``.
 
+``cls`` argument to ``loads()`` and ``dumps()``
+  ``json.dumps()`` accepts a ``cls`` parameter that allows to specify custom
+  encoder/decoder class. If you must use that approach, the following snippet shows a
+  reasonably simple way to do that:
+
+  .. doctest::
+
+      >>> import datetime
+      >>> import json
+      >>> import rapidjson
+      >>>
+      >>> class Encoder:
+      ...     def __init__(self, *args, **kwargs):
+      ...         # Filter/adapt JSON arguments to RapidJSON ones
+      ...         rjkwargs = {'datetime_mode': rapidjson.DM_ISO8601}
+      ...         encoder = rapidjson.Encoder(**rjkwargs)
+      ...         self.encode = encoder.__call__
+      >>>
+      >>> json.dumps([1,2,datetime.date(2020, 12, 8)], cls=Encoder)
+      '[1,2,"2020-12-08"]'
+      >>>
+      >>> class Decoder:
+      ...     def __init__(self, *args, **kwargs):
+      ...         # Filter/adapt JSON arguments to RapidJSON ones
+      ...         rjkwargs = {'datetime_mode': rapidjson.DM_ISO8601}
+      ...         encoder = rapidjson.Decoder(**rjkwargs)
+      ...         self.decode = encoder.__call__
+      >>>
+      >>> json.loads('[1,2,"2020-12-08"]', cls=Decoder)
+      [1, 2, datetime.date(2020, 12, 8)]
 
 .. _JSON: https://www.json.org/
 .. _RapidJSON: http://rapidjson.org/
