@@ -116,24 +116,10 @@ __ https://python-rapidjson.readthedocs.io/en/latest/benchmarks.html
 Incompatibility
 ---------------
 
-Here are things in the standard ``json`` library supports that we have decided
-not to support:
+Although we tried to implement an API similar to the standard library ``json``, being a
+strict *drop-in* replacement in not our goal and we have decided to depart from there in
+some aspects. See `this section`__ in the documentation for further details.
 
-``separators`` argument
-  This is mostly used for pretty printing and not supported by ``RapidJSON``
-  so it isn't a high priority. We do support ``indent`` kwarg that would get
-  you nice looking JSON anyways.
-
-Coercing keys when dumping
-  ``json`` will stringify a ``True`` dictionary key as ``"true"`` if you dump it out but
-  when you load it back in it'll still be a string. We want the dump and load to return
-  the exact same objects so we have decided not to do this coercion by default; you can
-  however use ``MM_COERCE_KEYS_TO_STRINGS`` or a ``default`` function to mimic that.
-
-Arbitrary encodings
-  ``json.loads()`` accepts an ``encoding`` kwarg determining the encoding of its input,
-  when that is a ``bytes`` or ``bytearray`` instance. Although ``RapidJSON`` is able to
-  cope with several different encodings, we currently support only the recommended one,
-  ``UTF-8``.
+__ https://python-rapidjson.readthedocs.io/en/latest/quickstart.html#incompatibilities
 
 .. _RapidJSON: http://rapidjson.org/
