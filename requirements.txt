@@ -16,8 +16,7 @@ twine==1.13.0
 pytest-benchmark==3.2.2
 
 # Keep in sync with benchmarks/tablize.py versions
-hyperjson==0.2.4
-orjson==2.5.0
-simplejson==3.17.0
-ujson==1.35
-yajl==0.3.5
+pysimdjson==3.1.1
+orjson==3.4.6
+simplejson==3.17.2
+ujson==4.0.1

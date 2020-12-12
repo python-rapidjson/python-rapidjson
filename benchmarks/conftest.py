@@ -73,15 +73,6 @@ string_contenders = [
 ]
 
 try:
-    import yajl
-except ImportError:
-    pass
-else:
-    contenders.append(Contender('yajl',
-                                yajl.Encoder().encode,
-                                yajl.Decoder().decode))
-
-try:
     import simplejson
 except ImportError:
     pass
@@ -122,7 +113,7 @@ except ImportError:
 else:
     contenders.append(Contender('ujson',
                                 ujson.dumps,
-                                partial(ujson.loads, precise_float=True)))
+                                ujson.loads))
     string_contenders.extend([
         Contender('ujson utf8',
                   partial(ujson.dumps, ensure_ascii=False),
@@ -133,13 +124,13 @@ else:
     ])
 
 try:
-    import hyperjson
+    import simdjson
 except ImportError:
     pass
 else:
-    contenders.append(Contender('hyperjson',
-                                hyperjson.dumps,
-                                hyperjson.loads))
+    contenders.append(Contender('simdjson',
+                                simdjson.dumps,
+                                simdjson.loads))
 
 try:
     import orjson

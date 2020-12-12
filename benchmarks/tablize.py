@@ -95,32 +95,29 @@ def dumps_and_loads(benchmarks):
                   'rapidjson_c',
                   'rapidjson_nn_f',
                   'rapidjson_nn_c',
-                  'hyperjson',
+                  'simdjson',
                   'orjson',
                   'ujson',
                   'simplejson',
-                  'stdlib json',
-                  'yajl')
+                  'stdlib json')
     s_headers = (r'``dumps()``\ [1]_',
                  r'``Encoder()``\ [2]_',
                  r'``dumps(n)``\ [3]_',
                  r'``Encoder(n)``\ [4]_',
-                 r'hyperjson\ [5]_',
+                 r'simdjson\ [5]_',
                  r'orjson\ [6]_',
                  r'ujson\ [7]_',
                  r'simplejson\ [8]_',
-                 r'stdlib\ [9]_',
-                 r'yajl\ [10]_')
-    d_headers = (r'``loads()``\ [11]_',
-                 r'``Decoder()``\ [12]_',
-                 r'``loads(n)``\ [13]_',
-                 r'``Decoder(n)``\ [14]_',
-                 r'hyperjson',
+                 r'stdlib\ [9]_')
+    d_headers = (r'``loads()``\ [10]_',
+                 r'``Decoder()``\ [11]_',
+                 r'``loads(n)``\ [12]_',
+                 r'``Decoder(n)``\ [13]_',
+                 r'simdjson',
                  r'orjson',
                  r'ujson',
                  r'simplejson',
-                 r'stdlib',
-                 r'yajl')
+                 r'stdlib')
 
     assert len(contenders) == len(s_headers) == len(d_headers)
 
@@ -129,16 +126,15 @@ def dumps_and_loads(benchmarks):
         '.. [2] ``rapidjson.Encoder()``',
         '.. [3] ``rapidjson.dumps(number_mode=NM_NATIVE)``',
         '.. [4] ``rapidjson.Encoder(number_mode=NM_NATIVE)``',
-        '.. [5] `hyperjson 0.2.4 <https://pypi.org/project/hyperjson/0.2.4/>`__',
-        '.. [6] `orjson 2.5.0 <https://pypi.org/project/orjson/2.5.0/>`__',
-        '.. [7] `ujson 1.35 <https://pypi.org/pypi/ujson/1.35>`__',
-        '.. [8] `simplejson 3.17.0 <https://pypi.org/pypi/simplejson/3.17.0>`__',
+        '.. [5] `simdjson 3.1.1 <https://pypi.org/project/pysimdjson/3.1.1/>`__',
+        '.. [6] `orjson 3.4.6 <https://pypi.org/project/orjson/3.4.6/>`__',
+        '.. [7] `ujson 4.0.1 <https://pypi.org/project/ujson/4.0.1/>`__',
+        '.. [8] `simplejson 3.17.2 <https://pypi.org/pypi/simplejson/3.17.2>`__',
         '.. [9] Python %d.%d.%d standard library ``json``' % sys.version_info[:3],
-        '.. [10] `yajl 0.3.5 <https://pypi.org/pypi/yajl/0.3.5>`__',
-        '.. [11] ``rapidjson.loads()``',
-        '.. [12] ``rapidjson.Decoder()``',
-        '.. [13] ``rapidjson.loads(number_mode=NM_NATIVE)``',
-        '.. [14] ``rapidjson.Decoder(number_mode=NM_NATIVE)``']
+        '.. [10] ``rapidjson.loads()``',
+        '.. [11] ``rapidjson.Decoder()``',
+        '.. [12] ``rapidjson.loads(number_mode=NM_NATIVE)``',
+        '.. [13] ``rapidjson.Decoder(number_mode=NM_NATIVE)``']
 
     comparison = Comparison(contenders, benchmarks)
 
