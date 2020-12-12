@@ -58,6 +58,11 @@ extension_options = {
     'define_macros': [('PYTHON_RAPIDJSON_VERSION', VERSION)],
 }
 
+if os.path.exists('rapidjson_exact_version.txt'):
+    with open('rapidjson_exact_version.txt', encoding='utf-8') as f:
+        extension_options['define_macros'].append(
+            ('RAPIDJSON_EXACT_VERSION', f.read().strip()))
+
 
 cxx = sysconfig.get_config_var('CXX')
 if cxx and 'g++' in cxx:

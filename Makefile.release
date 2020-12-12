@@ -2,7 +2,7 @@
 # :Project:   python-rapidjson -- Release specific targets
 # :Author:    Lele Gaifax <lele@metapensiero.it>
 # :License:   MIT License
-# :Copyright: © 2017, 2019 Lele Gaifax
+# :Copyright: © 2017, 2019, 2020 Lele Gaifax
 #
 
 BUMP_FIELD := minor
@@ -66,7 +66,7 @@ help::
 	@printf "pypi-upload\n\tUpload the source distribution to PyPI\n"
 
 .PHONY: pypi-upload
-pypi-upload: assert-master-branch assert-clean-tree
+pypi-upload: assert-master-branch assert-clean-tree rapidjson_exact_version.txt
 	@$(PYTHON) setup.py sdist
 	@$(TWINE) upload dist/$(PACKAGE_NAME)-$(VERSION).tar.gz
 

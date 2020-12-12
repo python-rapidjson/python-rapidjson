@@ -3913,15 +3913,23 @@ module_exec(PyObject* m)
 
         || PyModule_AddIntConstant(m, "MM_ANY_MAPPING", MM_ANY_MAPPING)
         || PyModule_AddIntConstant(m, "MM_ONLY_DICTS", MM_ONLY_DICTS)
-        || PyModule_AddIntConstant(m, "MM_COERCE_KEYS_TO_STRINGS", MM_COERCE_KEYS_TO_STRINGS)
+        || PyModule_AddIntConstant(m, "MM_COERCE_KEYS_TO_STRINGS",
+                                   MM_COERCE_KEYS_TO_STRINGS)
         || PyModule_AddIntConstant(m, "MM_SKIP_NON_STRING_KEYS", MM_SKIP_NON_STRING_KEYS)
         || PyModule_AddIntConstant(m, "MM_SORT_KEYS", MM_SORT_KEYS)
 
-        || PyModule_AddStringConstant(m, "__version__", STRINGIFY(PYTHON_RAPIDJSON_VERSION))
+        || PyModule_AddStringConstant(m, "__version__",
+                                      STRINGIFY(PYTHON_RAPIDJSON_VERSION))
         || PyModule_AddStringConstant(m, "__author__",
                                       "Ken Robbins <ken@kenrobbins.com>"
                                       ", Lele Gaifax <lele@metapensiero.it>")
-        || PyModule_AddStringConstant(m, "__rapidjson_version__", RAPIDJSON_VERSION_STRING))
+        || PyModule_AddStringConstant(m, "__rapidjson_version__",
+                                      RAPIDJSON_VERSION_STRING)
+#ifdef RAPIDJSON_EXACT_VERSION
+        || PyModule_AddStringConstant(m, "__rapidjson_exact_version__",
+                                      STRINGIFY(RAPIDJSON_EXACT_VERSION))
+#endif
+        )
         return -1;
 
     Py_INCREF(&Decoder_Type);

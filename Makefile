@@ -20,6 +20,9 @@ all: rapidjson/license.txt virtualenv help
 rapidjson/license.txt:
 	git submodule update --init
 
+rapidjson_exact_version.txt: .git/modules/rapidjson
+	(cd rapidjson; git describe --tags) > $@
+
 .PHONY: help
 help::
 	@printf "\nBuild targets\n"
@@ -29,7 +32,7 @@ help::
 	@printf "build\n\tbuild the module\n"
 
 .PHONY: build
-build: virtualenv
+build: virtualenv rapidjson_exact_version.txt
 	$(PYTHON) setup.py build_ext --inplace
 
 help::
@@ -46,7 +49,7 @@ help::
 
 .PHONY: distclean
 distclean:: clean
-	rm -rf .tox build dist
+	rm -rf .tox build dist rapidjson_exact_version.txt
 	git submodule deinit --all
 
 help::
