@@ -20,7 +20,7 @@ all: rapidjson/license.txt virtualenv help
 rapidjson/license.txt:
 	git submodule update --init
 
-rapidjson_exact_version.txt: .git/modules/rapidjson
+rapidjson_exact_version.txt: .git/modules/rapidjson/FETCH_HEAD
 	(cd rapidjson; git describe --tags) > $@
 
 .PHONY: help
