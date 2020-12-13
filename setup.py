@@ -98,7 +98,7 @@ setup(
     maintainer_email='lele@metapensiero.it',
     url='https://github.com/python-rapidjson/python-rapidjson',
     classifiers=[
-        'Development Status :: 3 - Alpha',
+        'Development Status :: 5 - Production/Stable',
         'Intended Audience :: Developers',
         'License :: OSI Approved :: MIT License',
         'Programming Language :: C++',
