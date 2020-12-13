@@ -25,7 +25,7 @@
 
 .. data:: __author__
 
-   The author of the module.
+   The authors of the module.
 
 .. data:: __version__
 
@@ -34,6 +34,10 @@
 .. data:: __rapidjson_version__
 
    The version of the RapidJSON_ library this module is built with.
+
+.. data:: __rapidjson_exact_version__
+
+   The *exact* version of the RapidJSON library, as determined by ``git describe``.
 
 
 .. rubric:: `datetime_mode` related constants
