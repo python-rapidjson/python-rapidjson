@@ -1,13 +1,14 @@
 Changes
 -------
 
-0.9.5 (unreleased)
-~~~~~~~~~~~~~~~~~~
+1.0 (2020-12-13)
+~~~~~~~~~~~~~~~~
 
 * Require Python 3.6 or greater
 
 * New serialization options, ``iterable_mode`` and ``mapping_mode``, to give some control
-  on how generic iterables and mappings get encoded (fix `issue #149`__ and `issue #150`)
+  on how generic iterables and mappings get encoded (fix `issue #149`__ and
+  `issue #150`__)
 
   __ https://github.com/python-rapidjson/python-rapidjson/issues/149
   __ https://github.com/python-rapidjson/python-rapidjson/issues/150
@@ -15,6 +16,9 @@ Changes
 * Internal refactorings, folding "skipkeys" and "sort_keys" arguments into the
   mapping_mode options, respectively as MM_SKIP_NON_STRING_KEYS and MM_SORT_KEYS: "old"
   arguments kept for backward compatibility
+
+* Bump major version to 1, tag as "production/stable" and switch to a simpler X.Y
+  versioning schema
 
 
 0.9.4 (2020-11-16)
