@@ -5,8 +5,7 @@
 # :Copyright: © 2017, 2019, 2020 Lele Gaifax
 #
 
-BUMP_FIELD := minor
-BUMPER = $(VENVDIR)/bin/bump_version -f $(BUMP_FIELD)
+BUMPER = $(VENVDIR)/bin/bump_version -s simple2
 VERSION_TXT := version.txt
 VERSION = $(shell cat $(VERSION_TXT))
 PACKAGE_NAME = $(shell $(PYTHON) setup.py --name)
@@ -27,7 +26,7 @@ assert-master-branch:
 	  (echo "NOT IN MASTER BRANCH" && false))
 
 help::
-	@printf "release\n\tBump version number\n"
+	@printf "release\n\tBump minor version number\n"
 
 .PHONY: release
 release: assert-master-branch assert-clean-tree
@@ -36,13 +35,6 @@ release: assert-master-branch assert-clean-tree
 	@echo ">>> Do your duties (update CHANGES.rst for example), then"
 	@echo ">>> execute “make tag-release”."
 	@echo ">>>"
-
-help::
-	@printf "tiny-release\n\tBump tiny version number\n"
-
-.PHONY: tiny-release
-tiny-release: BUMP_FIELD := tiny
-tiny-release: release
 
 help::
 	@printf "tag-release\n\tComplete the release tagging the working tree\n"
