@@ -538,7 +538,6 @@ static PyTypeObject RawJSON_Type = {
 };
 
 
-
 static bool
 accept_indent_arg(PyObject* arg, unsigned &write_mode, unsigned &indent_count,
                    char &indent_char)
@@ -770,6 +769,7 @@ accept_parse_mode_arg(PyObject* arg, unsigned &parse_mode)
     }
     return true;
 }
+
 
 /////////////
 // Decoder //
