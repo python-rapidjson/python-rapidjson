@@ -1688,7 +1688,7 @@ load(PyObject* self, PyObject* args, PyObject* kwargs)
             numberMode = NM_NONE;
         } else if (PyLong_Check(numberModeObj)) {
             int mode = PyLong_AsLong(numberModeObj);
-            if (mode < 0 || mode >= 1<<3) {
+            if (mode < 0 || mode >= NM_MAX) {
                 PyErr_SetString(PyExc_ValueError, "Invalid number_mode");
                 return NULL;
             }
@@ -1735,7 +1735,7 @@ load(PyObject* self, PyObject* args, PyObject* kwargs)
             uuidMode = UM_NONE;
         } else if (PyLong_Check(uuidModeObj)) {
             int mode = PyLong_AsLong(uuidModeObj);
-            if (mode < 0 || mode >= 1<<2) {
+            if (mode < 0 || mode >= UM_MAX) {
                 PyErr_SetString(PyExc_ValueError, "Invalid uuid_mode");
                 return NULL;
             }
@@ -1752,7 +1752,7 @@ load(PyObject* self, PyObject* args, PyObject* kwargs)
             parseMode = PM_NONE;
         } else if (PyLong_Check(parseModeObj)) {
             int mode = PyLong_AsLong(parseModeObj);
-            if (mode < 0 || mode >= 1<<2) {
+            if (mode < 0 || mode >= PM_MAX) {
                 PyErr_SetString(PyExc_ValueError, "Invalid parse_mode");
                 return NULL;
             }
@@ -2127,7 +2127,7 @@ decoder_new(PyTypeObject* type, PyObject* args, PyObject* kwargs)
             numberMode = NM_NONE;
         } else if (PyLong_Check(numberModeObj)) {
             int mode = PyLong_AsLong(numberModeObj);
-            if (mode < 0 || mode >= 1<<3) {
+            if (mode < 0 || mode >= NM_MAX) {
                 PyErr_SetString(PyExc_ValueError, "Invalid number_mode");
                 return NULL;
             }
@@ -2168,7 +2168,7 @@ decoder_new(PyTypeObject* type, PyObject* args, PyObject* kwargs)
             uuidMode = UM_NONE;
         } else if (PyLong_Check(uuidModeObj)) {
             int mode = PyLong_AsLong(uuidModeObj);
-            if (mode < 0 || mode >= 1<<2) {
+            if (mode < 0 || mode >= UM_MAX) {
                 PyErr_SetString(PyExc_ValueError, "Invalid uuid_mode");
                 return NULL;
             }
@@ -2185,7 +2185,7 @@ decoder_new(PyTypeObject* type, PyObject* args, PyObject* kwargs)
             parseMode = PM_NONE;
         } else if (PyLong_Check(parseModeObj)) {
             int mode = PyLong_AsLong(parseModeObj);
-            if (mode < 0 || mode >= 1<<2) {
+            if (mode < 0 || mode >= PM_MAX) {
                 PyErr_SetString(PyExc_ValueError, "Invalid parse_mode");
                 return NULL;
             }
