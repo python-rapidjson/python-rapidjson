@@ -14,10 +14,7 @@
 .. testsetup::
 
    import io
-   from rapidjson import (Decoder, Encoder, DM_NONE, DM_ISO8601, DM_UNIX_TIME,
-                          DM_ONLY_SECONDS, DM_IGNORE_TZ, DM_NAIVE_IS_UTC, DM_SHIFT_TO_UTC,
-                          UM_NONE, UM_CANONICAL, UM_HEX, NM_NATIVE, NM_DECIMAL, NM_NAN,
-                          PM_NONE, PM_COMMENTS, PM_TRAILING_COMMAS)
+   from rapidjson import Decoder, Encoder, DM_ISO8601
 
 .. class:: Decoder(number_mode=None, datetime_mode=None, uuid_mode=None, parse_mode=None)
 

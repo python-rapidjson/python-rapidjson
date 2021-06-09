@@ -13,12 +13,7 @@
 
 .. testsetup::
 
-   from rapidjson import (Decoder, Encoder, BM_NONE, BM_UTF8, DM_NONE, DM_ISO8601,
-                          DM_UNIX_TIME, DM_ONLY_SECONDS, DM_IGNORE_TZ, DM_NAIVE_IS_UTC,
-                          DM_SHIFT_TO_UTC, IM_ANY_ITERABLE, IM_ONLY_LISTS, MM_ANY_MAPPING,
-                          MM_ONLY_DICTS, NM_NATIVE, NM_DECIMAL, NM_NAN, PM_NONE,
-                          PM_COMMENTS, PM_TRAILING_COMMAS, UM_NONE, UM_CANONICAL, UM_HEX,
-                          WM_COMPACT, WM_PRETTY, WM_SINGLE_LINE_ARRAY)
+   from rapidjson import Decoder, Encoder, BM_NONE, IM_ONLY_LISTS, MM_ONLY_DICTS
 
 .. class:: Encoder(skip_invalid_keys=False, ensure_ascii=True, write_mode=WM_COMPACT, \
                    indent=4, sort_keys=False, number_mode=None, datetime_mode=None, \
