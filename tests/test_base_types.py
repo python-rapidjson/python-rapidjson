@@ -3,7 +3,7 @@
 # :Author:    John Anderson <sontek@gmail.com>
 # :License:   MIT License
 # :Copyright: © 2015 John Anderson
-# :Copyright: © 2016, 2017, 2018, 2019, 2020 Lele Gaifax
+# :Copyright: © 2016, 2017, 2018, 2019, 2020, 2021 Lele Gaifax
 #
 
 import random
@@ -180,6 +180,13 @@ def test_iterables(dumps):
 
 def test_decode_error(loads):
     pytest.raises(rj.JSONDecodeError, loads, '{')
+
+
+def test_shared_keys(loads):
+    res = loads('[{"key": "value1"}, {"key": "value2"}]')
+    key1, = res[0].keys()
+    key2, = res[1].keys()
+    assert key1 is key2
 
 
 # TODO: Figure out what we want to do here

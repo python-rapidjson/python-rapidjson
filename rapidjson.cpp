@@ -3,7 +3,7 @@
 // :Author:    Ken Robbins <ken@kenrobbins.com>
 // :License:   MIT License
 // :Copyright: © 2015 Ken Robbins
-// :Copyright: © 2015, 2016, 2017, 2018, 2019, 2020 Lele Gaifax
+// :Copyright: © 2015, 2016, 2017, 2018, 2019, 2020, 2021 Lele Gaifax
 //
 
 #include <Python.h>
@@ -803,6 +803,7 @@ struct PyHandler {
     PyObject* decoderEndObject;
     PyObject* decoderEndArray;
     PyObject* decoderString;
+    PyObject* sharedKeys;
     PyObject* root;
     PyObject* objectHook;
     unsigned datetimeMode;
@@ -841,6 +842,7 @@ struct PyHandler {
                     decoderString = PyObject_GetAttr(decoder, string_name);
                 }
             }
+            sharedKeys = PyDict_New();
         }
 
     ~PyHandler() {
@@ -856,6 +858,7 @@ struct PyHandler {
         Py_CLEAR(decoderEndObject);
         Py_CLEAR(decoderEndArray);
         Py_CLEAR(decoderString);
+        Py_CLEAR(sharedKeys);
     }
 
     bool Handle(PyObject* value) {
@@ -869,6 +872,16 @@ struct PyHandler {
                     Py_DECREF(value);
                     return false;
                 }
+
+                PyObject* shared_key = PyDict_SetDefault(sharedKeys, key, key);
+                if (shared_key == NULL) {
+                    Py_DECREF(key);
+                    Py_DECREF(value);
+                    return false;
+                }
+                Py_INCREF(shared_key);
+                Py_DECREF(key);
+                key = shared_key;
 
                 int rc;
                 if (PyDict_CheckExact(current.object))
@@ -991,6 +1004,16 @@ struct PyHandler {
                     Py_DECREF(replacement);
                     return false;
                 }
+
+                PyObject* shared_key = PyDict_SetDefault(sharedKeys, key, key);
+                if (shared_key == NULL) {
+                    Py_DECREF(key);
+                    Py_DECREF(replacement);
+                    return false;
+                }
+                Py_INCREF(shared_key);
+                Py_DECREF(key);
+                key = shared_key;
 
                 int rc;
                 if (PyDict_Check(current.object))
