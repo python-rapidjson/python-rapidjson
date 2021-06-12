@@ -1,6 +1,17 @@
 Changes
 -------
 
+1.1 (unreleased)
+~~~~~~~~~~~~~~~~
+
+* Lower decoder memory consumption by uniquifiying keys in the loaded dictionaries
+
+* Implement an alternative way of transmogrify JSON objects, similar to ``json``\ 's
+  ``object_pairs_hook`` load option (`issue #154`__)
+
+  __ https://github.com/python-rapidjson/python-rapidjson/issues/154
+
+
 1.0 (2020-12-13)
 ~~~~~~~~~~~~~~~~
 
