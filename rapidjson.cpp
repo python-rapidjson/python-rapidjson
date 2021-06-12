@@ -82,6 +82,7 @@ struct HandlerContext {
     const char* key;
     SizeType keyLength;
     bool isObject;
+    bool keyValuePairs;
     bool copiedKey;
 };
 
@@ -884,13 +885,25 @@ struct PyHandler {
                 key = shared_key;
 
                 int rc;
-                if (PyDict_CheckExact(current.object))
-                    // If it's a standard dictionary, this is +20% faster
-                    rc = PyDict_SetItem(current.object, key, value);
-                else
-                    rc = PyObject_SetItem(current.object, key, value);
-                Py_DECREF(key);
-                Py_DECREF(value);
+                if (current.keyValuePairs) {
+                    PyObject* pair = PyTuple_Pack(2, key, value);
+
+                    Py_DECREF(key);
+                    Py_DECREF(value);
+                    if (pair == NULL) {
+                        return false;
+                    }
+                    rc = PyList_Append(current.object, pair);
+                    Py_DECREF(pair);
+                } else {
+                    if (PyDict_CheckExact(current.object))
+                        // If it's a standard dictionary, this is +20% faster
+                        rc = PyDict_SetItem(current.object, key, value);
+                    else
+                        rc = PyObject_SetItem(current.object, key, value);
+                    Py_DECREF(key);
+                    Py_DECREF(value);
+                }
 
                 if (rc == -1) {
                     return false;
@@ -935,15 +948,17 @@ struct PyHandler {
 
     bool StartObject() {
         PyObject* mapping;
+        bool key_value_pairs;
 
         if (decoderStartObject != NULL) {
             mapping = PyObject_CallFunctionObjArgs(decoderStartObject, NULL);
             if (mapping == NULL)
                 return false;
-            if (!PyMapping_Check(mapping)) {
+            key_value_pairs = PyList_Check(mapping);
+            if (!PyMapping_Check(mapping) && !key_value_pairs) {
                 Py_DECREF(mapping);
                 PyErr_SetString(PyExc_ValueError,
-                                "start_object() must return a mapping instance");
+                                "start_object() must return a mapping or a list instance");
                 return false;
             }
         } else {
@@ -951,6 +966,7 @@ struct PyHandler {
             if (mapping == NULL) {
                 return false;
             }
+            key_value_pairs = false;
         }
 
         if (!Handle(mapping)) {
@@ -959,6 +975,7 @@ struct PyHandler {
 
         HandlerContext ctx;
         ctx.isObject = true;
+        ctx.keyValuePairs = key_value_pairs;
         ctx.object = mapping;
         ctx.key = NULL;
         ctx.copiedKey = false;
@@ -995,7 +1012,7 @@ struct PyHandler {
             return false;
 
         if (!stack.empty()) {
-            const HandlerContext& current = stack.back();
+            HandlerContext& current = stack.back();
 
             if (current.isObject) {
                 PyObject* key = PyUnicode_FromStringAndSize(current.key,
@@ -1016,17 +1033,37 @@ struct PyHandler {
                 key = shared_key;
 
                 int rc;
-                if (PyDict_Check(current.object))
-                    // If it's a standard dictionary, this is +20% faster
-                    rc = PyDict_SetItem(current.object, key, replacement);
-                else
-                    rc = PyObject_SetItem(current.object, key, replacement);
+                if (current.keyValuePairs) {
+                    PyObject* pair = PyTuple_Pack(2, key, replacement);
 
-                Py_DECREF(key);
-                Py_DECREF(replacement);
+                    Py_DECREF(key);
+                    Py_DECREF(replacement);
+                    if (pair == NULL) {
+                        return false;
+                    }
 
-                if (rc == -1) {
-                    return false;
+                    Py_ssize_t listLen = PyList_GET_SIZE(current.object);
+
+                    rc = PyList_SetItem(current.object, listLen - 1, pair);
+
+                    // NB: PyList_SetItem() steals a reference on the replacement, so it
+                    // must not be DECREFed when the operation succeeds
+
+                    if (rc == -1) {
+                        Py_DECREF(pair);
+                        return false;
+                    }
+                } else {
+                    if (PyDict_CheckExact(current.object))
+                        // If it's a standard dictionary, this is +20% faster
+                        rc = PyDict_SetItem(current.object, key, replacement);
+                    else
+                        rc = PyObject_SetItem(current.object, key, replacement);
+                    Py_DECREF(key);
+                    Py_DECREF(replacement);
+                    if (rc == -1) {
+                        return false;
+                    }
                 }
             } else {
                 // Change these to PySequence_Size() and PySequence_SetItem(),

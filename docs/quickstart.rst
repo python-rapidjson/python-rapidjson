@@ -2,7 +2,7 @@
 .. :Project:   python-rapidjson -- Quickstart examples
 .. :Author:    Lele Gaifax <lele@metapensiero.it>
 .. :License:   MIT License
-.. :Copyright: © 2016, 2017, 2018, 2020 Lele Gaifax
+.. :Copyright: © 2016, 2017, 2018, 2020, 2021 Lele Gaifax
 ..
 
 =============
@@ -182,9 +182,10 @@ Arbitrary encodings
   ``UTF-8``.
 
 ``cls`` argument to ``loads()`` and ``dumps()``
-  ``json.dumps()`` accepts a ``cls`` parameter that allows to specify custom
-  encoder/decoder class. If you must use that approach, the following snippet shows a
-  reasonably simple way to do that:
+  The ``json`` top level functions accept a ``cls`` parameter that allows to specify
+  custom encoder/decoder class. If you must use that approach, that is you have to use the
+  standard ``json`` top level functions but want to use ``RapidJSON`` functionalities, the
+  following snippet shows a reasonably simple way to do that:
 
   .. doctest::
 
@@ -211,6 +212,30 @@ Arbitrary encodings
       >>>
       >>> json.loads('[1,2,"2020-12-08"]', cls=Decoder)
       [1, 2, datetime.date(2020, 12, 8)]
+
+``object_pairs_hook`` argument
+  ``json`` decoding functions accept an ``object_pairs_hook`` kwarg, a variant of
+  ``object_hook`` that selects a different way to translate JSON objects into Python
+  dictionaries by first collecting their content into a sequence of *key-value pairs* and
+  eventually passing that sequence to the hook function. That behaviour may be easily
+  simulated:
+
+  .. doctest::
+
+     >>> def loads(s, object_pairs_hook=None):
+     ...     if object_pairs_hook is None:
+     ...         d = rapidjson.Decoder()
+     ...     else:
+     ...         class KWPairsDecoder(rapidjson.Decoder):
+     ...             def start_object(self):
+     ...                 return []
+     ...             def end_object(self, pairs):
+     ...                 return object_pairs_hook(pairs)
+     ...         d = KWPairsDecoder()
+     ...     return d(s)
+     >>>
+     >>> loads('{"foo": "bar"}', lambda pairs: ','.join(f'{k}={v}' for k, v in pairs))
+     'foo=bar'
 
 .. _JSON: https://www.json.org/
 .. _RapidJSON: http://rapidjson.org/

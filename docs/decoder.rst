@@ -2,7 +2,7 @@
 .. :Project:   python-rapidjson -- Decoder class documentation
 .. :Author:    Lele Gaifax <lele@metapensiero.it>
 .. :License:   MIT License
-.. :Copyright: © 2017, 2018, 2020 Lele Gaifax
+.. :Copyright: © 2017, 2018, 2020, 2021 Lele Gaifax
 ..
 
 ===============
@@ -100,7 +100,8 @@
 
    .. method:: end_object(mapping)
 
-      :param mapping: an instance implementing the *mapping protocol*
+      :param mapping: an instance representing the JSON object, either one implementing
+                      the *mapping protocol* or a list containing ``(key, value)`` tuples
       :returns: a new value
 
       This is called, if implemented, when a *JSON object* has been completely parsed, and
@@ -127,12 +128,15 @@
          >>> pd('{"x":1,"y":2}')
          Point(1, 2)
 
+      When :meth:`start_object` returns a ``list`` instance, then the `mapping` argument
+      is actually a list of tuples.
+
    .. method:: start_object()
 
-      :returns: a mapping instance
+      :returns: either a list or mapping instance
 
       This method, when implemented, is called whenever a new *JSON object* is found: it
-      must return an instance implementing the *mapping protocol*.
+      must return either a list or an instance implementing the *mapping protocol*.
 
       It can be used to select a different implementation than the standard ``dict`` used
       by default:
@@ -147,6 +151,24 @@
          >>> od = OrderedDecoder()
          >>> type(od('{"foo": "bar"}'))
          <class 'collections.OrderedDict'>
+
+      By returning a ``list`` you obtain a different handling of *JSON objects*: instead
+      of translating them into Python maps as soon as they are found, their *key-value
+      tuples* are accumulated in the given list; when the *JSON object* has been
+      completely parsed, then the sequence is passed to the method :meth:`end_object`, if
+      implemented, that will reasonably transmogrify it into some kind of dictionary. When
+      that method is missing, then the list is kept as is, thus representing all objects
+      in the JSON origin as lists of key-value tuples in Python:
+
+      .. doctest::
+
+         >>> class KVPairsDecoder(Decoder):
+         ...   def start_object(self):
+         ...     return []
+         ...
+         >>> kvpd = KVPairsDecoder()
+         >>> kvpd('{"one": 1, "two": 2}')
+         [('one', 1), ('two', 2)]
 
    .. method:: string(s)
 
