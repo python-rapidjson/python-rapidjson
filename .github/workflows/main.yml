@@ -49,12 +49,18 @@ jobs:
         run: |
           pytest tests
 
-    - name: Test memory leaks
+  debug-tests:
+    - name: Run tests on debug build of Python
       uses: deadsnakes/action@v2.1.1
       with:
         python-version: ${{ matrix.python-version }}
         debug: true
-      run: |
+
+    strategy:
+      matrix:
+        python-version: [3.9]
+
+    - run: |
         pytest tests
 
     - name: Execute doctest
