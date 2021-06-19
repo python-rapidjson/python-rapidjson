@@ -124,13 +124,16 @@ jobs:
           name: artifact
           path: dist
 
-      - name: Upload to Test PyPI
-        uses: pypa/gh-action-pypi-publish@master
-        with:
-          password: ${{ secrets.TEST_PYPI_API_TOKEN }}
-          repository_url: https://test.pypi.org/legacy/
+      # This has been used to test the complete workflow: given that it's not possible to
+      # re-upload the same binaries (i.e. without bumping the version number), it's
+      # commented out and left here just to remind that the required token already exist
+      # - name: Upload to Test PyPI
+      #   uses: pypa/gh-action-pypi-publish@master
+      #   with:
+      #     password: ${{ secrets.TEST_PYPI_API_TOKEN }}
+      #     repository_url: https://test.pypi.org/legacy/
 
-      # upload to PyPI on every tag starting with 'v'
+      # Upload to PyPI on every tag starting with 'v'
       - name: Upload to PyPI
         uses: pypa/gh-action-pypi-publish@master
         if: github.event_name == 'push' && startsWith(github.event.ref, 'refs/tags/v')
