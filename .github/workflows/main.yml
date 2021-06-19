@@ -45,27 +45,30 @@ jobs:
           pip install -r requirements-test.txt
           pip install .
 
-      - name: Test with pytest
+      - name: Tests
         run: |
           pytest tests
 
+      - name: Doctests
+        run: |
+          make -C docs doctest -e PYTHON=$(which python3)
+
   debug-tests:
-    - name: Run tests on debug build of Python
-      uses: deadsnakes/action@v2.1.1
-      with:
-        python-version: ${{ matrix.python-version }}
-        debug: true
+    name: Memory leak tests, on current debug build Python
+    runs-on: ubuntu-latest
 
     strategy:
       matrix:
         python-version: [3.9]
 
-    - run: |
-        pytest tests
+    steps:
+      - uses: deadsnakes/action@v2.1.1
+        with:
+          python-version: ${{ matrix.python-version }}
+          debug: true
 
-    - name: Execute doctest
-      run: |
-        make -C docs doctest -e PYTHON=$(which python3)
+      - run: |
+          pytest tests
 
   build_wheels:
     name: Build wheels on ${{ matrix.os }}
