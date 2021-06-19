@@ -86,8 +86,8 @@ jobs:
         uses: pypa/cibuildwheel@v1.11.1
         env:
           CIBW_TEST_REQUIRES: "pytest pytest-benchmark pytz"
-          CIBW_TEST_COMMAND="pytest {project}/tests"
-          CIBW_SKIP="cp2* cp33* cp34* cp35* pp*"
+          CIBW_TEST_COMMAND: "pytest {project}/tests"
+          CIBW_SKIP: "cp2* cp33* cp34* cp35* pp*"
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v2
