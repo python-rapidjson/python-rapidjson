@@ -62,6 +62,10 @@ jobs:
         python-version: [3.9]
 
     steps:
+      - uses: actions/checkout@v2
+        with:
+          submodules: recursive
+
       - uses: deadsnakes/action@v2.1.1
         with:
           python-version: ${{ matrix.python-version }}
