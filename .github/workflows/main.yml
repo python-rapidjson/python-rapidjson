@@ -67,6 +67,12 @@ jobs:
           python-version: ${{ matrix.python-version }}
           debug: true
 
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements-test.txt
+          pip install .
+
       - run: |
           pytest tests
 
