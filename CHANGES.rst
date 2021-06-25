@@ -1,10 +1,10 @@
 Changes
 -------
 
-1.1 (unreleased)
+1.1 (2021-06-25)
 ~~~~~~~~~~~~~~~~
 
-* Lower decoder memory consumption by uniquifiying keys in the loaded dictionaries
+* Reduce decoder memory consumption by uniquifiying keys in the loaded dictionaries
 
 * Implement an alternative way of transmogrify JSON objects, similar to ``json``\ 's
   ``object_pairs_hook`` load option (`issue #154`__)
