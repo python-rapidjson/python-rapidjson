@@ -1,6 +1,12 @@
 Changes
 -------
 
+1.2 (unreleased)
+~~~~~~~~~~~~~~~~
+
+* Fix automatic wheels upload from GH Actions to PyPI
+
+
 1.1 (2021-06-25)
 ~~~~~~~~~~~~~~~~
 
