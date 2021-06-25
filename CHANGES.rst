@@ -1,6 +1,14 @@
 Changes
 -------
 
+1.4 (unreleased)
+~~~~~~~~~~~~~~~~
+
+* Build binary wheel for aarch64, thanks to odidev (`PR #156`__)
+
+  __ https://github.com/python-rapidjson/python-rapidjson/pull/156
+
+
 1.3 (2021-06-25)
 ~~~~~~~~~~~~~~~~
 
