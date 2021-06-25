@@ -118,24 +118,16 @@ jobs:
     needs: build_wheels
     runs-on: ubuntu-latest
 
+    # Upload to PyPI on every tag starting with 'v'
+    if: github.event_name == 'push' && startsWith(github.event.ref, 'refs/tags/v')
+
     steps:
       - uses: actions/download-artifact@v2
         with:
           name: artifact
           path: dist
 
-      # This has been used to test the complete workflow: given that it's not possible to
-      # re-upload the same binaries (i.e. without bumping the version number), it's
-      # commented out and left here just to remind that the required token already exist
-      # - name: Upload to Test PyPI
-      #   uses: pypa/gh-action-pypi-publish@master
-      #   with:
-      #     password: ${{ secrets.TEST_PYPI_API_TOKEN }}
-      #     repository_url: https://test.pypi.org/legacy/
-
-      # Upload to PyPI on every tag starting with 'v'
-      - name: Upload to PyPI
-        uses: pypa/gh-action-pypi-publish@master
-        if: startsWith(github.ref, 'refs/tags/v')
+      - uses: pypa/gh-action-pypi-publish@master
         with:
+          user: __token__
           password: ${{ secrets.PYPI_API_TOKEN }}
