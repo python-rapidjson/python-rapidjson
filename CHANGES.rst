@@ -1,7 +1,7 @@
 Changes
 -------
 
-1.4 (unreleased)
+1.4 (2021-06-25)
 ~~~~~~~~~~~~~~~~
 
 * Build binary wheel for aarch64, thanks to odidev (`PR #156`__)
