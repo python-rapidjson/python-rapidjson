@@ -1,7 +1,7 @@
 Changes
 -------
 
-1.3 (unreleased)
+1.3 (2021-06-25)
 ~~~~~~~~~~~~~~~~
 
 * Yet another attempt to fix automatic wheels upload
