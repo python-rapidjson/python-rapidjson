@@ -104,7 +104,7 @@ jobs:
       - name: Install Python
         uses: actions/setup-python@v2
         with:
-          python-version: '3.8'
+          python-version: '3.9'
 
       - uses: docker/setup-qemu-action@v1
         if:  ${{ matrix.arch == 'aarch64' }}
