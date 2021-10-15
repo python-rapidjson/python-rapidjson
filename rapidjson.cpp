@@ -6,6 +6,8 @@
 // :Copyright: © 2015, 2016, 2017, 2018, 2019, 2020, 2021 Lele Gaifax
 //
 
+#include <locale.h>
+
 #include <Python.h>
 #include <datetime.h>
 #include <structmember.h>
@@ -2798,7 +2800,21 @@ dumps_internal(
                     // 1514893636.276702, because its exact double value is
                     // 1514893636.2767028808593750000000000...
                     char tsStr[12 + 1 + 6 + 1];
+
+                    // Temporarily switch to a POSIX locale, in case the outer world is
+                    // configured differently: by chance I got one doctest failure, and I
+                    // can only imagine that recent Sphinx (that is, 4.2+) initializes the
+                    // locale to something that implies a decimal separator different from
+                    // a dot ".", say a comma "," when LANG is "it_IT"... not the best
+                    // thing to do when emitting JSON!
+
+                    const char* locale = setlocale(LC_NUMERIC, NULL);
+                    setlocale(LC_NUMERIC, "C");
+
                     int size = snprintf(tsStr, 12 + 1 + 6, "%.6f", timestamp);
+
+                    setlocale(LC_NUMERIC, locale);
+
                     // Remove trailing 0s
                     while (tsStr[size-2] != '.' && tsStr[size-1] == '0')
                         size--;
@@ -2871,6 +2887,15 @@ dumps_internal(
                 // 1514893636.276702, because its exact double value is
                 // 1514893636.2767028808593750000000000...
                 char tsStr[12 + 1 + 6 + 1];
+
+                // Temporarily switch to a POSIX locale, in case the outer
+                // world is configured differently, see above
+
+                const char* locale = setlocale(LC_NUMERIC, NULL);
+                setlocale(LC_NUMERIC, "C");
+
+                setlocale(LC_NUMERIC, locale);
+
                 int size = snprintf(tsStr, 12 + 1 + 6, "%.6f", timestamp);
                 // Remove trailing 0s
                 while (tsStr[size-2] != '.' && tsStr[size-1] == '0')
