@@ -1,6 +1,12 @@
 Changes
 -------
 
+1.5 (unreleased)
+~~~~~~~~~~~~~~~~
+
+* Fix serialization bug when using DM_UNIX_TIME in a non-C locale context
+
+
 1.4 (2021-06-25)
 ~~~~~~~~~~~~~~~~
 
