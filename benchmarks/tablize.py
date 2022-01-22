@@ -2,7 +2,7 @@
 # :Project:   python-rapidjson -- reST tables writer tool
 # :Author:    Lele Gaifax <lele@metapensiero.it>
 # :License:   MIT License
-# :Copyright: © 2017, 2018, 2020, 2021 Lele Gaifax
+# :Copyright: © 2017, 2018, 2020, 2021, 2022 Lele Gaifax
 #
 
 # Assume we did::
@@ -126,10 +126,10 @@ def dumps_and_loads(benchmarks):
         '.. [2] ``rapidjson.Encoder()``',
         '.. [3] ``rapidjson.dumps(number_mode=NM_NATIVE)``',
         '.. [4] ``rapidjson.Encoder(number_mode=NM_NATIVE)``',
-        '.. [5] `simdjson 4.0.0 <https://pypi.org/project/pysimdjson/4.0.0/>`__',
-        '.. [6] `orjson 3.5.3 <https://pypi.org/project/orjson/3.5.3/>`__',
-        '.. [7] `ujson 4.0.2 <https://pypi.org/project/ujson/4.0.2/>`__',
-        '.. [8] `simplejson 3.17.2 <https://pypi.org/pypi/simplejson/3.17.2>`__',
+        '.. [5] `simdjson 4.0.3 <https://pypi.org/project/pysimdjson/4.0.3/>`__',
+        '.. [6] `orjson 3.6.6 <https://pypi.org/project/orjson/3.6.6/>`__',
+        '.. [7] `ujson 5.1.0 <https://pypi.org/project/ujson/5.1.0/>`__',
+        '.. [8] `simplejson 3.17.6 <https://pypi.org/pypi/simplejson/3.17.6>`__',
         '.. [9] Python %d.%d.%d standard library ``json``' % sys.version_info[:3],
         '.. [10] ``rapidjson.loads()``',
         '.. [11] ``rapidjson.Decoder()``',
