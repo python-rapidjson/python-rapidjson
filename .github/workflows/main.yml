@@ -4,7 +4,7 @@
 # :Author:    Martin Thoma <info@martin-thoma.de>
 # :License:   MIT License
 # :Copyright: © 2020 Martin Thoma
-# :Copyright: © 2020, 2021 Lele Gaifax
+# :Copyright: © 2020, 2021, 2022 Lele Gaifax
 #
 
 # For more information see:
@@ -111,12 +111,12 @@ jobs:
         name: Set up QEMU
 
       - name: Build wheels
-        uses: pypa/cibuildwheel@v2.1.3
+        uses: pypa/cibuildwheel@v2.3.1
         env:
           CIBW_ARCHS_LINUX: ${{matrix.arch}}
           CIBW_TEST_REQUIRES: "pytest pytest-benchmark pytz"
           CIBW_TEST_COMMAND: "pytest {project}/tests"
-          CIBW_SKIP: "cp2* cp33* cp34* cp35* pp*"
+          CIBW_SKIP: "cp2* cp33* cp34* cp35* cp36* pp*"
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v2
