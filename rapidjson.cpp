@@ -3,7 +3,7 @@
 // :Author:    Ken Robbins <ken@kenrobbins.com>
 // :License:   MIT License
 // :Copyright: © 2015 Ken Robbins
-// :Copyright: © 2015, 2016, 2017, 2018, 2019, 2020, 2021 Lele Gaifax
+// :Copyright: © 2015, 2016, 2017, 2018, 2019, 2020, 2021, 2022 Lele Gaifax
 //
 
 #include <locale.h>
@@ -1147,10 +1147,11 @@ struct PyHandler {
                     rc = PyDict_SetItem(current.object, key, replacement);
                 else
                     rc = PyObject_SetItem(current.object, key, replacement);
+
                 Py_DECREF(key);
+                Py_DECREF(replacement);
 
                 if (rc == -1) {
-                    Py_DECREF(replacement);
                     return false;
                 }
             } else {
@@ -1158,6 +1159,9 @@ struct PyHandler {
                 // should we implement Decoder.start_array()
                 Py_ssize_t listLen = PyList_GET_SIZE(current.object);
                 int rc = PyList_SetItem(current.object, listLen - 1, replacement);
+
+                // NB: PyList_SetItem() steals a reference on the replacement, so it must
+                // not be DECREFed when the operation succeeds
 
                 if (rc == -1) {
                     Py_DECREF(replacement);
