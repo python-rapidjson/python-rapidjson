@@ -1,6 +1,14 @@
 Changes
 -------
 
+1.6 (unreleased)
+~~~~~~~~~~~~~~~~
+
+* Fix memory leak when using ``end_array`` (`issue #160`__)
+
+  __ https://github.com/python-rapidjson/python-rapidjson/issues/160
+
+
 1.5 (2021-10-16)
 ~~~~~~~~~~~~~~~~
 
