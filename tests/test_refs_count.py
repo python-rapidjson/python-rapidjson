@@ -2,7 +2,7 @@
 # :Project:   python-rapidjson -- Refs leaks tests
 # :Author:    Lele Gaifax <lele@metapensiero.it>
 # :License:   MIT License
-# :Copyright: © 2017, 2018, 2020 Lele Gaifax
+# :Copyright: © 2017, 2018, 2020, 2022 Lele Gaifax
 #
 
 # NB: this is a simplicistic test that uses sys.gettotalrefcount(), available
@@ -197,3 +197,24 @@ def test_invalid_json_load_leaks():
     del _
     rc1 = sys.gettotalrefcount()
     assert (rc1 - rc0) < THRESHOLD
+
+
+def test_endarray_leak():
+    # See issue #160
+    value = '{"v": [1, 2]}'
+
+    class Decoder1(rj.Decoder):
+        pass
+
+    class Decoder2(rj.Decoder):
+        def end_array(self, seq):
+            return list(seq)
+
+    j1 = rj.loads(value)
+    assert sys.getrefcount(j1['v']) == 3
+
+    j2 = Decoder1()(value)
+    assert sys.getrefcount(j2['v']) == 3
+
+    j3 = Decoder2()(value)
+    assert sys.getrefcount(j3['v']) == 3
