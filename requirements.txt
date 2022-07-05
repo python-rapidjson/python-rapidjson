@@ -19,4 +19,4 @@ pytest-benchmark==3.4.1
 pysimdjson==4.0.3
 orjson==3.6.6
 simplejson==3.17.6
-ujson==5.1.0
+ujson==5.4.0
