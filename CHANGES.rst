@@ -1,6 +1,18 @@
 Changes
 -------
 
+1.7 (unreleased)
+~~~~~~~~~~~~~~~~
+
+* Use `current master`__ version of rapidjson
+
+  __ https://github.com/Tencent/rapidjson/commit/232389d4f1012dddec4ef84861face2d2ba85709
+
+* Update the test suite to work on Pyston, thanks to Kevin Modzelewski (`PR #161`__)
+
+  __ https://github.com/python-rapidjson/python-rapidjson/pull/161
+
+
 1.6 (2022-02-19)
 ~~~~~~~~~~~~~~~~
 
