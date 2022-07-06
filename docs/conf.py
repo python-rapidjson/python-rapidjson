@@ -46,7 +46,7 @@ master_doc = 'index'
 
 # General information about the project.
 project = 'python-rapidjson'
-copyright = '2016—2020, Lele Gaifax'
+copyright = '2016—2022, Lele Gaifax'
 author = 'Lele Gaifax'
 
 # The version info for the project you're documenting, acts as replacement for
@@ -63,7 +63,7 @@ release = '0.9.4'
 #
 # This is also used if you do content translation via gettext catalogs.
 # Usually you set "language" from the command line for these cases.
-language = None
+language = 'en'
 
 # List of patterns, relative to source directory, that match files and
 # directories to ignore when looking for source files.
