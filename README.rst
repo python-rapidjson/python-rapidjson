@@ -3,7 +3,7 @@
 .. :Author:    Ken Robbins <ken@kenrobbins.com>
 .. :License:   MIT License
 .. :Copyright: © 2015 Ken Robbins
-.. :Copyright: © 2016, 2017, 2018, 2020 Lele Gaifax
+.. :Copyright: © 2016, 2017, 2018, 2020, 2022 Lele Gaifax
 ..
 
 ==================
@@ -60,7 +60,7 @@ Basic usage looks like this:
     >>> import rapidjson
     >>> data = {'foo': 100, 'bar': 'baz'}
     >>> rapidjson.dumps(data)
-    '{"bar":"baz","foo":100}'
+    '{"foo":100,"bar":"baz"}'
     >>> rapidjson.loads('{"bar":"baz","foo":100}')
     {'bar': 'baz', 'foo': 100}
     >>>

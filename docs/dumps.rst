@@ -2,7 +2,7 @@
 .. :Project:   python-rapidjson -- dumps function documentation
 .. :Author:    Lele Gaifax <lele@metapensiero.it>
 .. :License:   MIT License
-.. :Copyright: © 2016, 2017, 2018, 2019, 2020 Lele Gaifax
+.. :Copyright: © 2016, 2017, 2018, 2019, 2020, 2022 Lele Gaifax
 ..
 
 ==================
@@ -16,10 +16,10 @@
    from rapidjson import (dumps, loads, BM_NONE, BM_UTF8, DM_NONE, DM_ISO8601,
                           DM_UNIX_TIME, DM_ONLY_SECONDS, DM_IGNORE_TZ, DM_NAIVE_IS_UTC,
                           DM_SHIFT_TO_UTC, IM_ANY_ITERABLE, IM_ONLY_LISTS, MM_ANY_MAPPING,
-                          MM_ONLY_DICTS, MM_COERCE_KEYS_TO_STRINGS, NM_NATIVE, NM_DECIMAL,
-                          NM_NAN, PM_NONE, PM_COMMENTS, PM_TRAILING_COMMAS, UM_NONE,
-                          UM_CANONICAL, UM_HEX, WM_COMPACT, WM_PRETTY,
-                          WM_SINGLE_LINE_ARRAY)
+                          MM_ONLY_DICTS, MM_COERCE_KEYS_TO_STRINGS, MM_SORT_KEYS,
+                          NM_NATIVE, NM_DECIMAL, NM_NAN, PM_NONE, PM_COMMENTS,
+                          PM_TRAILING_COMMAS, UM_NONE, UM_CANONICAL, UM_HEX, WM_COMPACT,
+                          WM_PRETTY, WM_SINGLE_LINE_ARRAY)
 
 .. function:: dumps(obj, *, skipkeys=False, ensure_ascii=True, write_mode=WM_COMPACT, \
                     indent=4, default=None, sort_keys=False, number_mode=None, \
@@ -215,8 +215,8 @@
       ...   else:
       ...     raise ValueError('%r is not JSON serializable' % obj)
       ...
-      >>> dumps(point, default=point_jsonifier) # doctest: +SKIP
-      '{"y":2,"x":1}'
+      >>> dumps(point, default=point_jsonifier)
+      '{"x":1,"y":2}'
 
 
    .. _sort-keys:
@@ -227,11 +227,27 @@
 
    .. doctest::
 
-      >>> dumps(point, default=point_jsonifier, sort_keys=True)
-      '{"x":1,"y":2}'
+      >>> data = {'a': 'A', 'c': 'C', 'i': 'I', 'd': 'D'}
+      >>> dumps(data, sort_keys=True)
+      '{"a":"A","c":"C","d":"D","i":"I"}'
 
    .. note:: `sort_keys` is a backward compatible alias of new ``MM_SORT_KEYS``
              :ref:`mapping mode <mapping_mode>`.
+
+   .. doctest::
+
+      >>> dumps(data, mapping_mode=MM_SORT_KEYS)
+      '{"a":"A","c":"C","d":"D","i":"I"}'
+
+   The default setting, on modern snakes (that is, on `Python >= 3.7`__), preserves
+   original dictionary insertion order:
+
+   .. doctest::
+
+      >>> dumps(data)
+      '{"a":"A","c":"C","i":"I","d":"D"}'
+
+   __ https://mail.python.org/pipermail/python-dev/2017-December/151283.html
 
 
    .. _dumps-number-mode:
