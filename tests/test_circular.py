@@ -54,7 +54,15 @@ def test_max_recursion_depth(dumps):
     dumps(root)
 
     rl = sys.getrecursionlimit()
-    sys.setrecursionlimit(500)
+
+    if hasattr(sys, "pyston_version_info"):
+        # In Pyston setrecursionlimit() sets a lower bound on the number of frames,
+        # not an exact count. So set the limit lower:
+        sys.setrecursionlimit(100)
+    else:
+        # Otherwise set it to the exact value:
+        sys.setrecursionlimit(500)
+
     try:
         with pytest.raises(expected_exception):
             dumps(root)

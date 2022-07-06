@@ -9,10 +9,11 @@
 import io
 import datetime
 import gc
-import tracemalloc
 
 import pytest
 import rapidjson as rj
+
+tracemalloc = pytest.importorskip("tracemalloc")
 
 
 def object_hook(td):
