@@ -1,7 +1,7 @@
 Changes
 -------
 
-1.8 (unreleased)
+1.8 (2022-07-07)
 ~~~~~~~~~~~~~~~~
 
 * Fix `problem on macOS`__ explicitly requiring C++11, thanks to agate-pris (`issue
