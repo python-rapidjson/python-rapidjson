@@ -75,9 +75,11 @@ if cxx and 'g++' in cxx:
             sysconfig.get_config_vars()[varname] = value
 
     # Add -pedantic, so we get a warning when using non-standard features, and
-    # -Wno-long-long to pacify old gcc (or Apple's hybrids) that treat "long
-    # long" as an error under C++ (see issue #69)
-    extension_options['extra_compile_args'] = ['-pedantic', '-Wno-long-long']
+    # -Wno-long-long to pacify old gcc (or Apple's hybrids) that treat "long long" as an
+    # error under C++ (see issue #69). C++11 is required since commit
+    # https://github.com/Tencent/rapidjson/commit/9965ab37f6cfae3d58a0a6e34c76112866ace0b1
+    extension_options['extra_compile_args'] = [
+        '-pedantic', '-Wno-long-long', '-std=c++11']
 
     # Up to Python 3.7, some structures use "char*" instead of "const char*",
     # and ISO C++ forbids assigning string literal constants
