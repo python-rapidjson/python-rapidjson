@@ -1,6 +1,16 @@
 Changes
 -------
 
+1.8 (unreleased)
+~~~~~~~~~~~~~~~~
+
+* Fix `problem on macOS`__ explicitly requiring C++11, thanks to agate-pris (`issue
+  #166`__)
+
+  __ https://github.com/Tencent/rapidjson/commit/9965ab37f6cfae3d58a0a6e34c76112866ace0b1#commitcomment-77875054
+  __ https://github.com/python-rapidjson/python-rapidjson/issues/166
+
+
 1.7 (2022-07-06)
 ~~~~~~~~~~~~~~~~
 
