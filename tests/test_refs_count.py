@@ -5,7 +5,7 @@
 # :Copyright: © 2017, 2018, 2020, 2022 Lele Gaifax
 #
 
-# NB: this is a simplicistic test that uses sys.gettotalrefcount(), available
+# NB: this is a simplistic test that uses sys.gettotalrefcount(), available
 # when the interpreter is built --with-pydebug, that tries to assert that
 # repeated calls to dumps() and loads() does not leak object references.
 # Since it's not an exact science, it should be taken with a grain of salt.
