@@ -2634,7 +2634,11 @@ dumps_internal(
         char isoformat[ISOFORMAT_LEN];
         memset(isoformat, 0, ISOFORMAT_LEN);
 
-        const int TIMEZONE_LEN = 16;
+        // The timezone is always shorter than this, but gcc12 emits a warning about
+        // sprintf() that *may* produce longer results, because we pass int values when
+        // concretely they are constrained to 24*3600 seconds: pacify gcc using a bigger
+        // buffer
+        const int TIMEZONE_LEN = 24;
         char timeZone[TIMEZONE_LEN] = { 0 };
 
         if (!(datetimeMode & DM_IGNORE_TZ)
