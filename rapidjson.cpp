@@ -2493,9 +2493,9 @@ dumps_internal(
         ASSERT_VALID_SIZE(l);
         writer->String(s, (SizeType) l);
         Py_DECREF(unicodeObj);
-    } else if ((!(iterableMode & IM_ONLY_LISTS) && PyList_Check(object))
+    } else if (PyList_CheckExact(object)
                ||
-               PyList_CheckExact(object)) {
+               (!(iterableMode & IM_ONLY_LISTS) && PyList_Check(object))) {
         writer->StartArray();
 
         Py_ssize_t size = PyList_GET_SIZE(object);
@@ -2527,9 +2527,9 @@ dumps_internal(
         }
 
         writer->EndArray();
-    } else if (((!(mappingMode & MM_ONLY_DICTS) && PyDict_Check(object))
+    } else if ((PyDict_CheckExact(object)
                 ||
-                PyDict_CheckExact(object))
+                (!(mappingMode & MM_ONLY_DICTS) && PyDict_Check(object)))
                &&
                ((mappingMode & MM_SKIP_NON_STRING_KEYS)
                 ||
