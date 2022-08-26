@@ -51,7 +51,7 @@ static PyObject* validation_error = NULL;
 static PyObject* decode_error = NULL;
 
 
-/* These are the names of oftenly used methods or literal values, interned in the module
+/* These are the names of often used methods or literal values, interned in the module
    initialization function, to avoid repeated creation/destruction of PyUnicode values
    from plain C strings.
 
@@ -393,7 +393,7 @@ public:
             }
         }
         if (c == NULL) {
-            // Propagate the error state, it will be catched by dumps_internal()
+            // Propagate the error state, it will be caught by dumps_internal()
         } else {
             PyObject* res = PyObject_CallMethodObjArgs(stream, write_name, c, NULL);
             if (res == NULL) {
