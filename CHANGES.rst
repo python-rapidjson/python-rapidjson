@@ -1,7 +1,7 @@
 Changes
 -------
 
-1.9 (unreleased)
+1.9 (2022-10-17)
 ~~~~~~~~~~~~~~~~
 
 * Produce Python 3.11 wheels, thanks to ``cibuildwheel`` `2.11.1`__
