@@ -108,7 +108,7 @@ jobs:
         with:
           python-version: '3.9'
 
-      - uses: docker/setup-qemu-action@v1
+      - uses: docker/setup-qemu-action@v2
         if:  ${{ matrix.arch == 'aarch64' || matrix.arch == 'ppc64le' }}
         name: Set up QEMU
 
