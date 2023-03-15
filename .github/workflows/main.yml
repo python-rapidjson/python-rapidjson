@@ -121,7 +121,7 @@ jobs:
           CIBW_SKIP: "cp2* cp33* cp34* cp35* cp36* pp*"
 
       - name: Upload artifacts
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         with:
           path: ./wheelhouse/*.whl
 
