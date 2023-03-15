@@ -1,6 +1,22 @@
 Changes
 -------
 
+1.10 (unreleased)
+~~~~~~~~~~~~~~~~~
+
+* Use `current master`__ version of rapidjson
+
+  __ https://github.com/Tencent/rapidjson/commit/083f359f5c36198accc2b9360ce1e32a333231d9
+
+* Produce ppc64le wheels, thanks to mgiessing (`PR #170`__)
+
+  __ https://github.com/python-rapidjson/python-rapidjson/pull/170
+
+* Use cibuildwheel `2.21.1`__
+
+  __ https://cibuildwheel.readthedocs.io/en/stable/changelog/#v2121
+
+
 1.9 (2022-10-17)
 ~~~~~~~~~~~~~~~~
 
