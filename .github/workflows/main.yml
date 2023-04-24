@@ -113,7 +113,7 @@ jobs:
         name: Set up QEMU
 
       - name: Build wheels
-        uses: pypa/cibuildwheel@v2.12.1
+        uses: pypa/cibuildwheel@v2.12.3
         env:
           CIBW_ARCHS_LINUX: ${{matrix.arch}}
           CIBW_TEST_REQUIRES: "pytest pytest-benchmark pytz"
