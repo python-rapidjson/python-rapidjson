@@ -1,6 +1,14 @@
 Changes
 -------
 
+1.11 (unreleased)
+~~~~~~~~~~~~~~~~~
+
+* Use `current master`__ version of rapidjson
+
+  __ https://github.com/Tencent/rapidjson/compare/083f359f5c36198accc2b9360ce1e32a333231d9...5e17dbed34eef33af8f3e734820b5dc547a2a3aa9
+
+
 1.10 (2023-03-15)
 ~~~~~~~~~~~~~~~~~
 
