@@ -8,6 +8,10 @@ Changes
 
   __ https://github.com/Tencent/rapidjson/compare/083f359f5c36198accc2b9360ce1e32a333231d9...5e17dbed34eef33af8f3e734820b5dc547a2a3aa9
 
+* Use cibuildwheel `2.15.0`__
+
+  __ https://cibuildwheel.readthedocs.io/en/stable/changelog/#v2150
+
 
 1.10 (2023-03-15)
 ~~~~~~~~~~~~~~~~~
@@ -20,7 +24,7 @@ Changes
 
   __ https://github.com/python-rapidjson/python-rapidjson/pull/170
 
-* Use cibuildwheel `2.21.1`__
+* Use cibuildwheel `2.12.1`__
 
   __ https://cibuildwheel.readthedocs.io/en/stable/changelog/#v2121
 
