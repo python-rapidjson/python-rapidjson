@@ -1,7 +1,7 @@
 Changes
 -------
 
-1.11 (unreleased)
+1.11 (2023-09-11)
 ~~~~~~~~~~~~~~~~~
 
 * Use `current master`__ version of rapidjson
