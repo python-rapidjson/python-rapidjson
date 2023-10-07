@@ -1,6 +1,14 @@
 Changes
 -------
 
+1.12 (unreleased)
+~~~~~~~~~~~~~~~~~
+
+* Generate wheels on PyPI using final Python 3.12 release, thanks to cibuildwheel `2.16.2`__
+
+  __ https://cibuildwheel.readthedocs.io/en/stable/changelog/#v2162
+
+
 1.11 (2023-09-11)
 ~~~~~~~~~~~~~~~~~
 
