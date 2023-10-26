@@ -3,7 +3,7 @@
 // :Author:    Ken Robbins <ken@kenrobbins.com>
 // :License:   MIT License
 // :Copyright: © 2015 Ken Robbins
-// :Copyright: © 2015, 2016, 2017, 2018, 2019, 2020, 2021, 2022 Lele Gaifax
+// :Copyright: © 2015, 2016, 2017, 2018, 2019, 2020, 2021, 2022, 2023 Lele Gaifax
 //
 
 #include <locale.h>
@@ -595,11 +595,7 @@ accept_write_mode_arg(PyObject* arg, unsigned &write_mode)
                 PyErr_SetString(PyExc_ValueError, "Invalid write_mode");
                 return false;
             }
-            if (mode == WM_COMPACT) {
-                write_mode = WM_COMPACT;
-            } else if (mode & WM_SINGLE_LINE_ARRAY) {
-                write_mode = (unsigned) (write_mode | WM_SINGLE_LINE_ARRAY);
-            }
+            write_mode = (unsigned) mode;
         } else {
             PyErr_SetString(PyExc_TypeError,
                             "write_mode must be a non-negative int");

@@ -2,7 +2,7 @@
 .. :Project:   python-rapidjson -- dumps function documentation
 .. :Author:    Lele Gaifax <lele@metapensiero.it>
 .. :License:   MIT License
-.. :Copyright: © 2016, 2017, 2018, 2019, 2020, 2022 Lele Gaifax
+.. :Copyright: © 2016, 2017, 2018, 2019, 2020, 2022, 2023 Lele Gaifax
 ..
 
 ==================
@@ -63,7 +63,8 @@
       Traceback (most recent call last):
         File "<stdin>", line 1, in <module>
       TypeError: keys must be strings
-      >>> dumps({(0,): 'empty tuple', True: 'a true value'}, skipkeys=True)
+      >>> dumps({(0,): 'empty tuple', True: 'a true value'},
+      ...       skipkeys=True)
       '{}'
 
    .. note:: `skipkeys` is a backward compatible alias of new
@@ -91,33 +92,36 @@
    The `write_mode` controls how ``python-rapidjson`` emits JSON: by default it is
    :data:`WM_COMPACT`, that produces the most compact JSON representation:
 
-   .. code-block:: pycon
+   .. doctest::
 
       >>> dumps([1, 2, {'three': 3, 'four': 4}])
-      '[1,2,{"four":4,"three":3}]'
+      '[1,2,{"three":3,"four":4}]'
 
    With :data:`WM_PRETTY` it will use ``RapidJSON``\ 's ``PrettyWriter``, with a default
    `indent` (see below) of four spaces:
 
-   .. code-block:: pycon
+   .. doctest::
 
-      >>> print(dumps([1, 2, {'three': 3, 'four': 4}], write_mode=WM_PRETTY))
+      >>> print(dumps([1, 2, {'three': 3, 'four': 4}],
+      ...       write_mode=WM_PRETTY))
       [
           1,
           2,
           {
-              "four": 4,
-              "three": 3
+              "three": 3,
+              "four": 4
           }
       ]
 
    With :data:`WM_SINGLE_LINE_ARRAY` arrays will be kept on a single line:
 
-   .. code-block:: pycon
+   .. doctest::
 
-      >>> print(dumps([1, 2, 'three', [4, 5]], write_mode=WM_SINGLE_LINE_ARRAY))
-      [1, 2, 'three', [4, 5]]
-      >>> print(dumps([1, 2, {'three': 3, 'four': 4}], write_mode=WM_SINGLE_LINE_ARRAY))
+      >>> print(dumps([1, 2, 'three', [4, 5]],
+      ...       write_mode=WM_SINGLE_LINE_ARRAY))
+      [1, 2, "three", [4, 5]]
+      >>> print(dumps([1, 2, {'three': 3, 'four': 4}],
+      ...       write_mode=WM_SINGLE_LINE_ARRAY))
       [1, 2, {
               "three": 3,
               "four": 4
@@ -141,15 +145,15 @@
    :data:`WM_SINGLE_LINE_MODE`) and each dictionary value will be followed by a newline. A
    positive integer means that each *level* will be indented by that many spaces:
 
-   .. code-block:: pycon
+   .. doctest::
 
       >>> print(dumps([1, 2, {'three': 3, 'four': 4}], indent=0))
       [
       1,
       2,
       {
-      "four": 4,
-      "three": 3
+      "three": 3,
+      "four": 4
       }
       ]
       >>> print(dumps([1, 2, {'three': 3, 'four': 4}], indent=2))
@@ -157,8 +161,8 @@
         1,
         2,
         {
-          "four": 4,
-          "three": 3
+          "three": 3,
+          "four": 4
         }
       ]
       >>> print(dumps([1, 2, {'three': 3, 'four': 4}], indent=""))
@@ -166,8 +170,8 @@
       1,
       2,
       {
-      "four": 4,
-      "three": 3
+      "three": 3,
+      "four": 4
       }
       ]
       >>> print(dumps([1, 2, {'three': 3, 'four': 4}], indent="  "))
@@ -175,18 +179,19 @@
         1,
         2,
         {
-          "four": 4,
-          "three": 3
+          "three": 3,
+          "four": 4
         }
       ]
-      >>> print(dumps([1, 2, {'three': 3, 'four': 4}], indent="\t"))
+      >>> print(dumps([1, 2, {'three': 3, 'four': 4}],
+      ...       indent="\t").replace('\t', '→ '))
       [
-              1,
-              2,
-              {
-                      "three": 3,
-                      "four": 4
-              }
+      → 1,
+      → 2,
+      → {
+      → → "three": 3,
+      → → "four": 4
+      → }
       ]
 
 
