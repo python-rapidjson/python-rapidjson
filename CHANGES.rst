@@ -1,7 +1,7 @@
 Changes
 -------
 
-1.13 (unreleased)
+1.13 (2023-10-29)
 ~~~~~~~~~~~~~~~~~
 
 * Fix handling of write_mode in dump functions (problem emerged discussing `issue #191`__)
