@@ -1,6 +1,14 @@
 Changes
 -------
 
+1.13 (unreleased)
+~~~~~~~~~~~~~~~~~
+
+* Fix handling of write_mode in dump functions (problem emerged discussing `issue #191`__)
+
+  __ https://github.com/python-rapidjson/python-rapidjson/issues/191
+
+
 1.12 (2023-10-07)
 ~~~~~~~~~~~~~~~~~
 
