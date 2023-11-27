@@ -65,7 +65,7 @@ jobs:
         with:
           submodules: recursive
 
-      - uses: deadsnakes/action@v3.0.1
+      - uses: deadsnakes/action@v3.1.0
         with:
           python-version: ${{ matrix.python-version }}
           debug: true
