@@ -1,7 +1,7 @@
 Changes
 -------
 
-1.14 (unreleased)
+1.14 (2023-12-14)
 ~~~~~~~~~~~~~~~~~
 
 * Produce binary wheels for macOS/arm64, thanks to timothyjlaurent (`PR #195`__)
