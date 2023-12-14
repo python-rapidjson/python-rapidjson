@@ -1,6 +1,14 @@
 Changes
 -------
 
+1.14 (unreleased)
+~~~~~~~~~~~~~~~~~
+
+* Produce binary wheels for macOS/arm64, thanks to timothyjlaurent (`PR #195`__)
+
+  __ https://github.com/python-rapidjson/python-rapidjson/pull/170
+
+
 1.13 (2023-10-29)
 ~~~~~~~~~~~~~~~~~
 
