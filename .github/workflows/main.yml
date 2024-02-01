@@ -123,8 +123,9 @@ jobs:
           CIBW_PRERELEASE_PYTHONS: True
 
       - name: Upload artifacts
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
+          name: wheels-for-${{ matrix.os }}-${{ matrix.arch }}
           path: ./wheelhouse/*.whl
 
   upload_wheels:
@@ -139,10 +140,11 @@ jobs:
     #if: github.event_name == 'push' && startsWith(github.event.ref, 'refs/tags/v')
 
     steps:
-      - uses: actions/download-artifact@v3
+      - uses: actions/download-artifact@v4
         with:
-          name: artifact
           path: dist
+          pattern: wheels-for-*
+          merge-multiple: true
 
       - uses: pypa/gh-action-pypi-publish@release/v1
         with:
