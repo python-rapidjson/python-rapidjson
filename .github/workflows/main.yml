@@ -4,7 +4,7 @@
 # :Author:    Martin Thoma <info@martin-thoma.de>
 # :License:   MIT License
 # :Copyright: © 2020 Martin Thoma
-# :Copyright: © 2020, 2021, 2022, 2023 Lele Gaifax
+# :Copyright: © 2020, 2021, 2022, 2023, 2024 Lele Gaifax
 #
 
 # For more information see:
@@ -94,7 +94,7 @@ jobs:
             arch: aarch64
           - os: ubuntu-22.04
             arch: ppc64le
-          - os: macos-12
+          - os: macos-14
             arch: arm64
           
     steps:
@@ -113,9 +113,9 @@ jobs:
         name: Set up QEMU
 
       - name: Build wheels
-        uses: pypa/cibuildwheel@v2.16.2
+        uses: pypa/cibuildwheel@v2.16.5
         env:
-          CIBW_ARCHS_LINUX: ${{matrix.arch}}
+          CIBW_ARCHS_LINUX: ${{ matrix.arch }}
           CIBW_ARCHS_MACOS: ${{ matrix.arch }}
           CIBW_TEST_REQUIRES: "pytest pytest-benchmark pytz"
           CIBW_TEST_COMMAND: "pytest {project}/tests"
