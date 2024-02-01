@@ -129,15 +129,12 @@ jobs:
           path: ./wheelhouse/*.whl
 
   upload_wheels:
-    name: Upload wheels
+    name: Upload wheels to PyPI
     needs: build_wheels
     runs-on: ubuntu-latest
 
     # Upload to PyPI on every tag starting with 'v'
-    # FIXME: for some reason, the job is skipped, although the configuration is
-    #        almost identical to the one I use on pglast... let's try to temporarily
-    #        remove the condition
-    #if: github.event_name == 'push' && startsWith(github.event.ref, 'refs/tags/v')
+    if: github.event_name == 'push' && startsWith(github.event.ref, 'refs/tags/v')
 
     steps:
       - uses: actions/download-artifact@v4
