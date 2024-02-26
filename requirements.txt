@@ -17,6 +17,6 @@ pytest-benchmark==4.0.0
 
 # Keep in sync with benchmarks/tablize.py versions
 pysimdjson==5.0.1 ; python_version < "3.12"
-orjson==3.7.6
+orjson==3.9.15
 simplejson==3.17.6
 ujson==5.4.0
