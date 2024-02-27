@@ -3,7 +3,7 @@
 # :Author:    John Anderson <sontek@gmail.com>
 # :License:   MIT License
 # :Copyright: © 2015 John Anderson
-# :Copyright: © 2017, 2018, 2020, 2023 Lele Gaifax
+# :Copyright: © 2017, 2018, 2020, 2023, 2024 Lele Gaifax
 #
 
 import sys
@@ -11,17 +11,11 @@ import sys
 import pytest
 
 
-if sys.version_info >= (3, 5):
-    expected_exception = RecursionError
-else:
-    expected_exception = RuntimeError
-
-
 def test_circular_dict(dumps):
     dct = {}
     dct['a'] = dct
 
-    with pytest.raises(expected_exception):
+    with pytest.raises(RecursionError):
         dumps(dct)
 
 
@@ -29,7 +23,7 @@ def test_circular_list(dumps):
     lst = []
     lst.append(lst)
 
-    with pytest.raises(expected_exception):
+    with pytest.raises(RecursionError):
         dumps(lst)
 
 
@@ -38,7 +32,7 @@ def test_circular_composite(dumps):
     dct2['a'] = []
     dct2['a'].append(dct2)
 
-    with pytest.raises(expected_exception):
+    with pytest.raises(RecursionError):
         dumps(dct2)
 
 
@@ -74,7 +68,7 @@ if sys.version_info < (3, 12):
             sys.setrecursionlimit(500)
 
         try:
-            with pytest.raises(expected_exception):
+            with pytest.raises(RecursionError):
                 dumps(root)
         finally:
             sys.setrecursionlimit(rl)
