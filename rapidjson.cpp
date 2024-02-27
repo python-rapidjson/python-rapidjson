@@ -3,7 +3,7 @@
 // :Author:    Ken Robbins <ken@kenrobbins.com>
 // :License:   MIT License
 // :Copyright: © 2015 Ken Robbins
-// :Copyright: © 2015, 2016, 2017, 2018, 2019, 2020, 2021, 2022, 2023 Lele Gaifax
+// :Copyright: © 2015, 2016, 2017, 2018, 2019, 2020, 2021, 2022, 2023, 2024 Lele Gaifax
 //
 
 #include <locale.h>
@@ -808,6 +808,7 @@ struct PyHandler {
     unsigned datetimeMode;
     unsigned uuidMode;
     unsigned numberMode;
+    unsigned recursionLimit;
     std::vector<HandlerContext> stack;
 
     PyHandler(PyObject* decoder,
@@ -842,6 +843,7 @@ struct PyHandler {
                 }
             }
             sharedKeys = PyDict_New();
+            recursionLimit = Py_GetRecursionLimit();
         }
 
     ~PyHandler() {
@@ -945,6 +947,12 @@ struct PyHandler {
     }
 
     bool StartObject() {
+        if (recursionLimit-- == 0) {
+            PyErr_SetString(PyExc_RecursionError,
+                            "Maximum parse recursion depth exceeded");
+            return false;
+        }
+
         PyObject* mapping;
         bool key_value_pairs;
 
@@ -985,6 +993,8 @@ struct PyHandler {
     }
 
     bool EndObject(SizeType member_count) {
+        recursionLimit++;
+
         const HandlerContext& ctx = stack.back();
 
         if (ctx.copiedKey)
@@ -1085,6 +1095,12 @@ struct PyHandler {
     }
 
     bool StartArray() {
+        if (recursionLimit-- == 0) {
+            PyErr_SetString(PyExc_RecursionError,
+                            "Maximum parse recursion depth exceeded!");
+            return false;
+        }
+
         PyObject* list = PyList_New(0);
         if (list == NULL) {
             return false;
@@ -1107,6 +1123,8 @@ struct PyHandler {
     }
 
     bool EndArray(SizeType elementCount) {
+        recursionLimit++;
+
         const HandlerContext& ctx = stack.back();
 
         if (ctx.copiedKey)

@@ -72,3 +72,25 @@ if sys.version_info < (3, 12):
                 dumps(root)
         finally:
             sys.setrecursionlimit(rl)
+
+
+def test_parse_respects_recursion_limit(loads):
+    rl = sys.getrecursionlimit()
+
+    deep_array = '[' * rl + ']' * rl
+    deep_obj = '{}'
+    for depth in range(rl-1):
+        deep_obj = '{"obj": ' + deep_obj + '}'
+
+    loads(deep_array)
+    loads(deep_obj)
+
+    sys.setrecursionlimit(rl // 2)
+
+    try:
+        with pytest.raises(RecursionError):
+            loads(deep_array)
+        with pytest.raises(RecursionError):
+            loads(deep_obj)
+    finally:
+        sys.setrecursionlimit(rl)
