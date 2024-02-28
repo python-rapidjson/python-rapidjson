@@ -1,7 +1,7 @@
 Changes
 -------
 
-1.16 (unreleased)
+1.16 (2024-02-28)
 ~~~~~~~~~~~~~~~~~
 
 * Produce Python 3.8 wheels again, I deactivated it too eagerly, it's in *security fixes
