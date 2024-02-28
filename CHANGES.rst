@@ -1,6 +1,16 @@
 Changes
 -------
 
+1.15 (unreleased)
+~~~~~~~~~~~~~~~~~
+
+* Honor the `recursion limit`__ also at parse time, to avoid attacks as described by
+  `CVE-2024-27454`__
+
+  __ https://docs.python.org/3.12/library/sys.html#sys.setrecursionlimit
+  __ https://monicz.dev/CVE-2024-27454
+
+
 1.14 (2023-12-14)
 ~~~~~~~~~~~~~~~~~
 
