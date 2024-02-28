@@ -1,7 +1,7 @@
 Changes
 -------
 
-1.15 (unreleased)
+1.15 (2024-02-28)
 ~~~~~~~~~~~~~~~~~
 
 * Honor the `recursion limit`__ also at parse time, to avoid attacks as described by
