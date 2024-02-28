@@ -119,7 +119,7 @@ jobs:
           CIBW_ARCHS_MACOS: ${{ matrix.arch }}
           CIBW_TEST_REQUIRES: "pytest pytest-benchmark pytz"
           CIBW_TEST_COMMAND: "pytest {project}/tests"
-          CIBW_SKIP: "cp2* cp33* cp34* cp35* cp36* cp37* cp38* pp*"
+          CIBW_SKIP: "cp2* cp33* cp34* cp35* cp36* cp37* pp*"
           CIBW_PRERELEASE_PYTHONS: True
 
       - name: Upload artifacts
