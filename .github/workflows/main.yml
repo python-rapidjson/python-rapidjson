@@ -134,7 +134,10 @@ jobs:
     runs-on: ubuntu-latest
 
     # Upload to PyPI on every tag starting with 'v'
-    if: github.event_name == 'push' && startsWith(github.event.ref, 'refs/tags/v')
+    # FIXME: for some reason, the job is skipped, although the configuration is
+    #        almost identical to the one I use on pglast... let's try to temporarily
+    #        remove the condition
+    #if: github.event_name == 'push' && startsWith(github.event.ref, 'refs/tags/v')
 
     steps:
       - uses: actions/download-artifact@v4
