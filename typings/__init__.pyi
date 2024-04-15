@@ -112,7 +112,7 @@ def dumps(
     iterable_mode: t.Optional[IterableMode] = IM_ANY_ITERABLE,
     mapping_mode: t.Optional[MappingMode] = MM_ANY_MAPPING,
     allow_nan: t.Optional[bool] = True,
-) -> None: ...
+) -> str: ...
 def dump(
     obj: t.Any,
     stream: t.IO,
