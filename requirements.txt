@@ -2,21 +2,21 @@
 # :Project:   python-rapidjson -- Development requirements
 # :Author:    Lele Gaifax <lele@metapensiero.it>
 # :License:   MIT License
-# :Copyright: © 2017, 2018, 2019, 2020, 2021, 2022, 2023 Lele Gaifax
+# :Copyright: © 2017, 2018, 2019, 2020, 2021, 2022, 2023, 2024 Lele Gaifax
 #
 
 -r requirements-test.txt
 
 # Needed by make release
 metapensiero.tool.bump-version==1.3
-readme-renderer==42.0
-twine==4.0.2
+readme-renderer==43.0
+twine==5.0.0
 
 # Needed by make benchmarks-*
 pytest-benchmark==4.0.0
 
 # Keep in sync with benchmarks/tablize.py versions
-pysimdjson==5.0.1 ; python_version < "3.12"
-orjson==3.7.6
-simplejson==3.17.6
-ujson==5.4.0
+pysimdjson==6.0.2
+orjson==3.10.1
+simplejson==3.19.2
+ujson==5.9.0
