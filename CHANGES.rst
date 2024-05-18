@@ -1,6 +1,18 @@
 Changes
 -------
 
+1.17 (unreleased)
+~~~~~~~~~~~~~~~~~
+
+* Use `current master`__ version of rapidjson
+
+  __ https://github.com/Tencent/rapidjson/compare/5e17dbed34eef33af8f3e734820b5dc547a2a3aa...ab1842a2dae061284c0a62dca1cc6d5e7e37e346
+
+* Generate wheels on PyPI using Python 3.13b1 release, thanks to cibuildwheel `2.18.0`__
+
+  __ https://cibuildwheel.pypa.io/en/stable/changelog/#v2180
+
+
 1.16 (2024-02-28)
 ~~~~~~~~~~~~~~~~~
 
