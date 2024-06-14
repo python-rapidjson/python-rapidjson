@@ -7,6 +7,7 @@
 # :Copyright: © 2015, 2017, 2018, 2021, 2022, 2023 Lele Gaifax
 #
 
+mypy==1.10.0
 pytest==7.4.3
 pytz==2023.3.post1
 sphinx==7.2.6
