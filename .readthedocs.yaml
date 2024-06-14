@@ -1,0 +1,28 @@
+# -*- coding: utf-8 -*-
+# :Project:   python-rapidjson — Configuration for Read the Docs
+# :Created:   sab 18 mag 2024, 15:59:36
+# :Author:    Lele Gaifax <lele@metapensiero.it>
+# :License:   MIT License
+# :Copyright: © 2024 Lele Gaifax
+#
+
+# See https://docs.readthedocs.io/en/stable/config-file/v2.html for details
+
+version: 2
+
+submodules:
+  include: all
+
+build:
+  os: ubuntu-22.04
+  tools:
+    python: "3.11"
+
+python:
+  install:
+    - requirements: requirements.txt
+    - method: pip
+      path: .
+
+sphinx:
+  configuration: docs/conf.py
