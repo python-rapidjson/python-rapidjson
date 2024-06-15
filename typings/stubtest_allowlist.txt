@@ -1,0 +1,5 @@
+rapidjson.Encoder.default
+rapidjson.Decoder.end_array
+rapidjson.Decoder.end_object
+rapidjson.Decoder.start_object
+rapidjson.Decoder.string
