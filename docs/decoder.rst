@@ -2,7 +2,7 @@
 .. :Project:   python-rapidjson -- Decoder class documentation
 .. :Author:    Lele Gaifax <lele@metapensiero.it>
 .. :License:   MIT License
-.. :Copyright: © 2017, 2018, 2020, 2021 Lele Gaifax
+.. :Copyright: © 2017, 2018, 2020, 2021, 2024 Lele Gaifax
 ..
 
 ===============
@@ -77,11 +77,11 @@
 
    .. method:: end_array(sequence)
 
-      :param sequence: an instance implement the *mutable sequence* protocol
+      :param sequence: an instance implementing the *mutable sequence* protocol
       :returns: a new value
 
       This is called, if implemented, when a *JSON array* has been completely parsed, and
-      can be used replace it with an arbitrary different value:
+      can be used to replace it with an arbitrary different value:
 
       .. doctest::
 
