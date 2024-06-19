@@ -15,7 +15,6 @@ twine==5.0.0
 # Needed by make benchmarks-*
 pytest-benchmark==4.0.0
 
-# Keep in sync with benchmarks/tablize.py versions
 pysimdjson==6.0.2
 orjson==3.10.1
 simplejson==3.19.2

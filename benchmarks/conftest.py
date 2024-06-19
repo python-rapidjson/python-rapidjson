@@ -2,7 +2,7 @@
 # :Project:   python-rapidjson -- Benchmarks specific pytest configuration
 # :Author:    Lele Gaifax <lele@metapensiero.it>
 # :License:   MIT License
-# :Copyright: © 2016, 2017, 2018, 2020 Lele Gaifax
+# :Copyright: © 2016, 2017, 2018, 2020, 2024 Lele Gaifax
 #
 
 from collections import namedtuple
@@ -55,6 +55,32 @@ contenders.append(Contender('rapidjson_nn_f',
 contenders.append(Contender('rapidjson_nn_c',
                             rj.Encoder(number_mode=rj.NM_NATIVE),
                             rj.Decoder(number_mode=rj.NM_NATIVE)))
+
+
+
+class DecoderPython(rj.Decoder):
+    def end_array(self, a):
+        return a
+
+    def start_object(self):
+        return {}
+
+    def end_object(self, d):
+        return d
+
+    def string(self, s):
+        return s
+
+
+class EncoderPython(rj.Encoder):
+    def default(self, obj):
+        return repr(obj)
+
+
+contenders.append(Contender('rapidjson_p',
+                            EncoderPython(),
+                            DecoderPython()))
+
 
 numbers_contenders = [
     Contender('Wide numbers', rj.dumps, rj.loads),
@@ -147,7 +173,9 @@ def pytest_generate_tests(metafunc):
         if metafunc.config.option.compare_other_engines:
             metafunc.parametrize('contender', contenders, ids=attrgetter('name'))
         else:
-            metafunc.parametrize('contender', contenders[:1], ids=attrgetter('name'))
+            metafunc.parametrize('contender', [c for c in contenders
+                                               if c.name.startswith('rapidjson')],
+                                 ids=attrgetter('name'))
 
     if 'datetimes_loads_contender' in metafunc.fixturenames:
         metafunc.parametrize('datetimes_loads_contender',

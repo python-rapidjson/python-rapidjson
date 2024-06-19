@@ -70,7 +70,7 @@ class Comparison:
         cells = ['=' * (width+2) for width in widths]
         headseprow = '+' + '+'.join(cells) + '+'
 
-        cells = [' {:^%d} ' % width for width in widths]
+        cells = [f' {{:^{width}}} ' for width in widths]
         rowfmt = '|' + '|'.join(cells) + '|'
 
         print(seprow)
@@ -95,6 +95,7 @@ def dumps_and_loads(benchmarks):
                   'rapidjson_c',
                   'rapidjson_nn_f',
                   'rapidjson_nn_c',
+                  'rapidjson_p',
                   'simdjson',
                   'orjson',
                   'ujson',
@@ -104,15 +105,17 @@ def dumps_and_loads(benchmarks):
                  r'``Encoder()``\ [2]_',
                  r'``dumps(n)``\ [3]_',
                  r'``Encoder(n)``\ [4]_',
-                 r'simdjson\ [5]_',
-                 r'orjson\ [6]_',
-                 r'ujson\ [7]_',
-                 r'simplejson\ [8]_',
-                 r'stdlib\ [9]_')
-    d_headers = (r'``loads()``\ [10]_',
-                 r'``Decoder()``\ [11]_',
-                 r'``loads(n)``\ [12]_',
-                 r'``Decoder(n)``\ [13]_',
+                 r'``PyEncoder()``\ [5]',
+                 r'simdjson\ [6]_',
+                 r'orjson\ [7]_',
+                 r'ujson\ [8]_',
+                 r'simplejson\ [9]_',
+                 r'stdlib\ [10]_')
+    d_headers = (r'``loads()``\ [11]_',
+                 r'``Decoder()``\ [12]_',
+                 r'``loads(n)``\ [13]_',
+                 r'``Decoder(n)``\ [14]_',
+                 r'``PyDecoder()``\ [15]_',
                  r'simdjson',
                  r'orjson',
                  r'ujson',
@@ -121,20 +124,29 @@ def dumps_and_loads(benchmarks):
 
     assert len(contenders) == len(s_headers) == len(d_headers)
 
+    from csimdjson import VERSION as simdjv
+    from orjson import __version__ as orjv
+    from simplejson import __version__ as sjv
+    from ujson import __version__ as ujv
+
+    pyv = '%d.%d.%d' % sys.version_info[:3]
+
     footnotes = [
         '.. [1] ``rapidjson.dumps()``',
         '.. [2] ``rapidjson.Encoder()``',
         '.. [3] ``rapidjson.dumps(number_mode=NM_NATIVE)``',
         '.. [4] ``rapidjson.Encoder(number_mode=NM_NATIVE)``',
-        '.. [5] `simdjson 6.0.2 <https://pypi.org/project/pysimdjson/6.0.2/>`__',
-        '.. [6] `orjson 3.10.1 <https://pypi.org/project/orjson/3.10.1/>`__',
-        '.. [7] `ujson 5.9.0 <https://pypi.org/project/ujson/5.9.0/>`__',
-        '.. [8] `simplejson 3.19.2 <https://pypi.org/pypi/simplejson/3.19.2>`__',
-        '.. [9] Python %d.%d.%d standard library ``json``' % sys.version_info[:3],
-        '.. [10] ``rapidjson.loads()``',
-        '.. [11] ``rapidjson.Decoder()``',
-        '.. [12] ``rapidjson.loads(number_mode=NM_NATIVE)``',
-        '.. [13] ``rapidjson.Decoder(number_mode=NM_NATIVE)``']
+        '.. [5] ``rapidjson.Encoder()`` subclassed in Python with *no-op* hook methods',
+        f'.. [6] `simdjson {simdjv} <https://pypi.org/project/pysimdjson/>`__',
+        f'.. [7] `orjson {orjv} <https://pypi.org/project/orjson/{orjv}/>`__',
+        f'.. [8] `ujson {ujv} <https://pypi.org/project/ujson/{ujv}/>`__',
+        f'.. [9] `simplejson {sjv} <https://pypi.org/pypi/simplejson/{sjv}>`__',
+        f'.. [10] Python {pyv} standard library ``json``',
+        '.. [11] ``rapidjson.loads()``',
+        '.. [12] ``rapidjson.Decoder()``',
+        '.. [13] ``rapidjson.loads(number_mode=NM_NATIVE)``',
+        '.. [14] ``rapidjson.Decoder(number_mode=NM_NATIVE)``',
+        '.. [15] ``rapidjson.Decoder() subclassed in Python with *no-op* hook methods``']
 
     comparison = Comparison(contenders, benchmarks)
 
@@ -157,17 +169,17 @@ def ascii_vs_utf8(benchmarks):
                ('ujson', 'uj'),
                ('simplejson', 'sj'),
                ('stdlib json', 'json'))
-    contenders = ['%s %s' % (e[0], k) for e in engines for k in ('ascii', 'utf8')]
-    i = 14
+    contenders = [f'{e[0]} {k}' for e in engines for k in ('ascii', 'utf8')]
+    i = 15
     s_headers = []
     footnotes = []
     for e in engines:
         i += 1
-        s_headers.append(r'``%s ascii``\ [%d]_' % (e[1], i))
-        footnotes.append('.. [%d] ``%s.dumps(ensure_ascii=True)``' % (i, e[0]))
+        s_headers.append(rf'``{e[1]} ascii``\ [{i}]_')
+        footnotes.append(f'.. [{i}] ``{e[0]}.dumps(ensure_ascii=True)``')
         i += 1
-        s_headers.append(r'``%s utf8``\ [%d]_' % (e[1], i))
-        footnotes.append('.. [%d] ``%s.dumps(ensure_ascii=False)``' % (i, e[0]))
+        s_headers.append(rf'``{e[1]} utf8``\ [{i}]_')
+        footnotes.append(f'.. [{i}] ``{e[0]}.dumps(ensure_ascii=False)``')
 
     comparison = Comparison(contenders, benchmarks)
 
