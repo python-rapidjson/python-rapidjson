@@ -1,6 +1,7 @@
 import typing as t
 
 
+__rapidjson_exact_version__: str
 __rapidjson_version__: str
 
 
