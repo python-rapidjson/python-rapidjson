@@ -1,3 +1,11 @@
+# -*- coding: utf-8 -*-
+# :Project:   python-rapidjson -- PEP-484 typing stubs
+# :Author:    Rodion Kosianenko <GoodWasHere@gmail.com>
+# :License:   MIT License
+# :Copyright: © 2024 Rodion Kosianenko
+# :Copyright: © 2024 Lele Gaifax
+#
+
 import typing as t
 
 
