@@ -105,7 +105,7 @@ def dumps_and_loads(benchmarks):
                  r'``Encoder()``\ [2]_',
                  r'``dumps(n)``\ [3]_',
                  r'``Encoder(n)``\ [4]_',
-                 r'``PyEncoder()``\ [5]',
+                 r'``PyEncoder()``\ [5]_',
                  r'simdjson\ [6]_',
                  r'orjson\ [7]_',
                  r'ujson\ [8]_',
