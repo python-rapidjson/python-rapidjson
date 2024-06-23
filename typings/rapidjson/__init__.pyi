@@ -1,6 +1,8 @@
 import typing as t
 
+
 __rapidjson_version__: str
+
 
 _JSONType = t.Union[
     str,
@@ -11,6 +13,7 @@ _JSONType = t.Union[
     t.Dict[str, "_JSONType"],
     t.List["_JSONType"],
 ]
+
 
 # Const types
 _BM_NONE_TYPE = t.Literal[0]
@@ -43,6 +46,7 @@ _WM_COMPACT_TYPE = t.Literal[0]
 _WM_PRETTY_TYPE = t.Literal[1]
 _WM_SINGLE_LINE_ARRAY_TYPE = t.Literal[2]
 
+
 # Const values
 BM_NONE: _BM_NONE_TYPE = 0
 BM_UTF8: _BM_UTF8_TYPE = 1
@@ -74,6 +78,7 @@ WM_COMPACT: _WM_COMPACT_TYPE = 0
 WM_PRETTY: _WM_PRETTY_TYPE = 1
 WM_SINGLE_LINE_ARRAY: _WM_SINGLE_LINE_ARRAY_TYPE = 2
 
+
 # Mode types
 _NumberMode = t.Literal[_NM_DECIMAL_TYPE, _NM_NAN_TYPE, _NM_NATIVE_TYPE, _NM_NONE_TYPE]
 _DatetimeMode = t.Literal[
@@ -97,6 +102,7 @@ _MappingMode = t.Literal[
     _MM_SKIP_NON_STRING_KEYS_TYPE,
     _MM_SORT_KEYS_TYPE,
 ]
+
 
 # Functions
 def dumps(
@@ -157,9 +163,11 @@ def loads(
     allow_nan: t.Optional[bool] = True,
 ) -> t.Any: ...
 
+
 # Classes
 class JSONDecodeError(Exception): ...
 class ValidationError(Exception): ...
+
 
 class Decoder:
     datetime_mode: _DatetimeMode
@@ -179,6 +187,7 @@ class Decoder:
         json: t.Union[str, bytes, t.IO],
         chunk_size: t.Optional[int] = 65536,
     ) -> t.Any: ...
+
 
 class Encoder:
     bytes_mode: _BytesMode
@@ -215,10 +224,12 @@ class Encoder:
         chunk_size: t.Optional[int] = 65536,
     ) -> t.Optional[str]: ...
 
+
 @t.final
 class RawJSON:
     value: RawJSON
     def __init__(self, value: str) -> None: ...
+
 
 @t.final
 class Validator:
