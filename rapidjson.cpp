@@ -4032,10 +4032,16 @@ module_exec(PyObject* m)
                                       ", Lele Gaifax <lele@metapensiero.it>")
         || PyModule_AddStringConstant(m, "__rapidjson_version__",
                                       RAPIDJSON_VERSION_STRING)
-#ifdef RAPIDJSON_EXACT_VERSION
         || PyModule_AddStringConstant(m, "__rapidjson_exact_version__",
-                                      STRINGIFY(RAPIDJSON_EXACT_VERSION))
+#ifdef RAPIDJSON_EXACT_VERSION
+                                      STRINGIFY(RAPIDJSON_EXACT_VERSION)
+#else
+                                      // This may happen for several reasons, under CI
+                                      // test or when the RJ library does not come from
+                                      // the git submodule
+                                      "not available"
 #endif
+            )
         )
         return -1;
 
