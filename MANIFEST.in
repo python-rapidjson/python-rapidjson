@@ -2,6 +2,7 @@ include .dir-locals.el
 include LICENSE MANIFEST.in *.cfg *.ini *.py *.rst *.txt
 include python-rapidjson/*.cpp python-rapidjson/*.h
 include benchmarks/*.py tests/*.py
+include typings/*.pyi
 
 exclude .github .gitmodules
 

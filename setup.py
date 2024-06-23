@@ -115,5 +115,9 @@ setup(
         'Programming Language :: Python',
     ],
     ext_modules=[Extension('rapidjson', **extension_options)],
+    package_dir={"rapidjson-stubs": "typings/rapidjson"},
+    packages=["rapidjson-stubs"],
+    package_data={"rapidjson-stubs": ["*.pyi"]},
+    include_package_data=True,
     **other_setup_options
 )
