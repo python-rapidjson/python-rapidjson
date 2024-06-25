@@ -100,7 +100,7 @@ _DatetimeMode = t.Literal[
     _DM_UNIX_TIME_TYPE,
 ]
 _UUIDMode = t.Literal[_UM_CANONICAL_TYPE, _UM_HEX_TYPE, _UM_NONE_TYPE]
-_ParseMode = t.Literal[_PM_COMMENTS_TYPE, _PM_NONE_TYPE, _PM_TRAILING_COMMAS_TYPE]
+_ParseMode = int
 _WriteMode = t.Literal[_WM_COMPACT_TYPE, _WM_PRETTY_TYPE, _WM_SINGLE_LINE_ARRAY_TYPE]
 _BytesMode = t.Literal[_BM_NONE_TYPE, _BM_UTF8_TYPE]
 _IterableMode = t.Literal[_IM_ANY_ITERABLE_TYPE, _IM_ONLY_LISTS_TYPE]
