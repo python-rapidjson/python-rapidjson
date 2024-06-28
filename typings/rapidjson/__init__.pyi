@@ -89,28 +89,14 @@ WM_SINGLE_LINE_ARRAY: _WM_SINGLE_LINE_ARRAY_TYPE = 2
 
 
 # Mode types
-_NumberMode = t.Literal[_NM_DECIMAL_TYPE, _NM_NAN_TYPE, _NM_NATIVE_TYPE, _NM_NONE_TYPE]
-_DatetimeMode = t.Literal[
-    _DM_IGNORE_TZ_TYPE,
-    _DM_ISO8601_TYPE,
-    _DM_NAIVE_IS_UTC_TYPE,
-    _DM_NONE_TYPE,
-    _DM_ONLY_SECONDS_TYPE,
-    _DM_SHIFT_TO_UTC_TYPE,
-    _DM_UNIX_TIME_TYPE,
-]
+_NumberMode = int
+_DatetimeMode = int
 _UUIDMode = t.Literal[_UM_CANONICAL_TYPE, _UM_HEX_TYPE, _UM_NONE_TYPE]
-_ParseMode = t.Literal[_PM_COMMENTS_TYPE, _PM_NONE_TYPE, _PM_TRAILING_COMMAS_TYPE]
+_ParseMode = int
 _WriteMode = t.Literal[_WM_COMPACT_TYPE, _WM_PRETTY_TYPE, _WM_SINGLE_LINE_ARRAY_TYPE]
 _BytesMode = t.Literal[_BM_NONE_TYPE, _BM_UTF8_TYPE]
 _IterableMode = t.Literal[_IM_ANY_ITERABLE_TYPE, _IM_ONLY_LISTS_TYPE]
-_MappingMode = t.Literal[
-    _MM_ANY_MAPPING_TYPE,
-    _MM_COERCE_KEYS_TO_STRINGS_TYPE,
-    _MM_ONLY_DICTS_TYPE,
-    _MM_SKIP_NON_STRING_KEYS_TYPE,
-    _MM_SORT_KEYS_TYPE,
-]
+_MappingMode = int
 
 
 # Functions
