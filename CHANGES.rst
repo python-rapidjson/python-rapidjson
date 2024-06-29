@@ -1,6 +1,14 @@
 Changes
 -------
 
+1.18 (unreleased)
+~~~~~~~~~~~~~~~~~
+
+* Expose PEP-484 typing stubs, thanks to Rodion Kosianenko and GoodWasHere (`PR #204`__)
+
+  __ https://github.com/python-rapidjson/python-rapidjson/pull/204
+
+
 1.17 (2024-05-18)
 ~~~~~~~~~~~~~~~~~
 
