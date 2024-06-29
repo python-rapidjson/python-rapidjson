@@ -1,7 +1,7 @@
 Changes
 -------
 
-1.18 (unreleased)
+1.18 (2024-06-29)
 ~~~~~~~~~~~~~~~~~
 
 * Expose PEP-484 typing stubs, thanks to Rodion Kosianenko and GoodWasHere (`PR #204`__)
