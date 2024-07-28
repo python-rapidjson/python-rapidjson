@@ -2443,10 +2443,7 @@ dumps_internal(
             Py_DECREF(intStrObj);
         }
     } else if (PyFloat_Check(object)) {
-        double d = PyFloat_AsDouble(object);
-        if (d == -1.0 && PyErr_Occurred())
-            return false;
-
+        double d = PyFloat_AS_DOUBLE(object);
         if (IS_NAN(d)) {
             if (numberMode & NM_NAN) {
                 writer->RawValue("NaN", 3, kNumberType);
