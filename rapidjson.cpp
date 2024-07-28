@@ -2466,7 +2466,7 @@ dumps_internal(
             // The RJ dtoa() produces "strange" results for particular values, see #101:
             // use Python's repr() to emit a raw value instead of writer->Double(d)
 
-            PyObject* dr = PyObject_Repr(object);
+            PyObject* dr = PyFloat_Type.tp_repr(object);
 
             if (dr == NULL)
                 return false;

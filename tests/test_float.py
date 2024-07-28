@@ -3,7 +3,7 @@
 # :Author:    John Anderson <sontek@gmail.com>
 # :License:   MIT License
 # :Copyright: © 2015 John Anderson
-# :Copyright: © 2016, 2017, 2020 Lele Gaifax
+# :Copyright: © 2016, 2017, 2020, 2024 Lele Gaifax
 #
 
 from decimal import Decimal
@@ -159,3 +159,15 @@ def test_nan_c():
     dumped = rj.Encoder(number_mode=rj.NM_DECIMAL|rj.NM_NAN)(d)
     loaded = rj.Decoder(number_mode=rj.NM_DECIMAL|rj.NM_NAN)(dumped)
     assert loaded.is_nan()
+
+
+def test_issue_213():
+    class CustomRepr(float):
+        def __repr__(self):
+            stdrepr = super().__repr__()
+            return f'CustomRepr({stdrepr})'
+
+    f = CustomRepr(123.45)
+    dumped = rj.dumps(f)
+    loaded = rj.loads(dumped)
+    assert loaded == 123.45
