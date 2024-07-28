@@ -1,7 +1,7 @@
 Changes
 -------
 
-1.19 (unreleased)
+1.19 (2024-07-28)
 ~~~~~~~~~~~~~~~~~
 
 * Properly dump subclasses of ``float`` with custom ``__repr__()`` method ( `issue #213`__)
