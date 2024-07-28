@@ -1,6 +1,14 @@
 Changes
 -------
 
+1.19 (unreleased)
+~~~~~~~~~~~~~~~~~
+
+* Properly dump subclasses of ``float`` with custom ``__repr__()`` method ( `issue #213`__)
+
+  __ https://github.com/python-rapidjson/python-rapidjson/issues/213
+
+
 1.18 (2024-06-29)
 ~~~~~~~~~~~~~~~~~
 
