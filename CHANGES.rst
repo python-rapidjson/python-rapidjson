@@ -1,6 +1,20 @@
 Changes
 -------
 
+1.20 (unreleased)
+~~~~~~~~~~~~~~~~~
+
+* Rectify type hints if ``loads()`` and ``Decoder.__call__()`` (`issue #214`__)
+
+  __ https://github.com/python-rapidjson/python-rapidjson/issues/214
+
+* Ensure ``Validator`` receives valid UTF-8 ``bytes``/``bytearray`` arguments
+
+* Generate wheels on PyPI using Python 3.13.0rc1 release, thanks to cibuildwheel `2.20.0`__
+
+  __ https://cibuildwheel.pypa.io/en/stable/changelog/#v2200
+
+
 1.19 (2024-07-28)
 ~~~~~~~~~~~~~~~~~
 
