@@ -148,7 +148,7 @@ def load(
     allow_nan: t.Optional[bool] = True,
 ) -> t.Any: ...
 def loads(
-    string: str,
+    string: t.Union[str, bytes, bytearray],
     *,
     object_hook: t.Optional[t.Callable[[t.Dict[str, t.Any]], t.Any]] = None,
     number_mode: t.Optional[_NumberMode] = NM_NAN,
@@ -179,7 +179,7 @@ class Decoder:
     ) -> None: ...
     def __call__(
         self,
-        json: t.Union[str, bytes, t.IO],
+        json: t.Union[str, bytes, bytearray, t.IO],
         chunk_size: t.Optional[int] = 65536,
     ) -> t.Any: ...
 

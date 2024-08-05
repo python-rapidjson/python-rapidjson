@@ -3,7 +3,7 @@
 # :Author:    John Anderson <sontek@gmail.com>
 # :License:   MIT License
 # :Copyright: © 2015 John Anderson
-# :Copyright: © 2016, 2017, 2018, 2019, 2020, 2021 Lele Gaifax
+# :Copyright: © 2016, 2017, 2018, 2019, 2020, 2021, 2024 Lele Gaifax
 #
 
 import random
@@ -180,6 +180,19 @@ def test_iterables(dumps):
 
 def test_decode_error(loads):
     pytest.raises(rj.JSONDecodeError, loads, '{')
+
+
+def test_decode_bytes_and_bytearray():
+    s = 'FòBàr'
+    j = f'"{s}"'
+    utf32 = j.encode('utf-32')
+    for loader in (rj.loads, rj.Decoder()):
+        pytest.raises(UnicodeDecodeError, loader, utf32)
+
+    utf8 = j.encode('utf-8')
+    for loader in (rj.loads, rj.Decoder()):
+        for data in (utf8, bytearray(utf8)):
+            assert loader(data) == s
 
 
 def test_shared_keys(loads):
