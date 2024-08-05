@@ -2156,8 +2156,9 @@ decoder_call(PyObject* self, PyObject* args, PyObject* kwargs)
         jsonStr = NULL;
         jsonStrLen = 0;
     } else {
-        PyErr_SetString(PyExc_TypeError,
-                        "Expected string or UTF-8 encoded bytes or bytearray");
+        PyErr_SetString(
+            PyExc_TypeError,
+            "Expected string or UTF-8 encoded bytes or bytearray or a file-like object");
         return NULL;
     }
 
