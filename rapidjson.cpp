@@ -3726,17 +3726,24 @@ static PyObject* validator_call(PyObject* self, PyObject* args, PyObject* kwargs
         return NULL;
 
     const char* jsonStr;
+    PyObject* asUnicode = NULL;
 
-    if (PyBytes_Check(jsonObject)) {
-        jsonStr = PyBytes_AsString(jsonObject);
-        if (jsonStr == NULL)
-            return NULL;
-    } else if (PyUnicode_Check(jsonObject)) {
+    if (PyUnicode_Check(jsonObject)) {
         jsonStr = PyUnicode_AsUTF8(jsonObject);
         if (jsonStr == NULL)
             return NULL;
+    } else if (PyBytes_Check(jsonObject) || PyByteArray_Check(jsonObject)) {
+        asUnicode = PyUnicode_FromEncodedObject(jsonObject, "utf-8", NULL);
+        if (asUnicode == NULL)
+            return NULL;
+        jsonStr = PyUnicode_AsUTF8(asUnicode);
+        if (jsonStr == NULL) {
+            Py_DECREF(asUnicode);
+            return NULL;
+        }
     } else {
-        PyErr_SetString(PyExc_TypeError, "Expected string or UTF-8 encoded bytes");
+        PyErr_SetString(PyExc_TypeError,
+                        "Expected string or UTF-8 encoded bytes or bytearray");
         return NULL;
     }
 
@@ -3748,6 +3755,8 @@ static PyObject* validator_call(PyObject* self, PyObject* args, PyObject* kwargs
     Py_END_ALLOW_THREADS
 
     if (error) {
+        if (asUnicode != NULL)
+            Py_DECREF(asUnicode);
         PyErr_SetString(decode_error, "Invalid JSON");
         return NULL;
     }
@@ -3758,6 +3767,9 @@ static PyObject* validator_call(PyObject* self, PyObject* args, PyObject* kwargs
     Py_BEGIN_ALLOW_THREADS
     accept = d.Accept(validator);
     Py_END_ALLOW_THREADS
+
+    if (asUnicode != NULL)
+        Py_DECREF(asUnicode);
 
     if (!accept) {
         StringBuffer sptr;
@@ -3772,7 +3784,9 @@ static PyObject* validator_call(PyObject* self, PyObject* args, PyObject* kwargs
                                         sptr.GetString(), dptr.GetString());
         PyErr_SetObject(validation_error, error);
 
-        Py_XDECREF(error);
+        if (error != NULL)
+            Py_DECREF(error);
+
         sptr.Clear();
         dptr.Clear();
 
@@ -3799,17 +3813,24 @@ static PyObject* validator_new(PyTypeObject* type, PyObject* args, PyObject* kwa
         return NULL;
 
     const char* jsonStr;
+    PyObject* asUnicode = NULL;
 
-    if (PyBytes_Check(jsonObject)) {
-        jsonStr = PyBytes_AsString(jsonObject);
-        if (jsonStr == NULL)
-            return NULL;
-    } else if (PyUnicode_Check(jsonObject)) {
+    if (PyUnicode_Check(jsonObject)) {
         jsonStr = PyUnicode_AsUTF8(jsonObject);
         if (jsonStr == NULL)
             return NULL;
+    } else if (PyBytes_Check(jsonObject) || PyByteArray_Check(jsonObject)) {
+        asUnicode = PyUnicode_FromEncodedObject(jsonObject, "utf-8", NULL);
+        if (asUnicode == NULL)
+            return NULL;
+        jsonStr = PyUnicode_AsUTF8(asUnicode);
+        if (jsonStr == NULL) {
+            Py_DECREF(asUnicode);
+            return NULL;
+        }
     } else {
-        PyErr_SetString(PyExc_TypeError, "Expected string or UTF-8 encoded bytes");
+        PyErr_SetString(PyExc_TypeError,
+                        "Expected string or UTF-8 encoded bytes or bytearray");
         return NULL;
     }
 
@@ -3819,6 +3840,9 @@ static PyObject* validator_new(PyTypeObject* type, PyObject* args, PyObject* kwa
     Py_BEGIN_ALLOW_THREADS
     error = d.Parse(jsonStr).HasParseError();
     Py_END_ALLOW_THREADS
+
+    if (asUnicode != NULL)
+        Py_DECREF(asUnicode);
 
     if (error) {
         PyErr_SetString(decode_error, "Invalid JSON");

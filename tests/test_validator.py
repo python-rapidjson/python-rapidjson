@@ -2,7 +2,7 @@
 # :Project:   python-rapidjson -- Validator class tests
 # :Author:    Lele Gaifax <lele@metapensiero.it>
 # :License:   MIT License
-# :Copyright: © 2017, 2019, 2020 Lele Gaifax
+# :Copyright: © 2017, 2019, 2020, 2024 Lele Gaifax
 #
 
 import pytest
@@ -26,8 +26,10 @@ def test_invalid_json():
     ('{ "type": ["number", "string"] }', '"Life, the universe, and everything"'),
 ))
 def test_valid(schema, json):
-    validate = rj.Validator(schema)
-    validate(json)
+    for s in (schema, schema.encode('utf-8'), bytearray(schema.encode('utf-8'))):
+        for j in (json, json.encode('utf-8'), bytearray(json.encode('utf-8'))):
+            validate = rj.Validator(s)
+            validate(j)
 
 
 @pytest.mark.parametrize('schema,json,details', (
