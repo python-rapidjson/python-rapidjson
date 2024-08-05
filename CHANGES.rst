@@ -1,7 +1,7 @@
 Changes
 -------
 
-1.20 (unreleased)
+1.20 (2024-08-05)
 ~~~~~~~~~~~~~~~~~
 
 * Rectify type hints if ``loads()`` and ``Decoder.__call__()`` (`issue #214`__)
