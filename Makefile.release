@@ -2,13 +2,13 @@
 # :Project:   python-rapidjson -- Release specific targets
 # :Author:    Lele Gaifax <lele@metapensiero.it>
 # :License:   MIT License
-# :Copyright: © 2017, 2019, 2020 Lele Gaifax
+# :Copyright: © 2017, 2019, 2020, 2024 Lele Gaifax
 #
 
 BUMPER = $(VENVDIR)/bin/bump_version -s simple2
 VERSION_TXT := version.txt
 VERSION = $(shell cat $(VERSION_TXT))
-PACKAGE_NAME = $(shell $(PYTHON) setup.py --name)
+PACKAGE_NAME = python_rapidjson
 TWINE := $(BINDIR)twine
 
 help::
