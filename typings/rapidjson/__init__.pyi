@@ -215,7 +215,7 @@ class Encoder:
     def __call__(
         self,
         obj: t.Any,
-        stream: t.Optional[t.IO],
+        stream: t.Optional[t.IO] = None,
         chunk_size: t.Optional[int] = 65536,
     ) -> t.Optional[str]: ...
 

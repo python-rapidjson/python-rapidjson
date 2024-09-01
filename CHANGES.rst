@@ -1,10 +1,19 @@
 Changes
 -------
 
+1.21 (unreleased)
+~~~~~~~~~~~~~~~~~
+
+* Typing stubs: specify default value for ``stream`` argument of ``Encoder.__call__()``
+  (`issue #215`__)
+
+  __ https://github.com/python-rapidjson/python-rapidjson/issues/214
+
+
 1.20 (2024-08-05)
 ~~~~~~~~~~~~~~~~~
 
-* Rectify type hints if ``loads()`` and ``Decoder.__call__()`` (`issue #214`__)
+* Rectify type hints of ``loads()`` and ``Decoder.__call__()`` (`issue #214`__)
 
   __ https://github.com/python-rapidjson/python-rapidjson/issues/214
 
