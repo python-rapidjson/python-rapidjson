@@ -124,6 +124,8 @@ jobs:
           CIBW_TEST_REQUIRES: "pytest pytest-benchmark pytz"
           CIBW_TEST_COMMAND: "pytest {project}/tests"
           CIBW_SKIP: "cp36* cp37* pp*"
+          # Skip tests on emulated hardware, take too long or not supported
+          CIBW_TEST_SKIP: "*-*linux_{aarch64,ppc64le} *-macosx_*:arm64"
           CIBW_PRERELEASE_PYTHONS: True
 
       - name: Upload artifacts
