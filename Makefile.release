@@ -5,9 +5,8 @@
 # :Copyright: © 2017, 2019, 2020, 2024 Lele Gaifax
 #
 
-BUMPER = $(VENVDIR)/bin/bump_version -s simple2
-VERSION_TXT := version.txt
-VERSION = $(shell cat $(VERSION_TXT))
+BUMPER = $(VENVDIR)/bin/bump-my-version bump
+VERSION = $(shell bump-my-version show current_version 2>/dev/null)
 PACKAGE_NAME = python_rapidjson
 TWINE := $(BINDIR)twine
 
@@ -30,7 +29,7 @@ help::
 
 .PHONY: release
 release: assert-master-branch assert-clean-tree
-	$(BUMPER) $(VERSION_TXT)
+	$(BUMPER) minor
 	@echo ">>>"
 	@echo ">>> Do your duties (update CHANGES.rst for example), then"
 	@echo ">>> execute “make tag-release”."

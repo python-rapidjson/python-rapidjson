@@ -43,8 +43,8 @@ else:
                            " as explained in the README.rst; in all other cases you may"
                            " want to report the issue.")
 
-with open('version.txt', encoding='utf-8') as f:
-    VERSION = f.read()
+# Automatically updated by bump-my-version at release time
+VERSION = '1.20'
 
 with open('README.rst', encoding='utf-8') as f:
     LONG_DESCRIPTION = f.read()

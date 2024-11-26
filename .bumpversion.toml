@@ -1,0 +1,32 @@
+# -*- coding: utf-8 -*-
+# :Project:   python-rapidjson — Configuration for bump-my-version
+# :Created:   lun 4 nov 2024, 08:25:29
+# :Author:    Lele Gaifax <lele@metapensiero.it>
+# :License:   MIT License
+# :Copyright: © 2024 Lele Gaifax
+#
+
+[tool.bumpversion]
+current_version = "1.20"
+parse = "(?P<major>\\d+)\\.(?P<minor>\\d+)"
+serialize = [
+    "{major}.{minor}",
+]
+search = "{current_version}"
+replace = "{new_version}"
+regex = false
+ignore_missing_version = false
+ignore_missing_files = false
+tag = false
+sign_tags = false
+tag_name = "v{new_version}"
+tag_message = "Bump version: {current_version} → {new_version}"
+allow_dirty = false
+commit = false
+message = "Bump version: {current_version} → {new_version}"
+commit_args = ""
+
+[[tool.bumpversion.files]]
+filename = "setup.py"
+search = "VERSION = '{current_version}'"
+replace = "VERSION = '{new_version}'"
