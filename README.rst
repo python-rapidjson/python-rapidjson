@@ -123,3 +123,13 @@ some aspects. See `this section`__ in the documentation for further details.
 __ https://python-rapidjson.readthedocs.io/en/latest/quickstart.html#incompatibilities
 
 .. _RapidJSON: http://rapidjson.org/
+
+Regular Expression
+------------------
+
+By default RapidJson uses a simple NFA regular expression engine for it's schema
+validation, see the section `RapidJson Regular Expression`__, it is possible
+to use ``std::regex`` instead of the original implementation by setting the
+environmental variable ``RAPIDJSON_SCHEMA_USE_STDREGEX``.
+
+__ http://rapidjson.org/md_doc_schema.html#Regex
