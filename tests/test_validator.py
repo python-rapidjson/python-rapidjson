@@ -81,5 +81,6 @@ def test_std_regex_used():
     if rj.RAPIDJSON_SCHEMA_USE_STDREGEX:
         with pytest.raises(ValueError) as error:
             validate('{"b": 1}')
+        assert error.value.args == ('patternProperties', '#', '#/b')
     else:
         validate('{"b": 1}')
