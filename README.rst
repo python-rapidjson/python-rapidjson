@@ -130,6 +130,6 @@ Regular Expression
 By default RapidJson uses a simple NFA regular expression engine for it's schema
 validation, see the section `RapidJson Regular Expression`__, it is possible
 to use ``std::regex`` instead of the original implementation by setting the
-environmental variable ``RAPIDJSON_SCHEMA_USE_STDREGEX``.
+environmental variable ``RAPIDJSON_SCHEMA_USE_STDREGEX=1``.
 
 __ http://rapidjson.org/md_doc_schema.html#Regex
