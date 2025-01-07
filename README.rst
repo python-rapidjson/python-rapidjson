@@ -32,7 +32,7 @@ capabilities.
 
 Latest version documentation is automatically rendered by `Read the Docs`__.
 
-__ http://json-schema.org/documentation.html
+__ http://json-schema.org/docs.html
 __ https://python-rapidjson.readthedocs.io/en/latest/
 
 
