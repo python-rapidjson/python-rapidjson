@@ -4,10 +4,10 @@
 # :License:   MIT License
 # :Copyright: © 2015 John Anderson
 # :Copyright: © 2015 Ken Robbins
-# :Copyright: © 2015, 2017, 2018, 2021, 2022, 2023, 2024 Lele Gaifax
+# :Copyright: © 2015, 2017, 2018, 2021, 2022, 2023, 2024, 2025 Lele Gaifax
 #
 
-mypy==1.13.0
-pytest==8.3.3
-pytz==2024.2
-sphinx==8.1.3
+mypy==1.16.1
+pytest==8.4.1
+pytz==2025.2
+sphinx==8.2.3
