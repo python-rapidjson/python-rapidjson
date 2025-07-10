@@ -90,7 +90,7 @@ if cxx and 'g++' in cxx:
 setup(
     name='python-rapidjson',
     version=VERSION,
-    description='Python wrapper around rapidjson',
+    description='Python bindings for the JSON/JSONC parser rapidjson', 
     long_description=LONG_DESCRIPTION + '\n\n' + CHANGES,
     long_description_content_type='text/x-rst',
     license='MIT License',

@@ -25,7 +25,7 @@ __ https://raw.githubusercontent.com/python-rapidjson/python-rapidjson/master/LI
    :target: https://readthedocs.org/projects/python-rapidjson/builds/
    :alt: Documentation status
 
-RapidJSON_ is an extremely fast C++ JSON parser and serialization library: this module
+RapidJSON_ is an extremely fast C++ JSON and JSONC parser and serialization library: this module
 wraps it into a Python 3 extension, exposing its serialization/deserialization (to/from
 either ``bytes``, ``str`` or *file-like* instances) and `JSON Schema`__ validation
 capabilities.
@@ -74,6 +74,22 @@ Basic usage looks like this:
     Chunk: b',"bar'
     Chunk: b'":"ba'
     Chunk: b'z"}'
+
+
+JSONC Support
+-----------
+RapidJSON_ supports decoding JSONC_ using parsing flags. 
+
+.. code-block:: python
+    
+    >>> import rapidjson
+    >>> rapidjson.Decoder(parse_mode=rapidjson.PM_COMMENTS | rapidjson.PM_TRAILING_COMMAS)('''\
+    {
+        "bar": /* Block comment */ "baz",
+        "foo":100, // Trailing comma and comment
+    }
+    ''')
+    {'bar': 'baz', 'foo': 100}
 
 
 Development
