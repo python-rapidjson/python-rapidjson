@@ -4,10 +4,20 @@ Changes
 1.21 (unreleased)
 ~~~~~~~~~~~~~~~~~
 
+* Use `current master`__ version of rapidjson, thanks to Kyle Gottfried (although I didn't
+  merge his `PR #224`__)
+
+  __ https://github.com/Tencent/rapidjson/compare/ab1842a2dae061284c0a62dca1cc6d5e7e37e346..24b5e7a8b27f42fa16b96fc70aade9106cf7102f
+  __ https://github.com/python-rapidjson/python-rapidjson/pull/224
+
+* Recompute comparison table with latest versions of other libraries, using Python 3.13
+
 * Typing stubs: specify default value for ``stream`` argument of ``Encoder.__call__()``
   (`issue #215`__)
 
-  __ https://github.com/python-rapidjson/python-rapidjson/issues/214
+  __ https://github.com/python-rapidjson/python-rapidjson/issues/215
+
+* Use more recent OS images on GH Actions to test and build wheels
 
 
 1.20 (2024-08-05)
