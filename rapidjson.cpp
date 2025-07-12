@@ -4046,6 +4046,7 @@ module_exec(PyObject* m)
                                    MM_COERCE_KEYS_TO_STRINGS)
         || PyModule_AddIntConstant(m, "MM_SKIP_NON_STRING_KEYS", MM_SKIP_NON_STRING_KEYS)
         || PyModule_AddIntConstant(m, "MM_SORT_KEYS", MM_SORT_KEYS)
+        || PyModule_AddIntConstant(m, "RAPIDJSON_SCHEMA_USE_STDREGEX", RAPIDJSON_SCHEMA_USE_STDREGEX)
 
         || PyModule_AddStringConstant(m, "__version__",
                                       STRINGIFY(PYTHON_RAPIDJSON_VERSION))
