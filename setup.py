@@ -94,7 +94,7 @@ setup(
     long_description=LONG_DESCRIPTION + '\n\n' + CHANGES,
     long_description_content_type='text/x-rst',
     license='MIT License',
-    keywords='json rapidjson',
+    keywords='json jsonc rapidjson',
     author='Ken Robbins',
     author_email='ken@kenrobbins.com',
     maintainer='Lele Gaifax',

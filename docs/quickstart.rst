@@ -2,7 +2,7 @@
 .. :Project:   python-rapidjson -- Quickstart examples
 .. :Author:    Lele Gaifax <lele@metapensiero.it>
 .. :License:   MIT License
-.. :Copyright: © 2016, 2017, 2018, 2020, 2021 Lele Gaifax
+.. :Copyright: © 2016, 2017, 2018, 2020, 2021, 2025 Lele Gaifax
 ..
 
 =============
@@ -157,6 +157,25 @@ The module exposes also a *stream* interface:
     0
     >>> load(stream) == data
     True
+
+Almost all these functionalities are also available as *classes*. For example, the
+following uses a *relaxed syntax* :class:`~rapidjson.Decoder` instance, that handles
+JSONC__ and *trailing commas*:
+
+__ https://jsonc.org/
+
+.. code-block:: python
+
+    >>> from rapidjson import Decoder
+    >>> from rapidjson import PM_COMMENTS, PM_TRAILING_COMMAS
+    >>> decoder = Decoder(parse_mode=PM_COMMENTS | PM_TRAILING_COMMAS)
+    >>> decoder('''
+    ... {
+    ...     "bar": /* Block comment */ "baz",
+    ...     "foo":100, // Trailing comma and comment
+    ... }
+    ... ''')
+    {'bar': 'baz', 'foo': 100}
 
 
 Incompatibilities

@@ -3,7 +3,7 @@
 .. :Author:    Ken Robbins <ken@kenrobbins.com>
 .. :License:   MIT License
 .. :Copyright: © 2015 Ken Robbins
-.. :Copyright: © 2016, 2017, 2018, 2020, 2022, 2024 Lele Gaifax
+.. :Copyright: © 2016, 2017, 2018, 2020, 2022, 2024, 2025 Lele Gaifax
 ..
 
 ==================
@@ -74,6 +74,26 @@ Basic usage looks like this:
     Chunk: b',"bar'
     Chunk: b'":"ba'
     Chunk: b'z"}'
+
+Most functionalities are exposed both as *functions* and as *classes*.
+
+The following uses a *relaxed syntax* ``Decoder`` instance, that handles JSONC__ and
+*trailing commas*:
+
+__ https://jsonc.org/
+
+.. code-block:: python
+
+    >>> from rapidjson import Decoder
+    >>> from rapidjson import PM_COMMENTS, PM_TRAILING_COMMAS
+    >>> decoder = Decoder(parse_mode=PM_COMMENTS | PM_TRAILING_COMMAS)
+    >>> decoder('''
+    ... {
+    ...     "bar": /* Block comment */ "baz",
+    ...     "foo":100, // Trailing comma and comment
+    ... }
+    ... ''')
+    {'bar': 'baz', 'foo': 100}
 
 
 Development
