@@ -2,7 +2,7 @@
 # :Project:   python-rapidjson -- Refs leaks tests
 # :Author:    Lele Gaifax <lele@metapensiero.it>
 # :License:   MIT License
-# :Copyright: © 2017, 2018, 2020, 2022 Lele Gaifax
+# :Copyright: © 2017, 2018, 2020, 2022, 2025 Lele Gaifax
 #
 
 # NB: this is a simplistic test that uses sys.gettotalrefcount(), available
@@ -211,10 +211,11 @@ def test_endarray_leak():
             return list(seq)
 
     j1 = rj.loads(value)
-    assert sys.getrefcount(j1['v']) == 3
+    # Uhm, with Py 3.14 the refcount is 2...
+    assert 2 <= sys.getrefcount(j1['v']) <= 3
 
     j2 = Decoder1()(value)
-    assert sys.getrefcount(j2['v']) == 3
+    assert 2 <= sys.getrefcount(j2['v']) <= 3
 
     j3 = Decoder2()(value)
-    assert sys.getrefcount(j3['v']) == 3
+    assert 2 <= sys.getrefcount(j3['v']) <= 3
