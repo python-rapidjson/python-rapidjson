@@ -65,3 +65,22 @@ def test_invalid(schema, json, details):
 def test_additional_and_pattern_properties_valid(schema, json):
     validate = rj.Validator(schema)
     validate(json)
+
+
+def test_std_regex_used():
+    schema = rj.dumps({
+        "type": "object",
+        "patternProperties": {
+            "^(?!a).+": {
+                "type": "string"
+            }
+        }
+    })
+    validate = rj.Validator(schema)
+    validate('{"b": "A string"}')
+    if rj.RAPIDJSON_SCHEMA_USE_STDREGEX:
+        with pytest.raises(ValueError) as error:
+            validate('{"b": 1}')
+        assert error.value.args == ('patternProperties', '#', '#/b')
+    else:
+        validate('{"b": 1}')
