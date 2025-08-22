@@ -9,10 +9,15 @@
 import io
 import datetime
 import gc
+import sys
 
 import pytest
 import rapidjson as rj
 
+pytestmark = pytest.mark.skipif(
+    not sys._is_gil_enabled(),
+    reason="Crashes under free-threaded variant, perhaps tracemalloc does not work there?"
+)
 tracemalloc = pytest.importorskip("tracemalloc")
 
 
