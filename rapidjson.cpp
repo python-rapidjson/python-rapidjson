@@ -3,7 +3,7 @@
 // :Author:    Ken Robbins <ken@kenrobbins.com>
 // :License:   MIT License
 // :Copyright: © 2015 Ken Robbins
-// :Copyright: © 2015, 2016, 2017, 2018, 2019, 2020, 2021, 2022, 2023, 2024 Lele Gaifax
+// :Copyright: © 2015, 2016, 2017, 2018, 2019, 2020, 2021, 2022, 2023, 2024, 2025 Lele Gaifax
 //
 
 #include <locale.h>
@@ -4117,6 +4117,9 @@ module_exec(PyObject* m)
 
 static struct PyModuleDef_Slot slots[] = {
     {Py_mod_exec, (void*) module_exec},
+#ifdef Py_GIL_DISABLED
+    {Py_mod_gil, Py_MOD_GIL_NOT_USED},
+#endif
     {0, NULL}
 };
 
