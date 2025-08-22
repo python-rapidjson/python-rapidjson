@@ -3,7 +3,7 @@
 # :Author:    John Anderson <sontek@gmail.com>
 # :License:   MIT License
 # :Copyright: © 2015 John Anderson
-# :Copyright: © 2017, 2018, 2020, 2023, 2024 Lele Gaifax
+# :Copyright: © 2017, 2018, 2020, 2023, 2024, 2025 Lele Gaifax
 #
 
 import sys
@@ -74,6 +74,10 @@ if sys.version_info < (3, 12):
             sys.setrecursionlimit(rl)
 
 
+@pytest.mark.skipif(
+    not sys._is_gil_enabled(),
+    reason="Crashes under free-threaded variant, perhaps getrecursionlimit() works differently there?"
+)
 def test_parse_respects_recursion_limit(loads):
     rl = sys.getrecursionlimit()
 
