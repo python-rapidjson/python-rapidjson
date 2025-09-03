@@ -14,6 +14,7 @@
 
 #include <algorithm>
 #include <cmath>
+#include <memory>
 #include <string>
 #include <vector>
 
@@ -26,6 +27,53 @@
 
 
 using namespace rapidjson;
+
+
+#if PY_VERSION_HEX < 0x030A0000
+// Fallback for Py_TPFLAGS_IMMUTABLETYPE which is added in 3.10
+#define Py_TPFLAGS_IMMUTABLETYPE 0
+#endif
+
+
+static uint32_t
+py_version_hex() noexcept {
+#if PY_VERSION_HEX < 0x030B0000
+    static const uint32_t once_fetched_ver = [] {
+        constexpr uint32_t ver_fallback = 0x03000000;
+
+        auto* ver_tuple = PySys_GetObject("version_info");
+        if (!ver_tuple)
+            return ver_fallback;
+
+        long major, minor, micro, serial;
+        const char* releaselevel;
+        if (!PyArg_ParseTuple(ver_tuple, "lllsl", &major, &minor, &micro, &releaselevel, &serial))
+            return ver_fallback;
+
+        return uint32_t(((major & 0xFF) << 24) | ((minor & 0xFF) << 16) | ((micro & 0xFF) << 8));
+    }();
+    return once_fetched_ver;
+#else
+    return Py_Version;
+#endif
+}
+
+
+struct PyDerefer {
+    void operator() (PyObject* obj) const noexcept {Py_DecRef(obj);}
+};
+using PyStrongRef = std::unique_ptr<PyObject, PyDerefer>;
+
+
+static PyStrongRef
+inline from_module_and_spec(PyObject& module, PyType_Spec& spec) noexcept {
+#if PY_VERSION_HEX >= 0x03090000
+    PyStrongRef type{PyType_FromModuleAndSpec(&module, &spec, NULL)};
+#else
+    PyStrongRef type{PyType_FromSpec(&spec)};
+#endif
+    return type;
+}
 
 
 /* On some MacOS combo, using Py_IS_XXX() macros does not work (see
@@ -208,6 +256,7 @@ static PyObject* do_decode(PyObject* decoder,
                            unsigned uuidMode, unsigned parseMode);
 static PyObject* decoder_call(PyObject* self, PyObject* args, PyObject* kwargs);
 static PyObject* decoder_new(PyTypeObject* type, PyObject* args, PyObject* kwargs);
+static int decoder_traverse(PyObject *op, visitproc visit, void *arg);
 
 
 static PyObject* do_encode(PyObject* value, PyObject* defaultFn, bool ensureAscii,
@@ -1890,46 +1939,22 @@ static PyMemberDef decoder_members[] = {
 };
 
 
-static PyTypeObject Decoder_Type = {
-    PyVarObject_HEAD_INIT(NULL, 0)
-    "rapidjson.Decoder",                      /* tp_name */
-    sizeof(DecoderObject),                    /* tp_basicsize */
-    0,                                        /* tp_itemsize */
-    0,                                        /* tp_dealloc */
-    0,                                        /* tp_print */
-    0,                                        /* tp_getattr */
-    0,                                        /* tp_setattr */
-    0,                                        /* tp_compare */
-    0,                                        /* tp_repr */
-    0,                                        /* tp_as_number */
-    0,                                        /* tp_as_sequence */
-    0,                                        /* tp_as_mapping */
-    0,                                        /* tp_hash */
-    (ternaryfunc) decoder_call,               /* tp_call */
-    0,                                        /* tp_str */
-    0,                                        /* tp_getattro */
-    0,                                        /* tp_setattro */
-    0,                                        /* tp_as_buffer */
-    Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE, /* tp_flags */
-    decoder_doc,                              /* tp_doc */
-    0,                                        /* tp_traverse */
-    0,                                        /* tp_clear */
-    0,                                        /* tp_richcompare */
-    0,                                        /* tp_weaklistoffset */
-    0,                                        /* tp_iter */
-    0,                                        /* tp_iternext */
-    0,                                        /* tp_methods */
-    decoder_members,                          /* tp_members */
-    0,                                        /* tp_getset */
-    0,                                        /* tp_base */
-    0,                                        /* tp_dict */
-    0,                                        /* tp_descr_get */
-    0,                                        /* tp_descr_set */
-    0,                                        /* tp_dictoffset */
-    0,                                        /* tp_init */
-    0,                                        /* tp_alloc */
-    decoder_new,                              /* tp_new */
-    PyObject_Del,                             /* tp_free */
+static PyType_Slot Decoder_Type_Slot[] = {
+    {Py_tp_doc, const_cast<char*>(decoder_doc)},
+    {Py_tp_call, reinterpret_cast<void*>(decoder_call)},
+    {Py_tp_members, decoder_members},
+    {Py_tp_new, reinterpret_cast<void*>(decoder_new)},
+    {Py_tp_traverse, reinterpret_cast<void*>(decoder_traverse)},
+    {0, NULL}
+};
+
+
+static PyType_Spec Decoder_Type_Spec = {
+    "rapidjson.Decoder",                                                                      /* name */
+    sizeof(DecoderObject),                                                                    /* basicsize */
+    0,                                                                                        /* itemsize */
+    Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE | Py_TPFLAGS_HAVE_GC | Py_TPFLAGS_IMMUTABLETYPE, /* flags */
+    Decoder_Type_Slot                                                                         /* slots */
 };
 
 
@@ -2289,6 +2314,16 @@ decoder_new(PyTypeObject* type, PyObject* args, PyObject* kwargs)
 
     return (PyObject*) d;
 }
+
+
+static int
+decoder_traverse(PyObject *op, visitproc visit, void *arg)
+{
+    if (py_version_hex() >= 0x03090000)
+        Py_VISIT(Py_TYPE(op));
+    return 0;
+}
+
 
 
 /////////////
@@ -3884,7 +3919,8 @@ module_exec(PyObject* m)
     PyObject* decimalModule;
     PyObject* uuidModule;
 
-    if (PyType_Ready(&Decoder_Type) < 0)
+    auto decoder_type = from_module_and_spec(*m, Decoder_Type_Spec);
+    if (!decoder_type)
         return -1;
 
     if (PyType_Ready(&Encoder_Type) < 0)
@@ -4067,11 +4103,8 @@ module_exec(PyObject* m)
         )
         return -1;
 
-    Py_INCREF(&Decoder_Type);
-    if (PyModule_AddObject(m, "Decoder", (PyObject*) &Decoder_Type) < 0) {
-        Py_DECREF(&Decoder_Type);
+    if (PyModule_AddObject(m, "Decoder", decoder_type.get()) < 0)
         return -1;
-    }
 
     Py_INCREF(&Encoder_Type);
     if (PyModule_AddObject(m, "Encoder", (PyObject*) &Encoder_Type) < 0) {
