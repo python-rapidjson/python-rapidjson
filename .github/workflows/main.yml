@@ -89,7 +89,8 @@ jobs:
       matrix:
         os:
           - ubuntu-24.04
-          - macos-13
+          - macos-14
+          - macos-15-intel
           - windows-2025
         arch:
           - auto
@@ -98,9 +99,7 @@ jobs:
             arch: aarch64
           - os: ubuntu-24.04
             arch: ppc64le
-          - os: macos-14
-            arch: arm64
-          
+
     steps:
       - name: Checkout sources
         uses: actions/checkout@v4
