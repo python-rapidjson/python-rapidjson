@@ -27,7 +27,7 @@ jobs:
 
     strategy:
       matrix:
-        python-version: [3.11]
+        python-version: ['3.13']
 
     steps:
       - uses: actions/checkout@v4
@@ -62,7 +62,7 @@ jobs:
 
     strategy:
       matrix:
-        python-version: [3.11]
+        python-version: ['3.13']
 
     steps:
       - uses: actions/checkout@v4
@@ -110,7 +110,7 @@ jobs:
       - name: Install Python
         uses: actions/setup-python@v5
         with:
-          python-version: '3.11'
+          python-version: '3.13'
 
       - uses: docker/setup-qemu-action@v3
         if:  ${{ matrix.arch == 'aarch64' || matrix.arch == 'ppc64le' }}
