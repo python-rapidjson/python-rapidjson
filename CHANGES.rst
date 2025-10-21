@@ -1,6 +1,14 @@
 Changes
 -------
 
+1.22 (2025-10-21)
+~~~~~~~~~~~~~~~~~
+
+* Generate wheels on PyPI using Python 3.14 final release, thanks to cibuildwheel `3.2.1`__
+
+  __ https://cibuildwheel.pypa.io/en/stable/changelog/#v321
+
+
 1.21 (2025-07-10)
 ~~~~~~~~~~~~~~~~~
 
