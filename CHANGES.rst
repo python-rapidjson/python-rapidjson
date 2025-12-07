@@ -1,6 +1,15 @@
 Changes
 -------
 
+1.23 (unreleased)
+~~~~~~~~~~~~~~~~~
+
+* Fix serialization bug when using ``MM_COERCE_KEYS_TO_STRINGS`` together with
+  ``sort_keys=True`` (`issue #229`__)
+
+  __ https://github.com/python-rapidjson/python-rapidjson/issues/229
+
+
 1.22 (2025-10-21)
 ~~~~~~~~~~~~~~~~~
 
