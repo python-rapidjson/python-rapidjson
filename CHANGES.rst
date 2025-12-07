@@ -1,7 +1,7 @@
 Changes
 -------
 
-1.23 (unreleased)
+1.23 (2025-12-07)
 ~~~~~~~~~~~~~~~~~
 
 * Fix serialization bug when using ``MM_COERCE_KEYS_TO_STRINGS`` together with
