@@ -1,6 +1,18 @@
 Changes
 -------
 
+1.24 (unreleased)
+~~~~~~~~~~~~~~~~~
+
+* Fix error handling after ``PyList_SetItem()`` calls (`issue 231`__)
+
+  __ https://github.com/python-rapidjson/python-rapidjson/issues/231
+
+* Fix error handling after ``PyList_Append()`` calls (`issue 232`__)
+
+  __ https://github.com/python-rapidjson/python-rapidjson/issues/232
+
+
 1.23 (2025-12-07)
 ~~~~~~~~~~~~~~~~~
 
