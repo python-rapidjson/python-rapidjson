@@ -909,8 +909,11 @@ struct PyHandler {
                     return false;
                 }
             } else {
-                PyList_Append(current.object, value);
+                int rc = PyList_Append(current.object, value);
                 Py_DECREF(value);
+                if (rc == -1) {
+                    return false;
+                }
             }
         } else {
             root = value;
