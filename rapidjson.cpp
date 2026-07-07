@@ -3,7 +3,7 @@
 // :Author:    Ken Robbins <ken@kenrobbins.com>
 // :License:   MIT License
 // :Copyright: © 2015 Ken Robbins
-// :Copyright: © 2015, 2016, 2017, 2018, 2019, 2020, 2021, 2022, 2023, 2024, 2025 Lele Gaifax
+// :Copyright: © 2015-2026 Lele Gaifax
 //
 
 #include <locale.h>
@@ -1054,11 +1054,11 @@ struct PyHandler {
 
                     rc = PyList_SetItem(current.object, listLen - 1, pair);
 
-                    // NB: PyList_SetItem() steals a reference on the replacement, so it
-                    // must not be DECREFed when the operation succeeds
+                    // NB: PyList_SetItem() always steals a reference on the replacement,
+                    // even in case of error:
+                    // https://docs.python.org/3/c-api/list.html#c.PyList_SetItem
 
                     if (rc == -1) {
-                        Py_DECREF(pair);
                         return false;
                     }
                 } else {
@@ -1079,11 +1079,11 @@ struct PyHandler {
                 Py_ssize_t listLen = PyList_GET_SIZE(current.object);
                 int rc = PyList_SetItem(current.object, listLen - 1, replacement);
 
-                // NB: PyList_SetItem() steals a reference on the replacement, so it must
-                // not be DECREFed when the operation succeeds
+                // NB: PyList_SetItem() always steals a reference on the replacement,
+                // even in case of error:
+                // https://docs.python.org/3/c-api/list.html#c.PyList_SetItem
 
                 if (rc == -1) {
-                    Py_DECREF(replacement);
                     return false;
                 }
             }
@@ -1174,11 +1174,11 @@ struct PyHandler {
                 Py_ssize_t listLen = PyList_GET_SIZE(current.object);
                 int rc = PyList_SetItem(current.object, listLen - 1, replacement);
 
-                // NB: PyList_SetItem() steals a reference on the replacement, so it must
-                // not be DECREFed when the operation succeeds
-
+                // NB: PyList_SetItem() always steals a reference on the replacement,
+                // even in case of error:
+                // https://docs.python.org/3/c-api/list.html#c.PyList_SetItem
+                //
                 if (rc == -1) {
-                    Py_DECREF(replacement);
                     return false;
                 }
             }
