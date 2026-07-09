@@ -32,7 +32,7 @@ capabilities.
 
 Latest version documentation is automatically rendered by `Read the Docs`__.
 
-__ http://json-schema.org/documentation.html
+__ http://json-schema.org/docs.html
 __ https://python-rapidjson.readthedocs.io/en/latest/
 
 
@@ -143,3 +143,27 @@ some aspects. See `this section`__ in the documentation for further details.
 __ https://python-rapidjson.readthedocs.io/en/latest/quickstart.html#incompatibilities
 
 .. _RapidJSON: http://rapidjson.org/
+
+Regex Engine
+------------
+
+By default RapidJson uses a simple NFA regular expression engine for it's schema
+validation, see the section `RapidJson Regular Expression`__, it is possible
+to use ``std::regex`` instead of the original implementation by setting the
+environmental variable ``RAPIDJSON_SCHEMA_USE_STDREGEX=1``.
+
+.. code-block:: bash
+
+    $ export RAPIDJSON_SCHEMA_USE_STDREGEX=1
+    $ pip install python-rapidjson
+
+After installation, you can verify that std::regex is being used by checking the
+constant in the module:
+
+.. code-block:: python
+
+    >>> import rapidjson
+    >>> rapidjson.RAPIDJSON_SCHEMA_USE_STDREGEX
+    1
+
+__ http://rapidjson.org/md_doc_schema.html#Regex

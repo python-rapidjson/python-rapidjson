@@ -8,6 +8,7 @@
 
 import os.path
 import sys
+from os import environ
 
 try:
     from setuptools import setup, Extension
@@ -52,12 +53,24 @@ with open('README.rst', encoding='utf-8') as f:
 with open('CHANGES.rst', encoding='utf-8') as f:
     CHANGES = f.read()
 
+if environ.get('RAPIDJSON_SCHEMA_USE_STDREGEX', None):
+    RAPIDJSON_SCHEMA_USE_STDREGEX = 1
+    RAPIDJSON_SCHEMA_USE_INTERNALREGEX = 0
+else:
+    RAPIDJSON_SCHEMA_USE_STDREGEX = 0
+    RAPIDJSON_SCHEMA_USE_INTERNALREGEX = 1
+
 extension_options = {
     'sources': ['./rapidjson.cpp'],
     'include_dirs': [rj_include_dir],
-    'define_macros': [('PYTHON_RAPIDJSON_VERSION', VERSION)],
+    'define_macros': [
+        ('PYTHON_RAPIDJSON_VERSION', VERSION),
+        ('RAPIDJSON_SCHEMA_USE_INTERNALREGEX', RAPIDJSON_SCHEMA_USE_INTERNALREGEX),
+        ('RAPIDJSON_SCHEMA_USE_STDREGEX', RAPIDJSON_SCHEMA_USE_STDREGEX),
+    ],
     'depends': ['./rapidjson_exact_version.txt'],
 }
+
 
 if os.path.exists('rapidjson_exact_version.txt'):
     with open('rapidjson_exact_version.txt', encoding='utf-8') as f:
