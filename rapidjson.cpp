@@ -2318,15 +2318,34 @@ struct DictItem {
 };
 
 
+// Owns a temporary PyObject, so the early returns below cannot leak it.
+struct PyObjectGuard {
+    PyObject* obj;
+    explicit PyObjectGuard(PyObject* o) : obj(o) {}
+    ~PyObjectGuard() { Py_XDECREF(obj); }
+    PyObjectGuard(const PyObjectGuard&) = delete;
+    PyObjectGuard& operator=(const PyObjectGuard&) = delete;
+};
+
+
 static inline bool
 all_keys_are_string(PyObject* dict) {
     Py_ssize_t pos = 0;
     PyObject* key;
+    bool result = true;
 
+    // PyDict_Next() does not lock the dict, so on a free-threaded build a concurrent
+    // mutation invalidates `pos`. The loop calls no Python code, so a critical section
+    // is enough; note the single exit, as returning from inside one would leak it.
+    Py_BEGIN_CRITICAL_SECTION(dict);
     while (PyDict_Next(dict, &pos, &key, NULL))
-        if (!PyUnicode_Check(key))
-            return false;
-    return true;
+        if (!PyUnicode_Check(key)) {
+            result = false;
+            break;
+        }
+    Py_END_CRITICAL_SECTION();
+
+    return result;
 }
 
 
@@ -2510,13 +2529,19 @@ dumps_internal(
                (!(iterableMode & IM_ONLY_LISTS) && PyList_Check(object))) {
         writer->StartArray();
 
-        Py_ssize_t size = PyList_GET_SIZE(object);
-
-        for (Py_ssize_t i = 0; i < size; i++) {
+        // Re-read the length each iteration and take a strong reference: with the
+        // unchecked macro over a size captured once, a concurrent shrink of the list
+        // being dumped reads past the end.
+        for (Py_ssize_t i = 0; i < PyList_GET_SIZE(object); i++) {
             if (Py_EnterRecursiveCall(" while JSONifying list object"))
                 return false;
-            PyObject* item = PyList_GET_ITEM(object, i);
+            PyObject* item = PyList_GetItemRef(object, i);
+            if (item == NULL) {
+                Py_LeaveRecursiveCall();
+                break;
+            }
             bool r = RECURSE(item);
+            Py_DECREF(item);
             Py_LeaveRecursiveCall();
             if (!r)
                 return false;
@@ -2550,13 +2575,24 @@ dumps_internal(
                 all_keys_are_string(object))) {
         writer->StartObject();
 
-        Py_ssize_t pos = 0;
         PyObject* key;
         PyObject* item;
         PyObject* coercedKey = NULL;
 
+        // PyDict_Next() does not lock the dict, and the loops below call back into
+        // Python (RECURSE, PyObject_Str), during which a critical section would be
+        // suspended. Walk a snapshot of the items instead, so a concurrent mutation
+        // cannot invalidate the iteration state.
+        PyObjectGuard snapshot(PyDict_Items(object));
+        if (snapshot.obj == NULL)
+            return false;
+        const Py_ssize_t snapshot_len = PyList_GET_SIZE(snapshot.obj);
+
         if (!(mappingMode & MM_SORT_KEYS)) {
-            while (PyDict_Next(object, &pos, &key, &item)) {
+            for (Py_ssize_t i = 0; i < snapshot_len; i++) {
+                PyObject* pair = PyList_GET_ITEM(snapshot.obj, i);
+                key = PyTuple_GET_ITEM(pair, 0);
+                item = PyTuple_GET_ITEM(pair, 1);
                 if (mappingMode & MM_COERCE_KEYS_TO_STRINGS) {
                     if (!PyUnicode_Check(key)) {
                         coercedKey = PyObject_Str(key);
@@ -2596,7 +2632,10 @@ dumps_internal(
         } else {
             std::vector<DictItem> items;
 
-            while (PyDict_Next(object, &pos, &key, &item)) {
+            for (Py_ssize_t i = 0; i < snapshot_len; i++) {
+                PyObject* pair = PyList_GET_ITEM(snapshot.obj, i);
+                key = PyTuple_GET_ITEM(pair, 0);
+                item = PyTuple_GET_ITEM(pair, 1);
                 if (mappingMode & MM_COERCE_KEYS_TO_STRINGS) {
                     if (!PyUnicode_Check(key)) {
                         coercedKey = PyObject_Str(key);
