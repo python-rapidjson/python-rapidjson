@@ -2530,13 +2530,23 @@ dumps_internal(
         writer->StartArray();
 
         // Re-read the length each iteration and take a strong reference: with the
-        // unchecked macro over a size captured once, a concurrent shrink of the list
-        // being dumped reads past the end.
+        // unchecked macro over a size captured once, a shrink of the list being dumped
+        // reads past the end. That shrink can come from another thread, or -- on any
+        // build, GIL included -- from a `default=` callable re-entering during RECURSE().
         for (Py_ssize_t i = 0; i < PyList_GET_SIZE(object); i++) {
             if (Py_EnterRecursiveCall(" while JSONifying list object"))
                 return false;
             PyObject* item = PyList_GetItemRef(object, i);
             if (item == NULL) {
+                // The list shrank between the length check above and this fetch, so
+                // PyList_GetItemRef() set IndexError. Clear it before stopping: leaving it
+                // set makes dumps() return a string with a live exception, which surfaces
+                // to the caller as a spurious "IndexError: list index out of range"
+                // (12 runs of 12 under a concurrent shrink). Stopping quietly gives the
+                // same shape of answer as the dict snapshot below -- the items that were
+                // there -- rather than an error about a mutation dumps()' caller did not
+                // make.
+                PyErr_Clear();
                 Py_LeaveRecursiveCall();
                 break;
             }
