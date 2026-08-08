@@ -15,7 +15,8 @@ import pytest
 import rapidjson as rj
 
 pytestmark = pytest.mark.skipif(
-    not sys._is_gil_enabled(),
+    # sys._is_gil_enabled() exists only on 3.13+; everywhere else the GIL is on.
+    not getattr(sys, "_is_gil_enabled", lambda: True)(),
     reason="Crashes under free-threaded variant, perhaps tracemalloc does not work there?"
 )
 tracemalloc = pytest.importorskip("tracemalloc")
