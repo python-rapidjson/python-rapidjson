@@ -16,11 +16,45 @@ name: Build, test and upload to PyPI
 
 on:
   push:
-    branches: [ master ]
+    branches: [ master, free-threaded ]
   pull_request:
-    branches: [ master ]
+    branches: [ master, free-threaded ]
 
 jobs:
+  free-threaded-tests:
+    name: Tests on the free-threaded interpreter
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        python-version: ['3.14t']
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      # Without this the job can pass while proving nothing: if the runner ever
+      # falls back to a GIL-enabled interpreter, every test below still passes and
+      # the green tick means "the GIL build works", which is already covered above.
+      - name: Confirm the interpreter really is free-threaded
+        run: |
+          python -c "import sys; assert hasattr(sys, '_is_gil_enabled'), sys.version; assert not sys._is_gil_enabled(), 'GIL is enabled: ' + sys.version; print(sys.version)"
+
+      - name: Install dependencies
+        run: |
+          pip install -r requirements-test.txt
+          pip install .
+
+      - name: Tests
+        run: |
+          pytest tests
+
   tests:
     name: All tests, on current Python
     runs-on: ubuntu-latest
