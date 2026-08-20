@@ -2330,6 +2330,20 @@ struct PyObjectGuard {
 #endif
 
 
+static inline PyObject*
+list_get_item_ref(PyObject* list, Py_ssize_t index) {
+#if PY_VERSION_HEX >= 0x030d0000
+    return PyList_GetItemRef(list, index);
+#else
+    // PyList_GetItemRef() was added in 3.13. Under the GIL, the checked borrowed
+    // read and incref are one atomic interpreter operation.
+    PyObject* item = PyList_GetItem(list, index);
+    Py_XINCREF(item);
+    return item;
+#endif
+}
+
+
 static inline bool
 all_keys_are_string(PyObject* dict) {
     Py_ssize_t pos = 0;
@@ -2339,13 +2353,17 @@ all_keys_are_string(PyObject* dict) {
     // PyDict_Next() does not lock the dict, so on a free-threaded build a concurrent
     // mutation invalidates `pos`. The loop calls no Python code, so a critical section
     // is enough; note the single exit, as returning from inside one would leak it.
+#ifdef Py_GIL_DISABLED
     Py_BEGIN_CRITICAL_SECTION(dict);
+#endif
     while (PyDict_Next(dict, &pos, &key, NULL))
         if (!PyUnicode_Check(key)) {
             result = false;
             break;
         }
+#ifdef Py_GIL_DISABLED
     Py_END_CRITICAL_SECTION();
+#endif
 
     return result;
 }
@@ -2538,7 +2556,7 @@ dumps_internal(
         for (Py_ssize_t i = 0; i < PyList_GET_SIZE(object); i++) {
             if (Py_EnterRecursiveCall(" while JSONifying list object"))
                 return false;
-            PyObject* item = PyList_GetItemRef(object, i);
+            PyObject* item = list_get_item_ref(object, i);
             if (item == NULL) {
                 // The list shrank between the length check above and this fetch, so
                 // PyList_GetItemRef() set IndexError. Clear it before stopping: leaving it
