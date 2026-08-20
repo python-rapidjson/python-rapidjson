@@ -2318,6 +2318,7 @@ struct DictItem {
 };
 
 
+#ifdef Py_GIL_DISABLED
 // Owns a temporary PyObject, so the early returns below cannot leak it.
 struct PyObjectGuard {
     PyObject* obj;
@@ -2326,6 +2327,7 @@ struct PyObjectGuard {
     PyObjectGuard(const PyObjectGuard&) = delete;
     PyObjectGuard& operator=(const PyObjectGuard&) = delete;
 };
+#endif
 
 
 static inline bool
@@ -2589,6 +2591,7 @@ dumps_internal(
         PyObject* item;
         PyObject* coercedKey = NULL;
 
+#ifdef Py_GIL_DISABLED
         // PyDict_Next() does not lock the dict, and the loops below call back into
         // Python (RECURSE, PyObject_Str), during which a critical section would be
         // suspended. Walk a snapshot of the items instead, so a concurrent mutation
@@ -2597,12 +2600,21 @@ dumps_internal(
         if (snapshot.obj == NULL)
             return false;
         const Py_ssize_t snapshot_len = PyList_GET_SIZE(snapshot.obj);
+#else
+        // The GIL keeps the streaming iterator's storage alive. Avoid allocating a
+        // list of tuples for every serialized dict on the default build.
+        Py_ssize_t pos = 0;
+#endif
 
         if (!(mappingMode & MM_SORT_KEYS)) {
+#ifdef Py_GIL_DISABLED
             for (Py_ssize_t i = 0; i < snapshot_len; i++) {
                 PyObject* pair = PyList_GET_ITEM(snapshot.obj, i);
                 key = PyTuple_GET_ITEM(pair, 0);
                 item = PyTuple_GET_ITEM(pair, 1);
+#else
+            while (PyDict_Next(object, &pos, &key, &item)) {
+#endif
                 if (mappingMode & MM_COERCE_KEYS_TO_STRINGS) {
                     if (!PyUnicode_Check(key)) {
                         coercedKey = PyObject_Str(key);
@@ -2642,10 +2654,14 @@ dumps_internal(
         } else {
             std::vector<DictItem> items;
 
+#ifdef Py_GIL_DISABLED
             for (Py_ssize_t i = 0; i < snapshot_len; i++) {
                 PyObject* pair = PyList_GET_ITEM(snapshot.obj, i);
                 key = PyTuple_GET_ITEM(pair, 0);
                 item = PyTuple_GET_ITEM(pair, 1);
+#else
+            while (PyDict_Next(object, &pos, &key, &item)) {
+#endif
                 if (mappingMode & MM_COERCE_KEYS_TO_STRINGS) {
                     if (!PyUnicode_Check(key)) {
                         coercedKey = PyObject_Str(key);
