@@ -2318,15 +2318,54 @@ struct DictItem {
 };
 
 
+#ifdef Py_GIL_DISABLED
+// Owns a temporary PyObject, so the early returns below cannot leak it.
+struct PyObjectGuard {
+    PyObject* obj;
+    explicit PyObjectGuard(PyObject* o) : obj(o) {}
+    ~PyObjectGuard() { Py_XDECREF(obj); }
+    PyObjectGuard(const PyObjectGuard&) = delete;
+    PyObjectGuard& operator=(const PyObjectGuard&) = delete;
+};
+#endif
+
+
+static inline PyObject*
+list_get_item_ref(PyObject* list, Py_ssize_t index) {
+#if PY_VERSION_HEX >= 0x030d0000
+    return PyList_GetItemRef(list, index);
+#else
+    // PyList_GetItemRef() was added in 3.13. Under the GIL, the checked borrowed
+    // read and incref are one atomic interpreter operation.
+    PyObject* item = PyList_GetItem(list, index);
+    Py_XINCREF(item);
+    return item;
+#endif
+}
+
+
 static inline bool
 all_keys_are_string(PyObject* dict) {
     Py_ssize_t pos = 0;
     PyObject* key;
+    bool result = true;
 
+    // PyDict_Next() does not lock the dict, so on a free-threaded build a concurrent
+    // mutation invalidates `pos`. The loop calls no Python code, so a critical section
+    // is enough; note the single exit, as returning from inside one would leak it.
+#ifdef Py_GIL_DISABLED
+    Py_BEGIN_CRITICAL_SECTION(dict);
+#endif
     while (PyDict_Next(dict, &pos, &key, NULL))
-        if (!PyUnicode_Check(key))
-            return false;
-    return true;
+        if (!PyUnicode_Check(key)) {
+            result = false;
+            break;
+        }
+#ifdef Py_GIL_DISABLED
+    Py_END_CRITICAL_SECTION();
+#endif
+
+    return result;
 }
 
 
@@ -2510,13 +2549,29 @@ dumps_internal(
                (!(iterableMode & IM_ONLY_LISTS) && PyList_Check(object))) {
         writer->StartArray();
 
-        Py_ssize_t size = PyList_GET_SIZE(object);
-
-        for (Py_ssize_t i = 0; i < size; i++) {
+        // Re-read the length each iteration and take a strong reference: with the
+        // unchecked macro over a size captured once, a shrink of the list being dumped
+        // reads past the end. That shrink can come from another thread, or -- on any
+        // build, GIL included -- from a `default=` callable re-entering during RECURSE().
+        for (Py_ssize_t i = 0; i < PyList_GET_SIZE(object); i++) {
             if (Py_EnterRecursiveCall(" while JSONifying list object"))
                 return false;
-            PyObject* item = PyList_GET_ITEM(object, i);
+            PyObject* item = list_get_item_ref(object, i);
+            if (item == NULL) {
+                // The list shrank between the length check above and this fetch, so
+                // PyList_GetItemRef() set IndexError. Clear it before stopping: leaving it
+                // set makes dumps() return a string with a live exception, which surfaces
+                // to the caller as a spurious "IndexError: list index out of range"
+                // (12 runs of 12 under a concurrent shrink). Stopping quietly gives the
+                // same shape of answer as the dict snapshot below -- the items that were
+                // there -- rather than an error about a mutation dumps()' caller did not
+                // make.
+                PyErr_Clear();
+                Py_LeaveRecursiveCall();
+                break;
+            }
             bool r = RECURSE(item);
+            Py_DECREF(item);
             Py_LeaveRecursiveCall();
             if (!r)
                 return false;
@@ -2550,13 +2605,34 @@ dumps_internal(
                 all_keys_are_string(object))) {
         writer->StartObject();
 
-        Py_ssize_t pos = 0;
         PyObject* key;
         PyObject* item;
         PyObject* coercedKey = NULL;
 
+#ifdef Py_GIL_DISABLED
+        // PyDict_Next() does not lock the dict, and the loops below call back into
+        // Python (RECURSE, PyObject_Str), during which a critical section would be
+        // suspended. Walk a snapshot of the items instead, so a concurrent mutation
+        // cannot invalidate the iteration state.
+        PyObjectGuard snapshot(PyDict_Items(object));
+        if (snapshot.obj == NULL)
+            return false;
+        const Py_ssize_t snapshot_len = PyList_GET_SIZE(snapshot.obj);
+#else
+        // The GIL keeps the streaming iterator's storage alive. Avoid allocating a
+        // list of tuples for every serialized dict on the default build.
+        Py_ssize_t pos = 0;
+#endif
+
         if (!(mappingMode & MM_SORT_KEYS)) {
+#ifdef Py_GIL_DISABLED
+            for (Py_ssize_t i = 0; i < snapshot_len; i++) {
+                PyObject* pair = PyList_GET_ITEM(snapshot.obj, i);
+                key = PyTuple_GET_ITEM(pair, 0);
+                item = PyTuple_GET_ITEM(pair, 1);
+#else
             while (PyDict_Next(object, &pos, &key, &item)) {
+#endif
                 if (mappingMode & MM_COERCE_KEYS_TO_STRINGS) {
                     if (!PyUnicode_Check(key)) {
                         coercedKey = PyObject_Str(key);
@@ -2596,7 +2672,14 @@ dumps_internal(
         } else {
             std::vector<DictItem> items;
 
+#ifdef Py_GIL_DISABLED
+            for (Py_ssize_t i = 0; i < snapshot_len; i++) {
+                PyObject* pair = PyList_GET_ITEM(snapshot.obj, i);
+                key = PyTuple_GET_ITEM(pair, 0);
+                item = PyTuple_GET_ITEM(pair, 1);
+#else
             while (PyDict_Next(object, &pos, &key, &item)) {
+#endif
                 if (mappingMode & MM_COERCE_KEYS_TO_STRINGS) {
                     if (!PyUnicode_Check(key)) {
                         coercedKey = PyObject_Str(key);
