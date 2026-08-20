@@ -75,7 +75,8 @@ if sys.version_info < (3, 12):
 
 
 @pytest.mark.skipif(
-    not sys._is_gil_enabled(),
+    # sys._is_gil_enabled() exists only on 3.13+; everywhere else the GIL is on.
+    not getattr(sys, "_is_gil_enabled", lambda: True)(),
     reason="Crashes under free-threaded variant, perhaps getrecursionlimit() works differently there?"
 )
 def test_parse_respects_recursion_limit(loads):
