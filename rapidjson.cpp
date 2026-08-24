@@ -4102,6 +4102,7 @@ module_exec(PyObject* m)
 
     if (PyModule_AddObject(m, "Decoder", decoder_type.get()) < 0)
         return -1;
+    decoder_type.release();
 
     Py_INCREF(&Encoder_Type);
     if (PyModule_AddObject(m, "Encoder", (PyObject*) &Encoder_Type) < 0) {
