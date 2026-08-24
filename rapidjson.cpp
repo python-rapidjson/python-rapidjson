@@ -29,36 +29,6 @@
 using namespace rapidjson;
 
 
-#if PY_VERSION_HEX < 0x030A0000
-// Fallback for Py_TPFLAGS_IMMUTABLETYPE which is added in 3.10
-#define Py_TPFLAGS_IMMUTABLETYPE 0
-#endif
-
-
-static uint32_t
-py_version_hex() noexcept {
-#if PY_VERSION_HEX < 0x030B0000
-    static const uint32_t once_fetched_ver = [] {
-        constexpr uint32_t ver_fallback = 0x03000000;
-
-        auto* ver_tuple = PySys_GetObject("version_info");
-        if (!ver_tuple)
-            return ver_fallback;
-
-        long major, minor, micro, serial;
-        const char* releaselevel;
-        if (!PyArg_ParseTuple(ver_tuple, "lllsl", &major, &minor, &micro, &releaselevel, &serial))
-            return ver_fallback;
-
-        return uint32_t(((major & 0xFF) << 24) | ((minor & 0xFF) << 16) | ((micro & 0xFF) << 8));
-    }();
-    return once_fetched_ver;
-#else
-    return Py_Version;
-#endif
-}
-
-
 struct PyDerefer {
     void operator() (PyObject* obj) const noexcept {Py_DecRef(obj);}
 };
@@ -67,11 +37,7 @@ using PyStrongRef = std::unique_ptr<PyObject, PyDerefer>;
 
 static PyStrongRef
 inline from_module_and_spec(PyObject& module, PyType_Spec& spec) noexcept {
-#if PY_VERSION_HEX >= 0x03090000
     PyStrongRef type{PyType_FromModuleAndSpec(&module, &spec, NULL)};
-#else
-    PyStrongRef type{PyType_FromSpec(&spec)};
-#endif
     return type;
 }
 
@@ -2322,8 +2288,7 @@ decoder_new(PyTypeObject* type, PyObject* args, PyObject* kwargs)
 static int
 decoder_traverse(PyObject *op, visitproc visit, void *arg)
 {
-    if (py_version_hex() >= 0x03090000)
-        Py_VISIT(Py_TYPE(op));
+    Py_VISIT(Py_TYPE(op));
     return 0;
 }
 
