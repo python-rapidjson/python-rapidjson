@@ -3646,46 +3646,22 @@ PyDoc_STRVAR(validator_doc,
              " string.");
 
 
-static PyTypeObject Validator_Type = {
-    PyVarObject_HEAD_INIT(NULL, 0)
-    "rapidjson.Validator",          /* tp_name */
-    sizeof(ValidatorObject),        /* tp_basicsize */
-    0,                              /* tp_itemsize */
-    (destructor) validator_dealloc, /* tp_dealloc */
-    0,                              /* tp_print */
-    0,                              /* tp_getattr */
-    0,                              /* tp_setattr */
-    0,                              /* tp_compare */
-    0,                              /* tp_repr */
-    0,                              /* tp_as_number */
-    0,                              /* tp_as_sequence */
-    0,                              /* tp_as_mapping */
-    0,                              /* tp_hash */
-    (ternaryfunc) validator_call,   /* tp_call */
-    0,                              /* tp_str */
-    0,                              /* tp_getattro */
-    0,                              /* tp_setattro */
-    0,                              /* tp_as_buffer */
-    Py_TPFLAGS_DEFAULT,             /* tp_flags */
-    validator_doc,                  /* tp_doc */
-    0,                              /* tp_traverse */
-    0,                              /* tp_clear */
-    0,                              /* tp_richcompare */
-    0,                              /* tp_weaklistoffset */
-    0,                              /* tp_iter */
-    0,                              /* tp_iternext */
-    0,                              /* tp_methods */
-    0,                              /* tp_members */
-    0,                              /* tp_getset */
-    0,                              /* tp_base */
-    0,                              /* tp_dict */
-    0,                              /* tp_descr_get */
-    0,                              /* tp_descr_set */
-    0,                              /* tp_dictoffset */
-    0,                              /* tp_init */
-    0,                              /* tp_alloc */
-    validator_new,                  /* tp_new */
-    PyObject_Del,                   /* tp_free */
+static PyType_Slot Validator_Type_Slot[] = {
+    {Py_tp_doc, const_cast<char*>(validator_doc)},
+    {Py_tp_call, reinterpret_cast<void*>(validator_call)},
+    {Py_tp_new, reinterpret_cast<void*>(validator_new)},
+    {Py_tp_traverse, reinterpret_cast<void*>(heap_type_traverse)},
+    {Py_tp_dealloc, reinterpret_cast<void*>(validator_dealloc)},
+    {0, NULL}
+};
+
+
+static PyType_Spec Validator_Type_Spec = {
+    "rapidjson.Validator",                                              /* name */
+    sizeof(ValidatorObject),                                            /* basicsize */
+    0,                                                                  /* itemsize */
+    Py_TPFLAGS_DEFAULT | Py_TPFLAGS_HAVE_GC | Py_TPFLAGS_IMMUTABLETYPE, /* flags */
+    Validator_Type_Slot                                                 /* slots */
 };
 
 
@@ -3863,7 +3839,8 @@ module_exec(PyObject* m)
     if (!encoder_type)
         return -1;
 
-    if (PyType_Ready(&Validator_Type) < 0)
+    auto validator_type = from_module_and_spec(*m, Validator_Type_Spec);
+    if (!validator_type)
         return -1;
 
     if (PyType_Ready(&RawJSON_Type) < 0)
@@ -4048,11 +4025,9 @@ module_exec(PyObject* m)
         return -1;
     encoder_type.release();
 
-    Py_INCREF(&Validator_Type);
-    if (PyModule_AddObject(m, "Validator", (PyObject*) &Validator_Type) < 0) {
-        Py_DECREF(&Validator_Type);
+    if (PyModule_AddObject(m, "Validator", validator_type.get()) < 0)
         return -1;
-    }
+    validator_type.release();
 
     Py_INCREF(&RawJSON_Type);
     if (PyModule_AddObject(m, "RawJSON", (PyObject*) &RawJSON_Type) < 0) {
