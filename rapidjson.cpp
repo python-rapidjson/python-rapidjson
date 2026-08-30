@@ -69,6 +69,7 @@ static PyObject* decimal_type = NULL;
 static PyObject* timezone_type = NULL;
 static PyObject* timezone_utc = NULL;
 static PyObject* uuid_type = NULL;
+static PyObject* rawjson_type = NULL;
 static PyObject* validation_error = NULL;
 static PyObject* decode_error = NULL;
 
@@ -521,45 +522,22 @@ PyDoc_STRVAR(rawjson_doc,
              "'{\"already\": \"serialized\"}'");
 
 
-static PyTypeObject RawJSON_Type = {
-    PyVarObject_HEAD_INIT(NULL, 0)
-    "rapidjson.RawJSON",            /* tp_name */
-    sizeof(RawJSON),                /* tp_basicsize */
-    0,                              /* tp_itemsize */
-    (destructor) RawJSON_dealloc,   /* tp_dealloc */
-    0,                              /* tp_print */
-    0,                              /* tp_getattr */
-    0,                              /* tp_setattr */
-    0,                              /* tp_compare */
-    0,                              /* tp_repr */
-    0,                              /* tp_as_number */
-    0,                              /* tp_as_sequence */
-    0,                              /* tp_as_mapping */
-    0,                              /* tp_hash */
-    0,                              /* tp_call */
-    0,                              /* tp_str */
-    0,                              /* tp_getattro */
-    0,                              /* tp_setattro */
-    0,                              /* tp_as_buffer */
-    Py_TPFLAGS_DEFAULT,             /* tp_flags */
-    rawjson_doc,                    /* tp_doc */
-    0,                              /* tp_traverse */
-    0,                              /* tp_clear */
-    0,                              /* tp_richcompare */
-    0,                              /* tp_weaklistoffset */
-    0,                              /* tp_iter */
-    0,                              /* tp_iternext */
-    0,                              /* tp_methods */
-    RawJSON_members,                /* tp_members */
-    0,                              /* tp_getset */
-    0,                              /* tp_base */
-    0,                              /* tp_dict */
-    0,                              /* tp_descr_get */
-    0,                              /* tp_descr_set */
-    0,                              /* tp_dictoffset */
-    0,                              /* tp_init */
-    0,                              /* tp_alloc */
-    RawJSON_new,                    /* tp_new */
+static PyType_Slot RawJSON_Type_Slot[] = {
+    {Py_tp_dealloc, reinterpret_cast<void*>(RawJSON_dealloc)},
+    {Py_tp_doc, const_cast<char*>(rawjson_doc)},
+    {Py_tp_members, reinterpret_cast<void*>(RawJSON_members)},
+    {Py_tp_new, reinterpret_cast<void*>(RawJSON_new)},
+    {Py_tp_traverse, reinterpret_cast<void*>(heap_type_traverse)},
+    {0, NULL}
+};
+
+
+static PyType_Spec RawJSON_Type_Spec = {
+    "rapidjson.RawJSON",                                                /* name */
+    sizeof(RawJSON),                                                    /* basicsize */
+    0,                                                                  /* itemsize */
+    Py_TPFLAGS_DEFAULT | Py_TPFLAGS_HAVE_GC | Py_TPFLAGS_IMMUTABLETYPE, /* flags */
+    RawJSON_Type_Slot                                                   /* slots */
 };
 
 
@@ -2977,7 +2955,7 @@ dumps_internal(
             return false;
 
         writer->EndArray();
-    } else if (PyObject_TypeCheck(object, &RawJSON_Type)) {
+    } else if (PyObject_TypeCheck(object, (PyTypeObject*) rawjson_type)) {
         const char* jsonStr;
         Py_ssize_t l;
         jsonStr = PyUnicode_AsUTF8AndSize(((RawJSON*) object)->value, &l);
@@ -3843,8 +3821,10 @@ module_exec(PyObject* m)
     if (!validator_type)
         return -1;
 
-    if (PyType_Ready(&RawJSON_Type) < 0)
+    auto rawjson_type_local_ref = from_module_and_spec(*m, RawJSON_Type_Spec);
+    if (!rawjson_type_local_ref)
         return -1;
+    rawjson_type = rawjson_type_local_ref.get();
 
     PyDateTime_IMPORT;
     if(!PyDateTimeAPI)
@@ -4029,11 +4009,9 @@ module_exec(PyObject* m)
         return -1;
     validator_type.release();
 
-    Py_INCREF(&RawJSON_Type);
-    if (PyModule_AddObject(m, "RawJSON", (PyObject*) &RawJSON_Type) < 0) {
-        Py_DECREF(&RawJSON_Type);
+    if (PyModule_AddObject(m, "RawJSON", rawjson_type_local_ref.get()) < 0)
         return -1;
-    }
+    rawjson_type_local_ref.release();
 
     validation_error = PyErr_NewException("rapidjson.ValidationError",
                                           PyExc_ValueError, NULL);
