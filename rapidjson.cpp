@@ -64,14 +64,19 @@ heap_type_traverse(PyObject *op, visitproc visit, void *arg)
 #define IS_INF(x) std::isinf(x)
 #endif
 
+struct Errors {
+    PyObject* validation = NULL;
+    PyObject* decode = NULL;
+};
 
-static PyObject* decimal_type = NULL;
-static PyObject* timezone_type = NULL;
-static PyObject* timezone_utc = NULL;
-static PyObject* uuid_type = NULL;
-static PyObject* rawjson_type = NULL;
-static PyObject* validation_error = NULL;
-static PyObject* decode_error = NULL;
+
+struct Types {
+    PyObject* decimal = NULL;
+    PyObject* timezone = NULL;
+    PyObject* uuid = NULL;
+    PyObject* rawjson = NULL;
+    Errors errors;
+};
 
 
 /* These are the names of often used methods or literal values, interned in the module
@@ -81,25 +86,44 @@ static PyObject* decode_error = NULL;
    We cannot use _Py_IDENTIFIER() because that upsets the GNU C++ compiler in -pedantic
    mode. */
 
-static PyObject* astimezone_name = NULL;
-static PyObject* hex_name = NULL;
-static PyObject* timestamp_name = NULL;
-static PyObject* total_seconds_name = NULL;
-static PyObject* utcoffset_name = NULL;
-static PyObject* is_infinite_name = NULL;
-static PyObject* is_nan_name = NULL;
-static PyObject* start_object_name = NULL;
-static PyObject* end_object_name = NULL;
-static PyObject* default_name = NULL;
-static PyObject* end_array_name = NULL;
-static PyObject* string_name = NULL;
-static PyObject* read_name = NULL;
-static PyObject* write_name = NULL;
-static PyObject* encoding_name = NULL;
+struct Names {
+    PyObject* astimezone = NULL;
+    PyObject* hex = NULL;
+    PyObject* timestamp = NULL;
+    PyObject* total_seconds = NULL;
+    PyObject* utcoffset = NULL;
+    PyObject* is_infinite = NULL;
+    PyObject* is_nan = NULL;
+    PyObject* start_object = NULL;
+    PyObject* end_object = NULL;
+    PyObject* default_name = NULL;
+    PyObject* end_array = NULL;
+    PyObject* string = NULL;
+    PyObject* read = NULL;
+    PyObject* write = NULL;
+    PyObject* encoding = NULL;
+};
 
-static PyObject* minus_inf_string_value = NULL;
-static PyObject* nan_string_value = NULL;
-static PyObject* plus_inf_string_value = NULL;
+
+struct Strings {
+    PyObject* minus_inf = NULL;
+    PyObject* nan = NULL;
+    PyObject* plus_inf = NULL;
+};
+
+
+struct Consts {
+    PyObject* timezone_utc = NULL;
+    Names names;
+    Strings strings;
+};
+
+
+struct  Cache {
+    Types types;
+    Consts consts;
+};
+static Cache cache;
 
 
 struct HandlerContext {
@@ -321,7 +345,7 @@ private:
     void Read() {
         Py_CLEAR(chunk);
 
-        chunk = PyObject_CallMethodObjArgs(stream, read_name, chunkSize, NULL);
+        chunk = PyObject_CallMethodObjArgs(stream, cache.consts.names.read, chunkSize, NULL);
 
         if (chunk == NULL) {
             eof = true;
@@ -371,7 +395,7 @@ public:
         bufferEnd = buffer + size;
         cursor = buffer;
         multiByteChar = NULL;
-        isBinary = !PyObject_HasAttr(stream, encoding_name);
+        isBinary = !PyObject_HasAttr(stream, cache.consts.names.encoding);
     }
 
     ~PyWriteStreamWrapper() {
@@ -418,7 +442,7 @@ public:
         if (c == NULL) {
             // Propagate the error state, it will be caught by dumps_internal()
         } else {
-            PyObject* res = PyObject_CallMethodObjArgs(stream, write_name, c, NULL);
+            PyObject* res = PyObject_CallMethodObjArgs(stream, cache.consts.names.write, c, NULL);
             if (res == NULL) {
                 // Likewise
             } else {
@@ -829,17 +853,17 @@ struct PyHandler {
             stack.reserve(128);
             if (decoder != NULL) {
                 assert(!objectHook);
-                if (PyObject_HasAttr(decoder, start_object_name)) {
-                    decoderStartObject = PyObject_GetAttr(decoder, start_object_name);
+                if (PyObject_HasAttr(decoder, cache.consts.names.start_object)) {
+                    decoderStartObject = PyObject_GetAttr(decoder, cache.consts.names.start_object);
                 }
-                if (PyObject_HasAttr(decoder, end_object_name)) {
-                    decoderEndObject = PyObject_GetAttr(decoder, end_object_name);
+                if (PyObject_HasAttr(decoder, cache.consts.names.end_object)) {
+                    decoderEndObject = PyObject_GetAttr(decoder, cache.consts.names.end_object);
                 }
-                if (PyObject_HasAttr(decoder, end_array_name)) {
-                    decoderEndArray = PyObject_GetAttr(decoder, end_array_name);
+                if (PyObject_HasAttr(decoder, cache.consts.names.end_array)) {
+                    decoderEndArray = PyObject_GetAttr(decoder, cache.consts.names.end_array);
                 }
-                if (PyObject_HasAttr(decoder, string_name)) {
-                    decoderString = PyObject_GetAttr(decoder, string_name);
+                if (PyObject_HasAttr(decoder, cache.consts.names.string)) {
+                    decoderString = PyObject_GetAttr(decoder, cache.consts.names.string);
                 }
             }
             sharedKeys = PyDict_New();
@@ -1201,9 +1225,9 @@ struct PyHandler {
 
         PyObject* value;
         if (numberMode & NM_DECIMAL) {
-            value = PyObject_CallFunctionObjArgs(decimal_type, nan_string_value, NULL);
+            value = PyObject_CallFunctionObjArgs(cache.types.decimal, cache.consts.strings.nan, NULL);
         } else {
-            value = PyFloat_FromString(nan_string_value);
+            value = PyFloat_FromString(cache.consts.strings.nan);
         }
 
         if (value == NULL)
@@ -1221,14 +1245,14 @@ struct PyHandler {
 
         PyObject* value;
         if (numberMode & NM_DECIMAL) {
-            value = PyObject_CallFunctionObjArgs(decimal_type,
+            value = PyObject_CallFunctionObjArgs(cache.types.decimal,
                                                  minus
-                                                 ? minus_inf_string_value
-                                                 : plus_inf_string_value, NULL);
+                                                 ? cache.consts.strings.minus_inf
+                                                 : cache.consts.strings.plus_inf, NULL);
         } else {
             value = PyFloat_FromString(minus
-                                       ? minus_inf_string_value
-                                       : plus_inf_string_value);
+                                       ? cache.consts.strings.minus_inf
+                                       : cache.consts.strings.plus_inf);
         }
 
         if (value == NULL)
@@ -1295,7 +1319,7 @@ struct PyHandler {
                 PyObject* pystr = PyUnicode_FromStringAndSize(str, length);
                 if (pystr == NULL)
                     return false;
-                value = PyObject_CallFunctionObjArgs(decimal_type, pystr, NULL);
+                value = PyObject_CallFunctionObjArgs(cache.types.decimal, pystr, NULL);
                 Py_DECREF(pystr);
             } else {
                 std::string zstr(str, length);
@@ -1450,11 +1474,11 @@ struct PyHandler {
         if ((datetimeMode & DM_NAIVE_IS_UTC || isZ) && !hasOffset) {
             if (hasDate) {
                 value = PyDateTimeAPI->DateTime_FromDateAndTime(
-                    year, month, day, hours, mins, secs, usecs, timezone_utc,
+                    year, month, day, hours, mins, secs, usecs, cache.consts.timezone_utc,
                     PyDateTimeAPI->DateTimeType);
             } else {
                 value = PyDateTimeAPI->Time_FromTime(
-                    hours, mins, secs, usecs, timezone_utc, PyDateTimeAPI->TimeType);
+                    hours, mins, secs, usecs, cache.consts.timezone_utc, PyDateTimeAPI->TimeType);
             }
         } else if (datetimeMode & DM_IGNORE_TZ || (!hasOffset && !isZ)) {
             if (hasDate) {
@@ -1469,14 +1493,14 @@ struct PyHandler {
             value = NULL;
         } else if (!hasDate && datetimeMode & DM_SHIFT_TO_UTC) {
             value = PyDateTimeAPI->Time_FromTime(
-                hours, mins, secs, usecs, timezone_utc, PyDateTimeAPI->TimeType);
+                hours, mins, secs, usecs, cache.consts.timezone_utc, PyDateTimeAPI->TimeType);
         } else {
             PyObject* offset = PyDateTimeAPI->Delta_FromDelta(0, tzoff, 0, 1,
                                                               PyDateTimeAPI->DeltaType);
             if (offset == NULL) {
                 value = NULL;
             } else {
-                PyObject* tz = PyObject_CallFunctionObjArgs(timezone_type, offset, NULL);
+                PyObject* tz = PyObject_CallFunctionObjArgs(cache.types.timezone, offset, NULL);
                 Py_DECREF(offset);
                 if (tz == NULL) {
                     value = NULL;
@@ -1487,7 +1511,7 @@ struct PyHandler {
                             PyDateTimeAPI->DateTimeType);
                         if (value != NULL && datetimeMode & DM_SHIFT_TO_UTC) {
                             PyObject* asUTC = PyObject_CallMethodObjArgs(
-                                value, astimezone_name, timezone_utc, NULL);
+                                value, cache.consts.names.astimezone, cache.consts.timezone_utc, NULL);
                             Py_DECREF(value);
                             if (asUTC == NULL) {
                                 value = NULL;
@@ -1534,7 +1558,7 @@ struct PyHandler {
         if (pystr == NULL)
             return false;
 
-        PyObject* value = PyObject_CallFunctionObjArgs(uuid_type, pystr, NULL);
+        PyObject* value = PyObject_CallFunctionObjArgs(cache.types.uuid, pystr, NULL);
         Py_DECREF(pystr);
 
         if (value == NULL)
@@ -1752,7 +1776,7 @@ load(PyObject* self, PyObject* args, PyObject* kwargs)
                                      &allowNan))
         return NULL;
 
-    if (!PyObject_HasAttr(jsonObject, read_name)) {
+    if (!PyObject_HasAttr(jsonObject, cache.consts.names.read)) {
         PyErr_SetString(PyExc_TypeError, "Expected file-like object");
         return NULL;
     }
@@ -2064,7 +2088,7 @@ do_decode(PyObject* decoder, const char* jsonStr, Py_ssize_t jsonStrLen,
                 PyErr_Restore(etype, evalue, etraceback);
         }
         else
-            PyErr_Format(decode_error, "Parse error at offset %zu: %s",
+            PyErr_Format(cache.types.errors.decode, "Parse error at offset %zu: %s",
                          offset, GetParseError_En(reader.GetParseErrorCode()));
 
         Py_XDECREF(handler.root);
@@ -2131,7 +2155,7 @@ decoder_call(PyObject* self, PyObject* args, PyObject* kwargs)
             Py_DECREF(asUnicode);
             return NULL;
         }
-    } else if (PyObject_HasAttr(jsonObject, read_name)) {
+    } else if (PyObject_HasAttr(jsonObject, cache.consts.names.read)) {
         jsonStr = NULL;
         jsonStrLen = 0;
     } else {
@@ -2334,14 +2358,14 @@ dumps_internal(
     } else if (PyBool_Check(object)) {
         writer->Bool(object == Py_True);
     } else if (numberMode & NM_DECIMAL
-               && (is_decimal = PyObject_IsInstance(object, decimal_type))) {
+               && (is_decimal = PyObject_IsInstance(object, cache.types.decimal))) {
         if (is_decimal == -1) {
             return false;
         }
 
         if (!(numberMode & NM_NAN)) {
             bool is_inf_or_nan;
-            PyObject* is_inf = PyObject_CallMethodObjArgs(object, is_infinite_name,
+            PyObject* is_inf = PyObject_CallMethodObjArgs(object, cache.consts.names.is_infinite,
                                                           NULL);
 
             if (is_inf == NULL) {
@@ -2351,7 +2375,7 @@ dumps_internal(
             Py_DECREF(is_inf);
 
             if (!is_inf_or_nan) {
-                PyObject* is_nan = PyObject_CallMethodObjArgs(object, is_nan_name,
+                PyObject* is_nan = PyObject_CallMethodObjArgs(object, cache.consts.names.is_nan,
                                                               NULL);
 
                 if (is_nan == NULL) {
@@ -2627,9 +2651,9 @@ dumps_internal(
         char timeZone[TIMEZONE_LEN] = { 0 };
 
         if (!(datetimeMode & DM_IGNORE_TZ)
-            && PyObject_HasAttr(object, utcoffset_name)) {
+            && PyObject_HasAttr(object, cache.consts.names.utcoffset)) {
             PyObject* utcOffset = PyObject_CallMethodObjArgs(object,
-                                                             utcoffset_name,
+                                                             cache.consts.names.utcoffset,
                                                              NULL);
 
             if (utcOffset == NULL)
@@ -2649,7 +2673,7 @@ dumps_internal(
 
                         asUTC = PyDateTimeAPI->DateTime_FromDateAndTime(
                             year, month, day, hour, min, sec, microsec,
-                            timezone_utc, PyDateTimeAPI->DateTimeType);
+                            cache.consts.timezone_utc, PyDateTimeAPI->DateTimeType);
                     } else {
                         hour = PyDateTime_TIME_GET_HOUR(dtObject);
                         min = PyDateTime_TIME_GET_MINUTE(dtObject);
@@ -2657,7 +2681,7 @@ dumps_internal(
                         microsec = PyDateTime_TIME_GET_MICROSECOND(dtObject);
                         asUTC = PyDateTimeAPI->Time_FromTime(
                             hour, min, sec, microsec,
-                            timezone_utc, PyDateTimeAPI->TimeType);
+                            cache.consts.timezone_utc, PyDateTimeAPI->TimeType);
                     }
 
                     if (asUTC == NULL) {
@@ -2675,8 +2699,8 @@ dumps_internal(
                 if (datetimeMode & DM_SHIFT_TO_UTC) {
                     // If it's not already in UTC, shift the value
                     if (PyObject_IsTrue(utcOffset)) {
-                        asUTC = PyObject_CallMethodObjArgs(object, astimezone_name,
-                                                           timezone_utc, NULL);
+                        asUTC = PyObject_CallMethodObjArgs(object, cache.consts.names.astimezone,
+                                                           cache.consts.timezone_utc, NULL);
 
                         if (asUTC == NULL) {
                             Py_DECREF(utcOffset);
@@ -2693,7 +2717,7 @@ dumps_internal(
 
                     if (PyObject_IsTrue(utcOffset)) {
                         PyObject* tsObj = PyObject_CallMethodObjArgs(utcOffset,
-                                                                     total_seconds_name,
+                                                                     cache.consts.names.total_seconds,
                                                                      NULL);
 
                         if (tsObj == NULL) {
@@ -2773,7 +2797,7 @@ dumps_internal(
         } else /* if (datetimeMode & DM_UNIX_TIME) */ {
             if (PyDateTime_Check(dtObject)) {
                 PyObject* timestampObj = PyObject_CallMethodObjArgs(dtObject,
-                                                                    timestamp_name,
+                                                                    cache.consts.names.timestamp,
                                                                     NULL);
 
                 if (timestampObj == NULL) {
@@ -2850,7 +2874,7 @@ dumps_internal(
             if (datetimeMode & (DM_SHIFT_TO_UTC | DM_NAIVE_IS_UTC))
                 midnightObj = PyDateTimeAPI->DateTime_FromDateAndTime(
                     year, month, day, 0, 0, 0, 0,
-                    timezone_utc, PyDateTimeAPI->DateTimeType);
+                    cache.consts.timezone_utc, PyDateTimeAPI->DateTimeType);
             else
                 midnightObj = PyDateTime_FromDateAndTime(year, month, day,
                                                          0, 0, 0, 0);
@@ -2859,7 +2883,7 @@ dumps_internal(
                 return false;
             }
 
-            timestampObj = PyObject_CallMethodObjArgs(midnightObj, timestamp_name,
+            timestampObj = PyObject_CallMethodObjArgs(midnightObj, cache.consts.names.timestamp,
                                                       NULL);
 
             Py_DECREF(midnightObj);
@@ -2897,12 +2921,12 @@ dumps_internal(
             }
         }
     } else if (uuidMode != UM_NONE
-               && PyObject_TypeCheck(object, (PyTypeObject*) uuid_type)) {
+               && PyObject_TypeCheck(object, (PyTypeObject*) cache.types.uuid)) {
         PyObject* hexval;
         if (uuidMode == UM_CANONICAL)
             hexval = PyObject_Str(object);
         else
-            hexval = PyObject_GetAttr(object, hex_name);
+            hexval = PyObject_GetAttr(object, cache.consts.names.hex);
         if (hexval == NULL)
             return false;
 
@@ -2955,7 +2979,7 @@ dumps_internal(
             return false;
 
         writer->EndArray();
-    } else if (PyObject_TypeCheck(object, (PyTypeObject*) rawjson_type)) {
+    } else if (PyObject_TypeCheck(object, (PyTypeObject*) cache.types.rawjson)) {
         const char* jsonStr;
         Py_ssize_t l;
         jsonStr = PyUnicode_AsUTF8AndSize(((RawJSON*) object)->value, &l);
@@ -3470,7 +3494,7 @@ encoder_call(PyObject* self, PyObject* args, PyObject* kwargs)
     EncoderObject* e = (EncoderObject*) self;
 
     if (stream != NULL && stream != Py_None) {
-        if (!PyObject_HasAttr(stream, write_name)) {
+        if (!PyObject_HasAttr(stream, cache.consts.names.write)) {
             PyErr_SetString(PyExc_TypeError, "Expected a writable stream");
             return NULL;
         }
@@ -3478,8 +3502,8 @@ encoder_call(PyObject* self, PyObject* args, PyObject* kwargs)
         if (!accept_chunk_size_arg(chunkSizeObj, chunkSize))
             return NULL;
 
-        if (PyObject_HasAttr(self, default_name)) {
-            defaultFn = PyObject_GetAttr(self, default_name);
+        if (PyObject_HasAttr(self, cache.consts.names.default_name)) {
+            defaultFn = PyObject_GetAttr(self, cache.consts.names.default_name);
         }
 
         result = do_stream_encode(value, stream, chunkSize, defaultFn, e->ensureAscii,
@@ -3487,8 +3511,8 @@ encoder_call(PyObject* self, PyObject* args, PyObject* kwargs)
                                   e->numberMode, e->datetimeMode, e->uuidMode,
                                   e->bytesMode, e->iterableMode, e->mappingMode);
     } else {
-        if (PyObject_HasAttr(self, default_name)) {
-            defaultFn = PyObject_GetAttr(self, default_name);
+        if (PyObject_HasAttr(self, cache.consts.names.default_name)) {
+            defaultFn = PyObject_GetAttr(self, cache.consts.names.default_name);
         }
 
         result = do_encode(value, defaultFn, e->ensureAscii, e->writeMode, e->indentChar,
@@ -3682,7 +3706,7 @@ static PyObject* validator_call(PyObject* self, PyObject* args, PyObject* kwargs
     if (error) {
         if (asUnicode != NULL)
             Py_DECREF(asUnicode);
-        PyErr_SetString(decode_error, "Invalid JSON");
+        PyErr_SetString(cache.types.errors.decode, "Invalid JSON");
         return NULL;
     }
 
@@ -3707,7 +3731,7 @@ static PyObject* validator_call(PyObject* self, PyObject* args, PyObject* kwargs
 
         PyObject* error = Py_BuildValue("sss", validator.GetInvalidSchemaKeyword(),
                                         sptr.GetString(), dptr.GetString());
-        PyErr_SetObject(validation_error, error);
+        PyErr_SetObject(cache.types.errors.validation, error);
 
         if (error != NULL)
             Py_DECREF(error);
@@ -3770,7 +3794,7 @@ static PyObject* validator_new(PyTypeObject* type, PyObject* args, PyObject* kwa
         Py_DECREF(asUnicode);
 
     if (error) {
-        PyErr_SetString(decode_error, "Invalid JSON");
+        PyErr_SetString(cache.types.errors.decode, "Invalid JSON");
         return NULL;
     }
 
@@ -3821,10 +3845,10 @@ module_exec(PyObject* m)
     if (!validator_type)
         return -1;
 
-    auto rawjson_type_local_ref = from_module_and_spec(*m, RawJSON_Type_Spec);
-    if (!rawjson_type_local_ref)
+    auto rawjson_type = from_module_and_spec(*m, RawJSON_Type_Spec);
+    if (!rawjson_type)
         return -1;
-    rawjson_type = rawjson_type_local_ref.get();
+    cache.types.rawjson = rawjson_type.get();
 
     PyDateTime_IMPORT;
     if(!PyDateTimeAPI)
@@ -3838,102 +3862,102 @@ module_exec(PyObject* m)
     if (decimalModule == NULL)
         return -1;
 
-    decimal_type = PyObject_GetAttrString(decimalModule, "Decimal");
+    cache.types.decimal = PyObject_GetAttrString(decimalModule, "Decimal");
     Py_DECREF(decimalModule);
 
-    if (decimal_type == NULL)
+    if (cache.types.decimal == NULL)
         return -1;
 
-    timezone_type = PyObject_GetAttrString(datetimeModule, "timezone");
+    cache.types.timezone = PyObject_GetAttrString(datetimeModule, "timezone");
     Py_DECREF(datetimeModule);
 
-    if (timezone_type == NULL)
+    if (cache.types.timezone == NULL)
         return -1;
 
-    timezone_utc = PyObject_GetAttrString(timezone_type, "utc");
-    if (timezone_utc == NULL)
+    cache.consts.timezone_utc = PyObject_GetAttrString(cache.types.timezone, "utc");
+    if (cache.consts.timezone_utc == NULL)
         return -1;
 
     uuidModule = PyImport_ImportModule("uuid");
     if (uuidModule == NULL)
         return -1;
 
-    uuid_type = PyObject_GetAttrString(uuidModule, "UUID");
+    cache.types.uuid = PyObject_GetAttrString(uuidModule, "UUID");
     Py_DECREF(uuidModule);
 
-    if (uuid_type == NULL)
+    if (cache.types.uuid == NULL)
         return -1;
 
-    astimezone_name = PyUnicode_InternFromString("astimezone");
-    if (astimezone_name == NULL)
+    cache.consts.names.astimezone = PyUnicode_InternFromString("astimezone");
+    if (cache.consts.names.astimezone == NULL)
         return -1;
 
-    hex_name = PyUnicode_InternFromString("hex");
-    if (hex_name == NULL)
+    cache.consts.names.hex = PyUnicode_InternFromString("hex");
+    if (cache.consts.names.hex == NULL)
         return -1;
 
-    timestamp_name = PyUnicode_InternFromString("timestamp");
-    if (timestamp_name == NULL)
+    cache.consts.names.timestamp = PyUnicode_InternFromString("timestamp");
+    if (cache.consts.names.timestamp == NULL)
         return -1;
 
-    total_seconds_name = PyUnicode_InternFromString("total_seconds");
-    if (total_seconds_name == NULL)
+    cache.consts.names.total_seconds = PyUnicode_InternFromString("total_seconds");
+    if (cache.consts.names.total_seconds == NULL)
         return -1;
 
-    utcoffset_name = PyUnicode_InternFromString("utcoffset");
-    if (utcoffset_name == NULL)
+    cache.consts.names.utcoffset = PyUnicode_InternFromString("utcoffset");
+    if (cache.consts.names.utcoffset == NULL)
         return -1;
 
-    is_infinite_name = PyUnicode_InternFromString("is_infinite");
-    if (is_infinite_name == NULL)
+    cache.consts.names.is_infinite = PyUnicode_InternFromString("is_infinite");
+    if (cache.consts.names.is_infinite == NULL)
         return -1;
 
-    is_nan_name = PyUnicode_InternFromString("is_nan");
-    if (is_infinite_name == NULL)
+    cache.consts.names.is_nan = PyUnicode_InternFromString("is_nan");
+    if (cache.consts.names.is_infinite == NULL)
         return -1;
 
-    minus_inf_string_value = PyUnicode_InternFromString("-Infinity");
-    if (minus_inf_string_value == NULL)
+    cache.consts.strings.minus_inf = PyUnicode_InternFromString("-Infinity");
+    if (cache.consts.strings.minus_inf == NULL)
         return -1;
 
-    nan_string_value = PyUnicode_InternFromString("nan");
-    if (nan_string_value == NULL)
+    cache.consts.strings.nan = PyUnicode_InternFromString("nan");
+    if (cache.consts.strings.nan == NULL)
         return -1;
 
-    plus_inf_string_value = PyUnicode_InternFromString("+Infinity");
-    if (plus_inf_string_value == NULL)
+    cache.consts.strings.plus_inf = PyUnicode_InternFromString("+Infinity");
+    if (cache.consts.strings.plus_inf == NULL)
         return -1;
 
-    start_object_name = PyUnicode_InternFromString("start_object");
-    if (start_object_name == NULL)
+    cache.consts.names.start_object = PyUnicode_InternFromString("start_object");
+    if (cache.consts.names.start_object == NULL)
         return -1;
 
-    end_object_name = PyUnicode_InternFromString("end_object");
-    if (end_object_name == NULL)
+    cache.consts.names.end_object = PyUnicode_InternFromString("end_object");
+    if (cache.consts.names.end_object == NULL)
         return -1;
 
-    default_name = PyUnicode_InternFromString("default");
-    if (default_name == NULL)
+    cache.consts.names.default_name = PyUnicode_InternFromString("default");
+    if (cache.consts.names.default_name == NULL)
         return -1;
 
-    end_array_name = PyUnicode_InternFromString("end_array");
-    if (end_array_name == NULL)
+    cache.consts.names.end_array = PyUnicode_InternFromString("end_array");
+    if (cache.consts.names.end_array == NULL)
         return -1;
 
-    string_name = PyUnicode_InternFromString("string");
-    if (string_name == NULL)
+    cache.consts.names.string = PyUnicode_InternFromString("string");
+    if (cache.consts.names.string == NULL)
         return -1;
 
-    read_name = PyUnicode_InternFromString("read");
-    if (read_name == NULL)
+    cache.consts.names.read = PyUnicode_InternFromString("read");
+    if (cache.consts.names.read == NULL)
         return -1;
 
-    write_name = PyUnicode_InternFromString("write");
-    if (write_name == NULL)
+    cache.consts.names.write = PyUnicode_InternFromString("write");
+    if (cache.consts.names.write == NULL)
         return -1;
 
-    encoding_name = PyUnicode_InternFromString("encoding");
-    if (encoding_name == NULL)
+    cache.consts.names.encoding = PyUnicode_InternFromString("encoding");
+    if (cache.consts.names.encoding == NULL)
         return -1;
 
 #define STRINGIFY(x) XSTRINGIFY(x)
@@ -4009,27 +4033,27 @@ module_exec(PyObject* m)
         return -1;
     validator_type.release();
 
-    if (PyModule_AddObject(m, "RawJSON", rawjson_type_local_ref.get()) < 0)
+    if (PyModule_AddObject(m, "RawJSON", rawjson_type.get()) < 0)
         return -1;
-    rawjson_type_local_ref.release();
+    rawjson_type.release();
 
-    validation_error = PyErr_NewException("rapidjson.ValidationError",
+    cache.types.errors.validation = PyErr_NewException("rapidjson.ValidationError",
                                           PyExc_ValueError, NULL);
-    if (validation_error == NULL)
+    if (cache.types.errors.validation == NULL)
         return -1;
-    Py_INCREF(validation_error);
-    if (PyModule_AddObject(m, "ValidationError", validation_error) < 0) {
-        Py_DECREF(validation_error);
+    Py_INCREF(cache.types.errors.validation);
+    if (PyModule_AddObject(m, "ValidationError", cache.types.errors.validation) < 0) {
+        Py_DECREF(cache.types.errors.validation);
         return -1;
     }
 
-    decode_error = PyErr_NewException("rapidjson.JSONDecodeError",
+    cache.types.errors.decode = PyErr_NewException("rapidjson.JSONDecodeError",
                                       PyExc_ValueError, NULL);
-    if (decode_error == NULL)
+    if (cache.types.errors.decode == NULL)
         return -1;
-    Py_INCREF(decode_error);
-    if (PyModule_AddObject(m, "JSONDecodeError", decode_error) < 0) {
-        Py_DECREF(decode_error);
+    Py_INCREF(cache.types.errors.decode);
+    if (PyModule_AddObject(m, "JSONDecodeError", cache.types.errors.decode) < 0) {
+        Py_DECREF(cache.types.errors.decode);
         return -1;
     }
 
