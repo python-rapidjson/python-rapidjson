@@ -247,7 +247,8 @@ enum MappingMode {
 //////////////////////////
 
 
-static PyObject* do_decode(PyObject* decoder,
+static PyObject* do_decode(const Consts& consts, const Types& types,
+                           PyObject* decoder,
                            const char* jsonStr, Py_ssize_t jsonStrlen,
                            PyObject* jsonStream, size_t chunkSize,
                            PyObject* objectHook,
@@ -262,7 +263,7 @@ static PyObject* do_encode(PyObject* value, PyObject* defaultFn, bool ensureAsci
                            unsigned numberMode, unsigned datetimeMode,
                            unsigned uuidMode, unsigned bytesMode,
                            unsigned iterableMode, unsigned mappingMode);
-static PyObject* do_stream_encode(PyObject* value, PyObject* stream, size_t chunkSize,
+static PyObject* do_stream_encode(const Names& names, PyObject* value, PyObject* stream, size_t chunkSize,
                                   PyObject* defaultFn, bool ensureAscii,
                                   unsigned writeMode, char indentChar,
                                   unsigned indentCount, unsigned numberMode,
@@ -287,8 +288,8 @@ class PyReadStreamWrapper {
 public:
     typedef char Ch;
 
-    PyReadStreamWrapper(PyObject* stream, size_t size)
-        : stream(stream) {
+    PyReadStreamWrapper(const Names& names, PyObject* stream, size_t size)
+        : names(&names), stream(stream) {
         Py_INCREF(stream);
         chunkSize = PyLong_FromUnsignedLong(size);
         buffer = NULL;
@@ -345,7 +346,7 @@ private:
     void Read() {
         Py_CLEAR(chunk);
 
-        chunk = PyObject_CallMethodObjArgs(stream, cache.consts.names.read, chunkSize, NULL);
+        chunk = PyObject_CallMethodObjArgs(stream, names->read, chunkSize, NULL);
 
         if (chunk == NULL) {
             eof = true;
@@ -372,6 +373,7 @@ private:
         }
     }
 
+    const Names* names;
     PyObject* stream;
     PyObject* chunkSize;
     PyObject* chunk;
@@ -387,15 +389,15 @@ class PyWriteStreamWrapper {
 public:
     typedef char Ch;
 
-    PyWriteStreamWrapper(PyObject* stream, size_t size)
-        : stream(stream) {
+    PyWriteStreamWrapper(const Names& names, PyObject* stream, size_t size)
+        : names(&names), stream(stream) {
         Py_INCREF(stream);
         buffer = (char*) PyMem_Malloc(size);
         assert(buffer);
         bufferEnd = buffer + size;
         cursor = buffer;
         multiByteChar = NULL;
-        isBinary = !PyObject_HasAttr(stream, cache.consts.names.encoding);
+        isBinary = !PyObject_HasAttr(stream, names.encoding);
     }
 
     ~PyWriteStreamWrapper() {
@@ -442,7 +444,7 @@ public:
         if (c == NULL) {
             // Propagate the error state, it will be caught by dumps_internal()
         } else {
-            PyObject* res = PyObject_CallMethodObjArgs(stream, cache.consts.names.write, c, NULL);
+            PyObject* res = PyObject_CallMethodObjArgs(stream, names->write, c, NULL);
             if (res == NULL) {
                 // Likewise
             } else {
@@ -476,6 +478,7 @@ public:
     }
 
 private:
+    const Names* names;
     PyObject* stream;
     Ch* buffer;
     Ch* bufferEnd;
@@ -822,6 +825,8 @@ float_from_string(const char* s, Py_ssize_t len)
 
 
 struct PyHandler {
+    const Consts* consts;
+    const Types* types;
     PyObject* decoderStartObject;
     PyObject* decoderEndObject;
     PyObject* decoderEndArray;
@@ -835,12 +840,16 @@ struct PyHandler {
     unsigned recursionLimit;
     std::vector<HandlerContext> stack;
 
-    PyHandler(PyObject* decoder,
+    PyHandler(const Consts& consts,
+              const Types& types,
+              PyObject* decoder,
               PyObject* hook,
               unsigned dm,
               unsigned um,
               unsigned nm)
-        : decoderStartObject(NULL),
+        : consts(&consts),
+          types(&types),
+          decoderStartObject(NULL),
           decoderEndObject(NULL),
           decoderEndArray(NULL),
           decoderString(NULL),
@@ -853,17 +862,17 @@ struct PyHandler {
             stack.reserve(128);
             if (decoder != NULL) {
                 assert(!objectHook);
-                if (PyObject_HasAttr(decoder, cache.consts.names.start_object)) {
-                    decoderStartObject = PyObject_GetAttr(decoder, cache.consts.names.start_object);
+                if (PyObject_HasAttr(decoder, consts.names.start_object)) {
+                    decoderStartObject = PyObject_GetAttr(decoder, consts.names.start_object);
                 }
-                if (PyObject_HasAttr(decoder, cache.consts.names.end_object)) {
-                    decoderEndObject = PyObject_GetAttr(decoder, cache.consts.names.end_object);
+                if (PyObject_HasAttr(decoder, consts.names.end_object)) {
+                    decoderEndObject = PyObject_GetAttr(decoder, consts.names.end_object);
                 }
-                if (PyObject_HasAttr(decoder, cache.consts.names.end_array)) {
-                    decoderEndArray = PyObject_GetAttr(decoder, cache.consts.names.end_array);
+                if (PyObject_HasAttr(decoder, consts.names.end_array)) {
+                    decoderEndArray = PyObject_GetAttr(decoder, consts.names.end_array);
                 }
-                if (PyObject_HasAttr(decoder, cache.consts.names.string)) {
-                    decoderString = PyObject_GetAttr(decoder, cache.consts.names.string);
+                if (PyObject_HasAttr(decoder, consts.names.string)) {
+                    decoderString = PyObject_GetAttr(decoder, consts.names.string);
                 }
             }
             sharedKeys = PyDict_New();
@@ -1225,9 +1234,9 @@ struct PyHandler {
 
         PyObject* value;
         if (numberMode & NM_DECIMAL) {
-            value = PyObject_CallFunctionObjArgs(cache.types.decimal, cache.consts.strings.nan, NULL);
+            value = PyObject_CallFunctionObjArgs(types->decimal, consts->strings.nan, NULL);
         } else {
-            value = PyFloat_FromString(cache.consts.strings.nan);
+            value = PyFloat_FromString(consts->strings.nan);
         }
 
         if (value == NULL)
@@ -1245,14 +1254,14 @@ struct PyHandler {
 
         PyObject* value;
         if (numberMode & NM_DECIMAL) {
-            value = PyObject_CallFunctionObjArgs(cache.types.decimal,
+            value = PyObject_CallFunctionObjArgs(types->decimal,
                                                  minus
-                                                 ? cache.consts.strings.minus_inf
-                                                 : cache.consts.strings.plus_inf, NULL);
+                                                 ? consts->strings.minus_inf
+                                                 : consts->strings.plus_inf, NULL);
         } else {
             value = PyFloat_FromString(minus
-                                       ? cache.consts.strings.minus_inf
-                                       : cache.consts.strings.plus_inf);
+                                       ? consts->strings.minus_inf
+                                       : consts->strings.plus_inf);
         }
 
         if (value == NULL)
@@ -1319,7 +1328,7 @@ struct PyHandler {
                 PyObject* pystr = PyUnicode_FromStringAndSize(str, length);
                 if (pystr == NULL)
                     return false;
-                value = PyObject_CallFunctionObjArgs(cache.types.decimal, pystr, NULL);
+                value = PyObject_CallFunctionObjArgs(types->decimal, pystr, NULL);
                 Py_DECREF(pystr);
             } else {
                 std::string zstr(str, length);
@@ -1474,11 +1483,11 @@ struct PyHandler {
         if ((datetimeMode & DM_NAIVE_IS_UTC || isZ) && !hasOffset) {
             if (hasDate) {
                 value = PyDateTimeAPI->DateTime_FromDateAndTime(
-                    year, month, day, hours, mins, secs, usecs, cache.consts.timezone_utc,
+                    year, month, day, hours, mins, secs, usecs, consts->timezone_utc,
                     PyDateTimeAPI->DateTimeType);
             } else {
                 value = PyDateTimeAPI->Time_FromTime(
-                    hours, mins, secs, usecs, cache.consts.timezone_utc, PyDateTimeAPI->TimeType);
+                    hours, mins, secs, usecs, consts->timezone_utc, PyDateTimeAPI->TimeType);
             }
         } else if (datetimeMode & DM_IGNORE_TZ || (!hasOffset && !isZ)) {
             if (hasDate) {
@@ -1493,14 +1502,14 @@ struct PyHandler {
             value = NULL;
         } else if (!hasDate && datetimeMode & DM_SHIFT_TO_UTC) {
             value = PyDateTimeAPI->Time_FromTime(
-                hours, mins, secs, usecs, cache.consts.timezone_utc, PyDateTimeAPI->TimeType);
+                hours, mins, secs, usecs, consts->timezone_utc, PyDateTimeAPI->TimeType);
         } else {
             PyObject* offset = PyDateTimeAPI->Delta_FromDelta(0, tzoff, 0, 1,
                                                               PyDateTimeAPI->DeltaType);
             if (offset == NULL) {
                 value = NULL;
             } else {
-                PyObject* tz = PyObject_CallFunctionObjArgs(cache.types.timezone, offset, NULL);
+                PyObject* tz = PyObject_CallFunctionObjArgs(types->timezone, offset, NULL);
                 Py_DECREF(offset);
                 if (tz == NULL) {
                     value = NULL;
@@ -1511,7 +1520,7 @@ struct PyHandler {
                             PyDateTimeAPI->DateTimeType);
                         if (value != NULL && datetimeMode & DM_SHIFT_TO_UTC) {
                             PyObject* asUTC = PyObject_CallMethodObjArgs(
-                                value, cache.consts.names.astimezone, cache.consts.timezone_utc, NULL);
+                                value, consts->names.astimezone, consts->timezone_utc, NULL);
                             Py_DECREF(value);
                             if (asUTC == NULL) {
                                 value = NULL;
@@ -1558,7 +1567,7 @@ struct PyHandler {
         if (pystr == NULL)
             return false;
 
-        PyObject* value = PyObject_CallFunctionObjArgs(cache.types.uuid, pystr, NULL);
+        PyObject* value = PyObject_CallFunctionObjArgs(types->uuid, pystr, NULL);
         Py_DECREF(pystr);
 
         if (value == NULL)
@@ -1714,7 +1723,7 @@ loads(PyObject* self, PyObject* args, PyObject* kwargs)
         return NULL;
     }
 
-    PyObject* result = do_decode(NULL, jsonStr, jsonStrLen, NULL, 0, objectHook,
+    PyObject* result = do_decode(cache.consts, cache.types, NULL, jsonStr, jsonStrLen, NULL, 0, objectHook,
                                  numberMode, datetimeMode, uuidMode, parseMode);
 
     if (asUnicode != NULL)
@@ -1888,7 +1897,7 @@ load(PyObject* self, PyObject* args, PyObject* kwargs)
         }
     }
 
-    return do_decode(NULL, NULL, 0, jsonObject, chunkSize, objectHook,
+    return do_decode(cache.consts, cache.types, NULL, NULL, 0, jsonObject, chunkSize, objectHook,
                      numberMode, datetimeMode, uuidMode, parseMode);
 }
 
@@ -2039,12 +2048,13 @@ static PyType_Spec Decoder_Type_Spec = {
 
 
 static PyObject*
-do_decode(PyObject* decoder, const char* jsonStr, Py_ssize_t jsonStrLen,
-          PyObject* jsonStream, size_t chunkSize, PyObject* objectHook,
-          unsigned numberMode, unsigned datetimeMode, unsigned uuidMode,
-          unsigned parseMode)
+do_decode(const Consts& consts, const Types& types, PyObject* decoder,
+          const char* jsonStr, Py_ssize_t jsonStrLen, PyObject* jsonStream,
+          size_t chunkSize, PyObject* objectHook, unsigned numberMode,
+          unsigned datetimeMode, unsigned uuidMode, unsigned parseMode)
 {
-    PyHandler handler(decoder, objectHook, datetimeMode, uuidMode, numberMode);
+    PyHandler handler(consts, types, decoder, objectHook,
+                      datetimeMode, uuidMode, numberMode);
     Reader reader;
 
     if (jsonStr != NULL) {
@@ -2061,7 +2071,7 @@ do_decode(PyObject* decoder, const char* jsonStr, Py_ssize_t jsonStrLen,
 
         PyMem_Free(jsonStrCopy);
     } else {
-        PyReadStreamWrapper sw(jsonStream, chunkSize);
+        PyReadStreamWrapper sw(consts.names, jsonStream, chunkSize);
 
         DECODE(reader, kParseNoFlags, sw, handler);
     }
@@ -2088,7 +2098,7 @@ do_decode(PyObject* decoder, const char* jsonStr, Py_ssize_t jsonStrLen,
                 PyErr_Restore(etype, evalue, etraceback);
         }
         else
-            PyErr_Format(cache.types.errors.decode, "Parse error at offset %zu: %s",
+            PyErr_Format(types.errors.decode, "Parse error at offset %zu: %s",
                          offset, GetParseError_En(reader.GetParseErrorCode()));
 
         Py_XDECREF(handler.root);
@@ -2167,9 +2177,9 @@ decoder_call(PyObject* self, PyObject* args, PyObject* kwargs)
 
     DecoderObject* d = (DecoderObject*) self;
 
-    PyObject* result = do_decode(self, jsonStr, jsonStrLen, jsonObject, chunkSize, NULL,
-                                 d->numberMode, d->datetimeMode, d->uuidMode,
-                                 d->parseMode);
+    PyObject* result = do_decode(cache.consts, cache.types, self, jsonStr, jsonStrLen,
+                                 jsonObject, chunkSize, NULL, d->numberMode, d->datetimeMode,
+                                 d->uuidMode, d->parseMode);
 
     if (asUnicode != NULL)
         Py_DECREF(asUnicode);
@@ -3276,7 +3286,7 @@ dump(PyObject* self, PyObject* args, PyObject* kwargs)
     if (sortKeys)
         mappingMode |= MM_SORT_KEYS;
 
-    return do_stream_encode(value, stream, chunkSize, defaultFn,
+    return do_stream_encode(cache.consts.names, value, stream, chunkSize, defaultFn,
                             ensureAscii ? true : false, writeMode, indentChar,
                             indentCount, numberMode, datetimeMode, uuidMode, bytesMode,
                             iterableMode, mappingMode);
@@ -3434,13 +3444,13 @@ do_encode(PyObject* value, PyObject* defaultFn, bool ensureAscii, unsigned write
 
 
 static PyObject*
-do_stream_encode(PyObject* value, PyObject* stream, size_t chunkSize, PyObject* defaultFn,
-                 bool ensureAscii, unsigned writeMode, char indentChar,
-                 unsigned indentCount, unsigned numberMode, unsigned datetimeMode,
-                 unsigned uuidMode, unsigned bytesMode, unsigned iterableMode,
-                 unsigned mappingMode)
+do_stream_encode(const Names& names, PyObject* value, PyObject* stream, size_t chunkSize,
+                 PyObject* defaultFn, bool ensureAscii, unsigned writeMode,
+                 char indentChar, unsigned indentCount, unsigned numberMode,
+                 unsigned datetimeMode, unsigned uuidMode, unsigned bytesMode,
+                 unsigned iterableMode, unsigned mappingMode)
 {
-    PyWriteStreamWrapper os(stream, chunkSize);
+    PyWriteStreamWrapper os(names, stream, chunkSize);
 
     if (writeMode == WM_COMPACT) {
         if (ensureAscii) {
@@ -3506,7 +3516,7 @@ encoder_call(PyObject* self, PyObject* args, PyObject* kwargs)
             defaultFn = PyObject_GetAttr(self, cache.consts.names.default_name);
         }
 
-        result = do_stream_encode(value, stream, chunkSize, defaultFn, e->ensureAscii,
+        result = do_stream_encode(cache.consts.names, value, stream, chunkSize, defaultFn, e->ensureAscii,
                                   e->writeMode, e->indentChar, e->indentCount,
                                   e->numberMode, e->datetimeMode, e->uuidMode,
                                   e->bytesMode, e->iterableMode, e->mappingMode);
