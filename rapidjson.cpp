@@ -4073,6 +4073,9 @@ module_exec(PyObject* m)
 
 static struct PyModuleDef_Slot slots[] = {
     {Py_mod_exec, (void*) module_exec},
+#if PY_VERSION_HEX >= 0x030C0000
+    {Py_mod_multiple_interpreters, Py_MOD_PER_INTERPRETER_GIL_SUPPORTED},
+#endif
     {0, NULL}
 };
 
