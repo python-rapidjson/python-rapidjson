@@ -42,6 +42,14 @@ inline from_module_and_spec(PyObject& module, PyType_Spec& spec) noexcept {
 }
 
 
+static int
+heap_type_traverse(PyObject *op, visitproc visit, void *arg)
+{
+    Py_VISIT(Py_TYPE(op));
+    return 0;
+}
+
+
 /* On some MacOS combo, using Py_IS_XXX() macros does not work (see
    https://github.com/python-rapidjson/python-rapidjson/issues/78).
    OTOH, MSVC < 2015 does not have std::isxxx() (see
@@ -222,7 +230,6 @@ static PyObject* do_decode(PyObject* decoder,
                            unsigned uuidMode, unsigned parseMode);
 static PyObject* decoder_call(PyObject* self, PyObject* args, PyObject* kwargs);
 static PyObject* decoder_new(PyTypeObject* type, PyObject* args, PyObject* kwargs);
-static int decoder_traverse(PyObject *op, visitproc visit, void *arg);
 
 
 static PyObject* do_encode(PyObject* value, PyObject* defaultFn, bool ensureAscii,
@@ -1913,7 +1920,7 @@ static PyType_Slot Decoder_Type_Slot[] = {
     {Py_tp_call, reinterpret_cast<void*>(decoder_call)},
     {Py_tp_members, decoder_members},
     {Py_tp_new, reinterpret_cast<void*>(decoder_new)},
-    {Py_tp_traverse, reinterpret_cast<void*>(decoder_traverse)},
+    {Py_tp_traverse, reinterpret_cast<void*>(heap_type_traverse)},
     {0, NULL}
 };
 
@@ -2283,15 +2290,6 @@ decoder_new(PyTypeObject* type, PyObject* args, PyObject* kwargs)
 
     return (PyObject*) d;
 }
-
-
-static int
-decoder_traverse(PyObject *op, visitproc visit, void *arg)
-{
-    Py_VISIT(Py_TYPE(op));
-    return 0;
-}
-
 
 
 /////////////
@@ -3348,46 +3346,22 @@ static PyGetSetDef encoder_props[] = {
     {NULL}
 };
 
-static PyTypeObject Encoder_Type = {
-    PyVarObject_HEAD_INIT(NULL, 0)
-    "rapidjson.Encoder",                      /* tp_name */
-    sizeof(EncoderObject),                    /* tp_basicsize */
-    0,                                        /* tp_itemsize */
-    0,                                        /* tp_dealloc */
-    0,                                        /* tp_print */
-    0,                                        /* tp_getattr */
-    0,                                        /* tp_setattr */
-    0,                                        /* tp_compare */
-    0,                                        /* tp_repr */
-    0,                                        /* tp_as_number */
-    0,                                        /* tp_as_sequence */
-    0,                                        /* tp_as_mapping */
-    0,                                        /* tp_hash */
-    (ternaryfunc) encoder_call,               /* tp_call */
-    0,                                        /* tp_str */
-    0,                                        /* tp_getattro */
-    0,                                        /* tp_setattro */
-    0,                                        /* tp_as_buffer */
-    Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE, /* tp_flags */
-    encoder_doc,                              /* tp_doc */
-    0,                                        /* tp_traverse */
-    0,                                        /* tp_clear */
-    0,                                        /* tp_richcompare */
-    0,                                        /* tp_weaklistoffset */
-    0,                                        /* tp_iter */
-    0,                                        /* tp_iternext */
-    0,                                        /* tp_methods */
-    encoder_members,                          /* tp_members */
-    encoder_props,                            /* tp_getset */
-    0,                                        /* tp_base */
-    0,                                        /* tp_dict */
-    0,                                        /* tp_descr_get */
-    0,                                        /* tp_descr_set */
-    0,                                        /* tp_dictoffset */
-    0,                                        /* tp_init */
-    0,                                        /* tp_alloc */
-    encoder_new,                              /* tp_new */
-    PyObject_Del,                             /* tp_free */
+static PyType_Slot Encoder_Type_Slot[] = {
+    {Py_tp_doc, const_cast<char*>(encoder_doc)},
+    {Py_tp_call, reinterpret_cast<void*>(encoder_call)},
+    {Py_tp_members, encoder_members},
+    {Py_tp_getset, encoder_props},
+    {Py_tp_new, reinterpret_cast<void*>(encoder_new)},
+    {Py_tp_traverse, reinterpret_cast<void*>(heap_type_traverse)},
+    {0, NULL}
+};
+
+static PyType_Spec Encoder_Type_Spec = {
+    "rapidjson.Encoder",                                                                      /* name */
+    sizeof(EncoderObject),                                                                    /* basicsize */
+    0,                                                                                        /* itemsize */
+    Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE | Py_TPFLAGS_HAVE_GC | Py_TPFLAGS_IMMUTABLETYPE, /* flags */
+    Encoder_Type_Slot                                                                         /* slots */
 };
 
 
@@ -3885,7 +3859,8 @@ module_exec(PyObject* m)
     if (!decoder_type)
         return -1;
 
-    if (PyType_Ready(&Encoder_Type) < 0)
+    auto encoder_type = from_module_and_spec(*m, Encoder_Type_Spec);
+    if (!encoder_type)
         return -1;
 
     if (PyType_Ready(&Validator_Type) < 0)
@@ -4069,11 +4044,9 @@ module_exec(PyObject* m)
         return -1;
     decoder_type.release();
 
-    Py_INCREF(&Encoder_Type);
-    if (PyModule_AddObject(m, "Encoder", (PyObject*) &Encoder_Type) < 0) {
-        Py_DECREF(&Encoder_Type);
+    if (PyModule_AddObject(m, "Encoder", encoder_type.get()) < 0)
         return -1;
-    }
+    encoder_type.release();
 
     Py_INCREF(&Validator_Type);
     if (PyModule_AddObject(m, "Validator", (PyObject*) &Validator_Type) < 0) {
