@@ -3859,6 +3859,8 @@ static void validator_dealloc(PyObject* self)
 }
 
 
+namespace { extern PyModuleDef module; }
+
 static PyObject* validator_new(PyTypeObject* type, PyObject* args, PyObject* kwargs)
 {
     PyObject* jsonObject;
@@ -4188,19 +4190,21 @@ static struct PyModuleDef_Slot slots[] = {
     {0, NULL}
 };
 
+namespace {
 
-static PyModuleDef module = {
-    PyModuleDef_HEAD_INIT,      /* m_base */
-    "rapidjson",                /* m_name */
-    PyDoc_STR("Fast, simple JSON encoder and decoder. Based on RapidJSON C++ library."),
-    sizeof(rj_state),           /* m_size */
-    functions,                  /* m_methods */
-    slots,                      /* m_slots */
-    rj_traverse,                /* m_traverse */
-    rj_clear,                   /* m_clear */
-    rj_free                     /* m_free */
-};
+    PyModuleDef module = {
+        PyModuleDef_HEAD_INIT,      /* m_base */
+        "rapidjson",                /* m_name */
+        PyDoc_STR("Fast, simple JSON encoder and decoder. Based on RapidJSON C++ library."),
+        sizeof(rj_state),           /* m_size */
+        functions,                  /* m_methods */
+        slots,                      /* m_slots */
+        rj_traverse,                /* m_traverse */
+        rj_clear,                   /* m_clear */
+        rj_free                     /* m_free */
+    };
 
+}
 
 PyMODINIT_FUNC
 PyInit_rapidjson()
