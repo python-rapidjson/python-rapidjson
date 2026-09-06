@@ -21,6 +21,12 @@ Changes
 
   __ https://github.com/python-rapidjson/python-rapidjson/pull/239
 
+* Drop support for Python <3.10
+
+* Generate wheels on PyPI for Python 3.15rc1, thanks to cibuildwheel `4.2.0`__
+
+  __ https://cibuildwheel.pypa.io/en/stable/changelog/#v420
+
 
 1.23 (2025-12-07)
 ~~~~~~~~~~~~~~~~~
