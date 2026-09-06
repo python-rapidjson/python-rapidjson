@@ -1,6 +1,14 @@
 Changes
 -------
 
+1.25 (2026-09-06)
+~~~~~~~~~~~~~~~~~
+
+* Rectify packaging, mention minimal supported Python version (`issue 240`__)
+
+  __ https://github.com/python-rapidjson/python-rapidjson/issues/240
+
+
 1.24 (2026-09-05)
 ~~~~~~~~~~~~~~~~~
 

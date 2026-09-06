@@ -33,7 +33,7 @@ else:
                            " want to report the issue.")
 
 # Automatically updated by bump-my-version at release time
-VERSION = '1.24'
+VERSION = '1.25'
 
 with open('README.rst', encoding='utf-8') as f:
     LONG_DESCRIPTION = f.read()
