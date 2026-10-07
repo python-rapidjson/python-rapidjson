@@ -1769,28 +1769,12 @@ load(PyObject* self, PyObject* args, PyObject* kwargs)
         }
     }
 
-    if (numberModeObj) {
-        if (numberModeObj == Py_None) {
-            numberMode = NM_NONE;
-        } else if (PyLong_Check(numberModeObj)) {
-            int mode = PyLong_AsLong(numberModeObj);
-            if (mode < 0 || mode >= NM_MAX) {
-                PyErr_SetString(PyExc_ValueError, "Invalid number_mode");
-                return NULL;
-            }
-            numberMode = (unsigned) mode;
-            if (numberMode & NM_DECIMAL && numberMode & NM_NATIVE) {
-                PyErr_SetString(PyExc_ValueError,
-                                "Combining NM_NATIVE with NM_DECIMAL is not supported");
-                return NULL;
-            }
-        }
-    }
-    if (allowNan != -1) {
-        if (allowNan)
-            numberMode |= NM_NAN;
-        else
-            numberMode &= ~NM_NAN;
+    if (!accept_number_mode_arg(numberModeObj, allowNan, numberMode))
+        return NULL;
+    if (numberMode & NM_DECIMAL && numberMode & NM_NATIVE) {
+        PyErr_SetString(PyExc_ValueError,
+                        "Combining NM_NATIVE with NM_DECIMAL is not supported");
+        return NULL;
     }
 
     if (datetimeModeObj) {
@@ -2209,22 +2193,12 @@ decoder_new(PyTypeObject* type, PyObject* args, PyObject* kwargs)
                                      &parseModeObj))
         return NULL;
 
-    if (numberModeObj) {
-        if (numberModeObj == Py_None) {
-            numberMode = NM_NONE;
-        } else if (PyLong_Check(numberModeObj)) {
-            int mode = PyLong_AsLong(numberModeObj);
-            if (mode < 0 || mode >= NM_MAX) {
-                PyErr_SetString(PyExc_ValueError, "Invalid number_mode");
-                return NULL;
-            }
-            numberMode = (unsigned) mode;
-            if (numberMode & NM_DECIMAL && numberMode & NM_NATIVE) {
-                PyErr_SetString(PyExc_ValueError,
-                                "Combining NM_NATIVE with NM_DECIMAL is not supported");
-                return NULL;
-            }
-        }
+    if (!accept_number_mode_arg(numberModeObj, -1, numberMode))
+        return NULL;
+    if (numberMode & NM_DECIMAL && numberMode & NM_NATIVE) {
+        PyErr_SetString(PyExc_ValueError,
+                        "Combining NM_NATIVE with NM_DECIMAL is not supported");
+        return NULL;
     }
 
     if (datetimeModeObj) {

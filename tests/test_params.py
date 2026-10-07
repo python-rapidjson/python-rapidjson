@@ -612,6 +612,58 @@ def test_invalid_loads_params(posargs, kwargs, loads):
         assert False, "Expected either a TypeError or a ValueError"
 
 
+@pytest.mark.parametrize('number_mode,error', (
+    (1.0, TypeError),
+    ('0', TypeError),
+    ([], TypeError),
+    ({}, TypeError),
+    (object(), TypeError),
+    (-1, ValueError),
+    (8, ValueError),
+    (2**32, ValueError),
+    (2**32 + 1, ValueError),
+    (-(2**32), ValueError),
+    (2**64, ValueError),
+    (2**64 + 1, ValueError),
+    (-(2**64), ValueError),
+    (rj.NM_NATIVE | rj.NM_DECIMAL, ValueError),
+    (rj.NM_NATIVE | rj.NM_DECIMAL | rj.NM_NAN, ValueError),
+))
+def test_invalid_number_mode(number_mode, error, loads):
+    with pytest.raises(error) as exc:
+        loads('[1.25]', number_mode=number_mode)
+    assert type(exc.value) is error
+
+
+def test_invalid_number_mode_index_object(loads):
+    class IndexMode:
+        def __index__(self):
+            return rj.NM_NONE
+
+    with pytest.raises(TypeError):
+        loads('[1.25]', number_mode=IndexMode())
+
+
+@pytest.mark.parametrize('number_mode,error', ((1.0, TypeError), (2**32, ValueError)))
+def test_invalid_number_mode_decoder_constructor(number_mode, error):
+    with pytest.raises(error) as exc:
+        rj.Decoder(number_mode=number_mode)
+    assert type(exc.value) is error
+
+
+@pytest.mark.parametrize('stream_type,document', (
+    (io.StringIO, '[1.25]'), (io.BytesIO, b'[1.25]'),
+))
+@pytest.mark.parametrize('number_mode,error', ((1.0, TypeError), (2**32, ValueError)))
+def test_invalid_number_mode_preserves_stream(stream_type, document, number_mode, error):
+    stream = stream_type(document)
+    with pytest.raises(error) as exc:
+        rj.load(stream, number_mode=number_mode)
+    assert type(exc.value) is error
+    assert stream.tell() == 0
+    assert not stream.closed
+
+
 @pytest.mark.parametrize(
     'posargs,kwargs', (
         ( (), {} ),
