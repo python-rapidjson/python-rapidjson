@@ -61,3 +61,24 @@ def test_non_utf8_bytes(dumps):
     value = b'\xff\xf0'
     with pytest.raises(UnicodeDecodeError, match="'utf-8' codec can't decode byte"):
         dumps(value)
+
+
+@pytest.mark.parametrize('prefix', ['123', 'true', 'null', '{}', '[] \n', '"\u03b1"'])
+@pytest.mark.parametrize('suffix', ['', 'garbage'])
+def test_null_after_document(prefix, suffix, loads):
+    offset = len(prefix.encode('utf-8'))
+    with pytest.raises(rapidjson.JSONDecodeError,
+                       match=f'Parse error at offset {offset}: The document root'):
+        loads(prefix + '\0' + suffix)
+
+
+@pytest.mark.parametrize('value', ['\0', 'before\0after'])
+def test_escaped_null_roundtrip(value, dumps, loads):
+    assert loads(dumps(value)) == value
+
+
+@pytest.mark.parametrize('input_type', [bytes, bytearray])
+@pytest.mark.parametrize('decoder', [rapidjson.loads, rapidjson.Decoder()])
+def test_null_after_document_bytes(input_type, decoder):
+    with pytest.raises(rapidjson.JSONDecodeError, match='Parse error at offset 3:'):
+        decoder(input_type(b'123\0garbage'))

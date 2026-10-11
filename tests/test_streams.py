@@ -21,6 +21,19 @@ def test_invalid_chunk_size(cs):
         rj.load(s, chunk_size=cs)
 
 
+@pytest.mark.parametrize('chunk_size', [4, 5, 65536])
+@pytest.mark.parametrize('stream_type', [io.StringIO, io.BytesIO])
+@pytest.mark.parametrize('use_decoder', [False, True])
+def test_null_at_chunk_boundary(chunk_size, stream_type, use_decoder):
+    document = '1234\0garbage'
+    stream = stream_type(document.encode() if stream_type is io.BytesIO else document)
+    with pytest.raises(rj.JSONDecodeError, match='Parse error at offset 4:'):
+        if use_decoder:
+            rj.Decoder()(stream, chunk_size=chunk_size)
+        else:
+            rj.load(stream, chunk_size=chunk_size)
+
+
 class ChunkedStream(io.StringIO):
     def __init__(self):
         super().__init__()

@@ -276,6 +276,10 @@ public:
         return offset + pos;
     }
 
+    bool IsEnd() const {
+        return eof;
+    }
+
     void Flush() {
         assert(false);
     }
@@ -2049,6 +2053,7 @@ do_decode(PyObject* decoder, const char* jsonStr, Py_ssize_t jsonStrLen,
 {
     PyHandler handler(decoder, objectHook, datetimeMode, uuidMode, numberMode);
     Reader reader;
+    ParseResult result;
 
     if (jsonStr != NULL) {
         char* jsonStrCopy = (char*) PyMem_Malloc(sizeof(char) * (jsonStrLen+1));
@@ -2062,15 +2067,23 @@ do_decode(PyObject* decoder, const char* jsonStr, Py_ssize_t jsonStrLen,
 
         DECODE(reader, kParseInsituFlag, ss, handler);
 
+        result.Set(reader.GetParseErrorCode(), reader.GetErrorOffset());
+        if (!result.IsError() && ss.Tell() < (size_t) jsonStrLen)
+            result.Set(kParseErrorDocumentRootNotSingular, ss.Tell());
+
         PyMem_Free(jsonStrCopy);
     } else {
         PyReadStreamWrapper sw(jsonStream, chunkSize);
 
         DECODE(reader, kParseNoFlags, sw, handler);
+
+        result.Set(reader.GetParseErrorCode(), reader.GetErrorOffset());
+        if (!result.IsError() && !sw.IsEnd())
+            result.Set(kParseErrorDocumentRootNotSingular, sw.Tell());
     }
 
-    if (reader.HasParseError()) {
-        size_t offset = reader.GetErrorOffset();
+    if (result.IsError()) {
+        size_t offset = result.Offset();
 
         if (PyErr_Occurred()) {
             PyObject* etype;
@@ -2092,7 +2105,7 @@ do_decode(PyObject* decoder, const char* jsonStr, Py_ssize_t jsonStrLen,
         }
         else
             PyErr_Format(decode_error, "Parse error at offset %zu: %s",
-                         offset, GetParseError_En(reader.GetParseErrorCode()));
+                         offset, GetParseError_En(result.Code()));
 
         Py_XDECREF(handler.root);
         return NULL;
