@@ -54,8 +54,8 @@ def test_object_hook_and_default():
     tracemalloc.stop()
 
     for stat in top_stats[:10]:
-        # Uhm, with Py 3.15 the diff is 4...
-        assert stat.count_diff <= 4
+        # Uhm, with Py 3.15 the diff is 4, while 3.14 on Windows ARM is 5...
+        assert stat.count_diff <= 5
 
 
 def test_load():
@@ -80,8 +80,8 @@ def test_load():
     tracemalloc.stop()
 
     for stat in top_stats[:10]:
-        # Uhm, with Py 3.14, on macOS,  the diff is 3...
-        assert stat.count_diff <= 3
+        # Uhm, with Py 3.14 on Windows ARM the diff is 4...
+        assert stat.count_diff <= 4
 
 
 def test_failed_validation():
