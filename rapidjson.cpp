@@ -2029,12 +2029,17 @@ static PyTypeObject Decoder_Type = {
             if (parseMode & PM_COMMENTS) {                              \
                 r.Parse<f |                                             \
                         kParseCommentsFlag |                            \
-                        kParseNumbersAsStringsFlag>(s, h);              \
+                        kParseNumbersAsStringsFlag |                    \
+                        kParseTrailingCommasFlag>(s, h);                \
             } else {                                                    \
                 r.Parse<f |                                             \
                         kParseNumbersAsStringsFlag |                    \
                         kParseTrailingCommasFlag>(s, h);                \
             }                                                           \
+        } else if (parseMode & PM_COMMENTS) {                           \
+            r.Parse<f |                                                 \
+                    kParseNumbersAsStringsFlag |                        \
+                    kParseCommentsFlag>(s, h);                          \
         } else {                                                        \
             r.Parse<f | kParseNumbersAsStringsFlag>(s, h);              \
         }                                                               \

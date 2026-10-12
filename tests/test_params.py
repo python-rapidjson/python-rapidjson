@@ -8,6 +8,7 @@
 
 from calendar import timegm
 from datetime import date, datetime, time, timezone, timedelta
+from decimal import Decimal
 import io
 import math
 import uuid
@@ -154,6 +155,57 @@ def test_parse_mode(dumps, loads):
     pytest.raises(ValueError, loads, c_and_tc, parse_mode=rj.PM_TRAILING_COMMAS)
     pytest.raises(ValueError, loads, c_and_tc, parse_mode=rj.PM_COMMENTS)
     assert loads(c_and_tc, parse_mode=rj.PM_COMMENTS | rj.PM_TRAILING_COMMAS) == expected
+
+
+@pytest.mark.parametrize('number_mode', [None, rj.NM_NONE, rj.NM_DECIMAL])
+@pytest.mark.parametrize('parse_mode', [
+    rj.PM_NONE, rj.PM_COMMENTS, rj.PM_TRAILING_COMMAS,
+    rj.PM_COMMENTS | rj.PM_TRAILING_COMMAS,
+])
+def test_parse_mode_without_nan(loads, number_mode, parse_mode):
+    documents = [
+        (rj.PM_NONE,
+         '[0.123456789123456789,{"integer":1208925819614629174706177}]'),
+        (rj.PM_COMMENTS,
+         '/* start */[0.123456789123456789,// fraction\n'
+         '{"integer":1208925819614629174706177/* integer */}]/* end */'),
+        (rj.PM_TRAILING_COMMAS,
+         '[0.123456789123456789,{"integer":1208925819614629174706177,},]'),
+        (rj.PM_COMMENTS | rj.PM_TRAILING_COMMAS,
+         '/* start */[0.123456789123456789,// fraction\n'
+         '{"integer":1208925819614629174706177/* integer */,},]/* end */'),
+    ]
+    options = {'number_mode': number_mode, 'parse_mode': parse_mode}
+    number_type = Decimal if number_mode == rj.NM_DECIMAL else float
+    for required_mode, document in documents:
+        if parse_mode & required_mode == required_mode:
+            result = loads(document, **options)
+            assert result == [number_type('0.123456789123456789'),
+                              {'integer': 2**80 + 1}]
+            assert type(result[0]) is number_type
+            assert type(result[1]['integer']) is int
+        else:
+            with pytest.raises(rj.JSONDecodeError):
+                loads(document, **options)
+
+    for document in ('[NaN]', '[Infinity]', '[-Infinity]', '[1.5,,2]',
+                     '[1.5 2]', '{unquoted:1}', '[1.5] /* unterminated',
+                     '[1.5] [2]'):
+        with pytest.raises(rj.JSONDecodeError):
+            loads(document, **options)
+    assert loads('["/* text */","// text"]', **options) == ['/* text */', '// text']
+
+
+@pytest.mark.parametrize('parse_mode,document', [
+    (rj.PM_COMMENTS, '/* comment */[1.5]'),
+    (rj.PM_TRAILING_COMMAS, '[1.5,]'),
+    (rj.PM_COMMENTS | rj.PM_TRAILING_COMMAS, '/* comment */[1.5,]'),
+])
+def test_parse_mode_with_allow_nan_false(parse_mode, document):
+    assert rj.loads(document, allow_nan=False, parse_mode=parse_mode) == [1.5]
+    assert rj.load(io.StringIO(document), allow_nan=False, parse_mode=parse_mode) == [1.5]
+    assert rj.load(io.BytesIO(document.encode()), allow_nan=False,
+                   parse_mode=parse_mode) == [1.5]
 
 
 def test_indent(dumps):
