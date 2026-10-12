@@ -1,6 +1,27 @@
 Changes
 -------
 
+1.26 (unreleased)
+~~~~~~~~~~~~~~~~~
+
+* Add Windows ARM64 build (`PR #242`__), thanks to Nikhil Dabas
+
+  __ https://github.com/python-rapidjson/python-rapidjson/pull/242
+
+* Fix parse_mode flags without native or NaN number modes (`PR #243`__), thanks to Ryan
+  Duguid
+
+  __ https://github.com/python-rapidjson/python-rapidjson/pull/243
+
+* Validate number_mode in load and Decoder (`PR #244`__), thanks to Ryan Duguid
+
+  __ https://github.com/python-rapidjson/python-rapidjson/pull/244
+
+* Reject JSON input truncated at an embedded NUL (`PR #245`__), thanks to Michał Furgała
+
+  __ https://github.com/python-rapidjson/python-rapidjson/pull/245
+
+
 1.25 (2026-09-06)
 ~~~~~~~~~~~~~~~~~
 
