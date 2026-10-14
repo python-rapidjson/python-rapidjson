@@ -18,6 +18,20 @@ import pytest
 import rapidjson as rj
 
 
+@pytest.mark.parametrize('mode', ['datetime_mode', 'uuid_mode', 'parse_mode'])
+@pytest.mark.parametrize('value', [2**32, 2**32 + 1, -(2**32)])
+def test_large_decode_mode_is_rejected(loads, mode, value):
+    with pytest.raises((ValueError, OverflowError)):
+        loads('null', **{mode: value})
+
+
+@pytest.mark.parametrize('mode', ['datetime_mode', 'uuid_mode'])
+@pytest.mark.parametrize('value', [2**32, 2**32 + 1, -(2**32)])
+def test_large_encode_mode_is_rejected(dumps, mode, value):
+    with pytest.raises((ValueError, OverflowError)):
+        dumps(None, **{mode: value})
+
+
 def test_skipkeys():
     o = {True: False, -1: 1, 1.1: 1.1, (1,2): "foo", b"asdf": 1, None: None}
 
