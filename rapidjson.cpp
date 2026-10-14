@@ -113,7 +113,7 @@ datetime_mode_format(unsigned mode) {
 
 
 static inline bool
-valid_datetime_mode(int mode) {
+valid_datetime_mode(long mode) {
     int format = datetime_mode_format(mode);
     return (mode >= 0 && mode < DM_MAX
             && (format <= DM_UNIX_TIME)
@@ -1785,7 +1785,7 @@ load(PyObject* self, PyObject* args, PyObject* kwargs)
         if (datetimeModeObj == Py_None) {
             datetimeMode = DM_NONE;
         } else if (PyLong_Check(datetimeModeObj)) {
-            int mode = PyLong_AsLong(datetimeModeObj);
+            long mode = PyLong_AsLong(datetimeModeObj);
             if (!valid_datetime_mode(mode)) {
                 PyErr_SetString(PyExc_ValueError, "Invalid datetime_mode");
                 return NULL;
@@ -1808,7 +1808,7 @@ load(PyObject* self, PyObject* args, PyObject* kwargs)
         if (uuidModeObj == Py_None) {
             uuidMode = UM_NONE;
         } else if (PyLong_Check(uuidModeObj)) {
-            int mode = PyLong_AsLong(uuidModeObj);
+            long mode = PyLong_AsLong(uuidModeObj);
             if (mode < 0 || mode >= UM_MAX) {
                 PyErr_SetString(PyExc_ValueError, "Invalid uuid_mode");
                 return NULL;
@@ -1825,7 +1825,7 @@ load(PyObject* self, PyObject* args, PyObject* kwargs)
         if (parseModeObj == Py_None) {
             parseMode = PM_NONE;
         } else if (PyLong_Check(parseModeObj)) {
-            int mode = PyLong_AsLong(parseModeObj);
+            long mode = PyLong_AsLong(parseModeObj);
             if (mode < 0 || mode >= PM_MAX) {
                 PyErr_SetString(PyExc_ValueError, "Invalid parse_mode");
                 return NULL;
@@ -2223,7 +2223,7 @@ decoder_new(PyTypeObject* type, PyObject* args, PyObject* kwargs)
         if (datetimeModeObj == Py_None) {
             datetimeMode = DM_NONE;
         } else if (PyLong_Check(datetimeModeObj)) {
-            int mode = PyLong_AsLong(datetimeModeObj);
+            long mode = PyLong_AsLong(datetimeModeObj);
             if (!valid_datetime_mode(mode)) {
                 PyErr_SetString(PyExc_ValueError, "Invalid datetime_mode");
                 return NULL;
@@ -2246,7 +2246,7 @@ decoder_new(PyTypeObject* type, PyObject* args, PyObject* kwargs)
         if (uuidModeObj == Py_None) {
             uuidMode = UM_NONE;
         } else if (PyLong_Check(uuidModeObj)) {
-            int mode = PyLong_AsLong(uuidModeObj);
+            long mode = PyLong_AsLong(uuidModeObj);
             if (mode < 0 || mode >= UM_MAX) {
                 PyErr_SetString(PyExc_ValueError, "Invalid uuid_mode");
                 return NULL;
@@ -2263,7 +2263,7 @@ decoder_new(PyTypeObject* type, PyObject* args, PyObject* kwargs)
         if (parseModeObj == Py_None) {
             parseMode = PM_NONE;
         } else if (PyLong_Check(parseModeObj)) {
-            int mode = PyLong_AsLong(parseModeObj);
+            long mode = PyLong_AsLong(parseModeObj);
             if (mode < 0 || mode >= PM_MAX) {
                 PyErr_SetString(PyExc_ValueError, "Invalid parse_mode");
                 return NULL;
