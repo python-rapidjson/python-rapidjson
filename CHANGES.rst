@@ -4,6 +4,8 @@ Changes
 1.26 (unreleased)
 ~~~~~~~~~~~~~~~~~
 
+* Reject embedded NUL truncation in ``Validator`` schemas and documents
+
 * Add Windows ARM64 build (`PR #242`__), thanks to Nikhil Dabas
 
   __ https://github.com/python-rapidjson/python-rapidjson/pull/242

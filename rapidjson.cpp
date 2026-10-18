@@ -3716,17 +3716,18 @@ static PyObject* validator_call(PyObject* self, PyObject* args, PyObject* kwargs
         return NULL;
 
     const char* jsonStr;
+    Py_ssize_t jsonStrLen;
     PyObject* asUnicode = NULL;
 
     if (PyUnicode_Check(jsonObject)) {
-        jsonStr = PyUnicode_AsUTF8(jsonObject);
+        jsonStr = PyUnicode_AsUTF8AndSize(jsonObject, &jsonStrLen);
         if (jsonStr == NULL)
             return NULL;
     } else if (PyBytes_Check(jsonObject) || PyByteArray_Check(jsonObject)) {
         asUnicode = PyUnicode_FromEncodedObject(jsonObject, "utf-8", NULL);
         if (asUnicode == NULL)
             return NULL;
-        jsonStr = PyUnicode_AsUTF8(asUnicode);
+        jsonStr = PyUnicode_AsUTF8AndSize(asUnicode, &jsonStrLen);
         if (jsonStr == NULL) {
             Py_DECREF(asUnicode);
             return NULL;
@@ -3741,7 +3742,8 @@ static PyObject* validator_call(PyObject* self, PyObject* args, PyObject* kwargs
     bool error;
 
     Py_BEGIN_ALLOW_THREADS
-    error = d.Parse(jsonStr).HasParseError();
+    StringStream stream(jsonStr);
+    error = d.ParseStream(stream).HasParseError() || stream.Tell() < (size_t) jsonStrLen;
     Py_END_ALLOW_THREADS
 
     if (error) {
@@ -3803,17 +3805,18 @@ static PyObject* validator_new(PyTypeObject* type, PyObject* args, PyObject* kwa
         return NULL;
 
     const char* jsonStr;
+    Py_ssize_t jsonStrLen;
     PyObject* asUnicode = NULL;
 
     if (PyUnicode_Check(jsonObject)) {
-        jsonStr = PyUnicode_AsUTF8(jsonObject);
+        jsonStr = PyUnicode_AsUTF8AndSize(jsonObject, &jsonStrLen);
         if (jsonStr == NULL)
             return NULL;
     } else if (PyBytes_Check(jsonObject) || PyByteArray_Check(jsonObject)) {
         asUnicode = PyUnicode_FromEncodedObject(jsonObject, "utf-8", NULL);
         if (asUnicode == NULL)
             return NULL;
-        jsonStr = PyUnicode_AsUTF8(asUnicode);
+        jsonStr = PyUnicode_AsUTF8AndSize(asUnicode, &jsonStrLen);
         if (jsonStr == NULL) {
             Py_DECREF(asUnicode);
             return NULL;
@@ -3828,7 +3831,8 @@ static PyObject* validator_new(PyTypeObject* type, PyObject* args, PyObject* kwa
     bool error;
 
     Py_BEGIN_ALLOW_THREADS
-    error = d.Parse(jsonStr).HasParseError();
+    StringStream stream(jsonStr);
+    error = d.ParseStream(stream).HasParseError() || stream.Tell() < (size_t) jsonStrLen;
     Py_END_ALLOW_THREADS
 
     if (asUnicode != NULL)
