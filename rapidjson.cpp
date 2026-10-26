@@ -6,8 +6,6 @@
 // :Copyright: © 2015-2026 Lele Gaifax
 //
 
-#include <locale.h>
-
 #include <Python.h>
 #include <datetime.h>
 #include <structmember.h>
@@ -2805,30 +2803,18 @@ dumps_internal(
                 if (datetimeMode & DM_ONLY_SECONDS) {
                     writer->Int64((int64_t) timestamp);
                 } else {
-                    // Writer.SetMaxDecimalPlaces(6) truncates the value,
-                    // so for example 1514893636.276703 would come out as
-                    // 1514893636.276702, because its exact double value is
-                    // 1514893636.2767028808593750000000000...
-                    char tsStr[12 + 1 + 6 + 1];
-
-                    // Temporarily switch to a POSIX locale, in case the outer world is
-                    // configured differently: by chance I got one doctest failure, and I
-                    // can only imagine that recent Sphinx (that is, 4.2+) initializes the
-                    // locale to something that implies a decimal separator different from
-                    // a dot ".", say a comma "," when LANG is "it_IT"... not the best
-                    // thing to do when emitting JSON!
-
-                    const char* locale = setlocale(LC_NUMERIC, NULL);
-                    setlocale(LC_NUMERIC, "C");
-
-                    int size = snprintf(tsStr, 12 + 1 + 6, "%.6f", timestamp);
-
-                    setlocale(LC_NUMERIC, locale);
-
-                    // Remove trailing 0s
+                    // Keep microsecond precision without changing the process locale.
+                    char* tsStr = PyOS_double_to_string(timestamp, 'f', 6, 0, NULL);
+                    if (tsStr == NULL) {
+                        Py_XDECREF(asUTC);
+                        return false;
+                    }
+                    size_t size = strlen(tsStr);
+                    // Keep one fractional digit, as before.
                     while (tsStr[size-2] != '.' && tsStr[size-1] == '0')
                         size--;
                     writer->RawValue(tsStr, size, kNumberType);
+                    PyMem_Free(tsStr);
                 }
             } else {
                 hour = PyDateTime_TIME_GET_HOUR(dtObject);
@@ -2892,25 +2878,16 @@ dumps_internal(
             if (datetimeMode & DM_ONLY_SECONDS) {
                 writer->Int64((int64_t) timestamp);
             } else {
-                // Writer.SetMaxDecimalPlaces(6) truncates the value,
-                // so for example 1514893636.276703 would come out as
-                // 1514893636.276702, because its exact double value is
-                // 1514893636.2767028808593750000000000...
-                char tsStr[12 + 1 + 6 + 1];
-
-                // Temporarily switch to a POSIX locale, in case the outer
-                // world is configured differently, see above
-
-                const char* locale = setlocale(LC_NUMERIC, NULL);
-                setlocale(LC_NUMERIC, "C");
-
-                setlocale(LC_NUMERIC, locale);
-
-                int size = snprintf(tsStr, 12 + 1 + 6, "%.6f", timestamp);
-                // Remove trailing 0s
+                // Keep microsecond precision without changing the process locale.
+                char* tsStr = PyOS_double_to_string(timestamp, 'f', 6, 0, NULL);
+                if (tsStr == NULL)
+                    return false;
+                size_t size = strlen(tsStr);
+                // Keep one fractional digit, as before.
                 while (tsStr[size-2] != '.' && tsStr[size-1] == '0')
                     size--;
                 writer->RawValue(tsStr, size, kNumberType);
+                PyMem_Free(tsStr);
             }
         }
     } else if (uuidMode != UM_NONE
