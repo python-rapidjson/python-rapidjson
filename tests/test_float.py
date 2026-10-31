@@ -14,6 +14,29 @@ import pytest
 import rapidjson as rj
 
 
+@pytest.mark.parametrize('value', [
+    'NaN', '-NaN', '+NaN', 'sNaN', '-sNaN', '+sNaN', 'NaN123', '-NaN123',
+])
+@pytest.mark.parametrize('use_encoder', [False, True])
+def test_decimal_nan_tokens(value, use_encoder):
+    number = Decimal(value)
+    mode = rj.NM_DECIMAL | rj.NM_NAN
+    encode = rj.Encoder(number_mode=mode) if use_encoder else (
+        lambda obj: rj.dumps(obj, number_mode=mode)
+    )
+    assert encode(number) == 'NaN'
+    encoded = encode({'value': [number]})
+    decoded = rj.loads(encoded, number_mode=mode)
+    assert decoded['value'][0].is_nan()
+
+    if use_encoder:
+        strict_encode = rj.Encoder(number_mode=rj.NM_DECIMAL)
+    else:
+        strict_encode = lambda obj: rj.dumps(obj, number_mode=rj.NM_DECIMAL)
+    with pytest.raises(ValueError, match='Out of range decimal'):
+        strict_encode(number)
+
+
 def test_infinity_f():
     inf = float("inf")
 

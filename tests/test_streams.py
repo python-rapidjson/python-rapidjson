@@ -8,6 +8,7 @@
 import io
 import sys
 import tempfile
+from decimal import Decimal
 
 import pytest
 
@@ -87,6 +88,24 @@ def test_underlying_stream_write_error():
     stream = CattyStream()
     with pytest.raises(CattyError):
         rj.dump('1234567890', stream)
+
+
+@pytest.mark.parametrize('value', [
+    Decimal('NaN'), Decimal('sNaN'), Decimal('-NaN123'),
+    Decimal('1.5'), float('nan'),
+])
+@pytest.mark.parametrize('use_encoder', [False, True])
+@pytest.mark.parametrize('nested', [False, True])
+def test_nonfinite_closed_stream_error(value, use_encoder, nested):
+    stream = io.StringIO()
+    stream.close()
+    mode = rj.NM_DECIMAL | rj.NM_NAN
+    datum = [value] if nested else value
+    with pytest.raises(ValueError, match='I/O operation on closed file'):
+        if use_encoder:
+            rj.Encoder(number_mode=mode)(datum, stream=stream)
+        else:
+            rj.dump(datum, stream, number_mode=mode)
 
 
 def test_file_object():

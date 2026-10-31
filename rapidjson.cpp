@@ -2387,6 +2387,19 @@ dumps_internal(
             }
         }
 
+        if (numberMode & NM_NAN) {
+            PyObject* is_nan = PyObject_CallMethodObjArgs(object, is_nan_name,
+                                                          NULL);
+            if (is_nan == NULL)
+                return false;
+            bool nan = is_nan == Py_True;
+            Py_DECREF(is_nan);
+            if (nan) {
+                writer->RawValue("NaN", 3, kNumberType);
+                return PyErr_Occurred() ? false : true;
+            }
+        }
+
         PyObject* decStrObj = PyObject_Str(object);
         if (decStrObj == NULL)
             return false;
