@@ -54,8 +54,9 @@ def test_object_hook_and_default():
     tracemalloc.stop()
 
     for stat in top_stats[:10]:
-        # Uhm, with Py 3.15 the diff is 4, while 3.14 on Windows ARM is 5...
-        assert stat.count_diff <= 5
+        # Uhm, with Py 3.15 the diff is 4, while 3.14 on Windows ARM is 5, and 3.14t on
+        # Ubuntu is 6...
+        assert stat.count_diff <= 6
 
 
 def test_load():
