@@ -4,11 +4,6 @@ Changes
 1.26 (unreleased)
 ~~~~~~~~~~~~~~~~~
 
-* Preserve the numeric locale when serializing Unix timestamps
-  (`issue 252`__)
-
-  __ https://github.com/python-rapidjson/python-rapidjson/issues/252
-
 * Add Windows ARM64 build (`PR #242`__), thanks to Nikhil Dabas
 
   __ https://github.com/python-rapidjson/python-rapidjson/pull/242
@@ -39,6 +34,11 @@ Changes
   thanks to Jaden Fix
 
   __ https://github.com/python-rapidjson/python-rapidjson/pull/250
+
+* Preserve the numeric locale when serializing Unix timestamps (`PR #253`__), thanks to
+  Parijat Biswas
+
+  __ https://github.com/python-rapidjson/python-rapidjson/pull/253
 
 
 1.25 (2026-09-06)
