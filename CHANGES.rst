@@ -4,9 +4,6 @@ Changes
 1.26 (unreleased)
 ~~~~~~~~~~~~~~~~~
 
-* Reject oversized datetime, UUID and parse mode values before narrowing them to
-  their internal representations.
-
 * Add Windows ARM64 build (`PR #242`__), thanks to Nikhil Dabas
 
   __ https://github.com/python-rapidjson/python-rapidjson/pull/242
@@ -23,6 +20,11 @@ Changes
 * Reject JSON input truncated at an embedded NUL (`PR #245`__), thanks to Michał Furgała
 
   __ https://github.com/python-rapidjson/python-rapidjson/pull/245
+
+* Reject oversized datetime, UUID and parse mode values before narrowing them to
+  their internal representations (`PR #248`__), thanks to Luochenchen
+
+  __ https://github.com/python-rapidjson/python-rapidjson/pull/248
 
 
 1.25 (2026-09-06)
