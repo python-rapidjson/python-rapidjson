@@ -26,6 +26,10 @@ Changes
 
   __ https://github.com/python-rapidjson/python-rapidjson/pull/248
 
+* Generate wheels for riscv4 (`PR #249`__), thanks to Julien Stephan
+
+  __ https://github.com/python-rapidjson/python-rapidjson/pull/249
+
 
 1.25 (2026-09-06)
 ~~~~~~~~~~~~~~~~~
