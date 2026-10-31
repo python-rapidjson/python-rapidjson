@@ -61,6 +61,7 @@ array = [dict(index=j, array=[dict(index=i,
 
 NO_OPTION = {}
 DATETIMES = {'datetime_mode': rj.DM_ISO8601}
+UNIX_TIMES = {'datetime_mode': rj.DM_UNIX_TIME}
 UUIDS = {'uuid_mode': rj.UM_CANONICAL}
 FOOS_DUMP = {'default': default}
 FOOS_LOAD = {'object_hook': hook}
@@ -79,6 +80,8 @@ ARRAY_LOAD = {'datetime_mode': rj.DM_ISO8601,
     ( rj.RawJSON(' "foo" '), NO_OPTION, NO_OPTION),
     ( right_now, DATETIMES, DATETIMES ),
     ( date, DATETIMES, DATETIMES ),
+    ( right_now, UNIX_TIMES, NO_OPTION ),
+    ( date, UNIX_TIMES, NO_OPTION ),
     ( time, DATETIMES, DATETIMES ),
     ( nil, UUIDS, UUIDS ),
     ( foo, FOOS_DUMP, FOOS_LOAD ),

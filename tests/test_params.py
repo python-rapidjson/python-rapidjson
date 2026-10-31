@@ -892,3 +892,37 @@ def test_encoder_attrs():
     e = rj.Encoder(mapping_mode=rj.MM_SKIP_NON_STRING_KEYS|rj.MM_SORT_KEYS)
     assert e.skip_invalid_keys
     assert e.sort_keys
+
+
+@pytest.mark.parametrize('value', [
+    date(2026, 10, 26),
+    datetime(2026, 10, 26, 1, 2, 3, 123456, tzinfo=timezone.utc),
+])
+@pytest.mark.parametrize('comma_decimal', [False, True])
+def test_unix_time_preserves_numeric_locale(value, comma_decimal, dumps):
+    import locale
+
+    original = locale.setlocale(locale.LC_NUMERIC)
+    try:
+        if comma_decimal:
+            for candidate in ('de_DE.UTF-8', 'de_DE.utf8', 'German_Germany.1252'):
+                try:
+                    active = locale.setlocale(locale.LC_NUMERIC, candidate)
+                except locale.Error:
+                    continue
+                if locale.localeconv()['decimal_point'] == ',':
+                    break
+            else:
+                pytest.skip('a comma-decimal locale is not available')
+        else:
+            active = locale.setlocale(locale.LC_NUMERIC, 'C')
+
+        encoded = dumps(value, datetime_mode=rj.DM_UNIX_TIME | rj.DM_NAIVE_IS_UTC)
+        assert locale.setlocale(locale.LC_NUMERIC) == active
+        assert locale.format_string('%.1f', 1.5) == ('1,5' if comma_decimal else '1.5')
+        assert ',' not in encoded
+        expected = (value.timestamp() if isinstance(value, datetime)
+                    else datetime(2026, 10, 26, tzinfo=timezone.utc).timestamp())
+        assert rj.loads(encoded) == expected
+    finally:
+        locale.setlocale(locale.LC_NUMERIC, original)
