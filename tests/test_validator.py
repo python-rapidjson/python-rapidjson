@@ -65,3 +65,40 @@ def test_invalid(schema, json, details):
 def test_additional_and_pattern_properties_valid(schema, json):
     validate = rj.Validator(schema)
     validate(json)
+
+
+@pytest.mark.parametrize('convert', (str, lambda s: s.encode('utf-8'),
+                                     lambda s: bytearray(s.encode('utf-8'))))
+@pytest.mark.parametrize('suffix', ('\0', '\0garbage', ' \n\0{}'))
+@pytest.mark.parametrize('root', ('{}', '{"type":"integer"}', '{"title":"café"}'))
+def test_schema_with_embedded_nul(convert, suffix, root):
+    with pytest.raises(rj.JSONDecodeError, match='Invalid JSON'):
+        rj.Validator(convert(root + suffix))
+
+
+@pytest.mark.parametrize('convert', (str, lambda s: s.encode('utf-8'),
+                                     lambda s: bytearray(s.encode('utf-8'))))
+@pytest.mark.parametrize('suffix', ('\0', '\0garbage', ' \n\0{}'))
+@pytest.mark.parametrize('root', ('123', '[]', '{"key":"café"}'))
+def test_document_with_embedded_nul(convert, suffix, root):
+    validate = rj.Validator('{}')
+    with pytest.raises(rj.JSONDecodeError, match='Invalid JSON'):
+        validate(convert(root + suffix))
+
+
+@pytest.mark.parametrize('convert', (str, lambda s: s.encode('utf-8'),
+                                     lambda s: bytearray(s.encode('utf-8'))))
+def test_escaped_nul_remains_valid(convert):
+    validate = rj.Validator(convert(rj.dumps({"type": "string", "enum": ["a\0b"]})))
+    validate(convert(rj.dumps("a\0b")))
+    with pytest.raises(rj.ValidationError):
+        validate(rj.dumps("other"))
+
+
+@pytest.mark.parametrize('convert', (str, lambda s: s.encode('utf-8'),
+                                     lambda s: bytearray(s.encode('utf-8'))))
+def test_trailing_json_whitespace(convert):
+    validate = rj.Validator(convert('{"type":"integer"} \n\t\r'))
+    validate(convert('123 \n\t\r'))
+    with pytest.raises(rj.ValidationError):
+        validate(convert('"wrong type" \n\t\r'))

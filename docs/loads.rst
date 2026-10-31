@@ -113,8 +113,16 @@
 
       >>> loads('123456789012345678901234567890')
       123456789012345678901234567890
-      >>> loads('123456789012345678901234567890', number_mode=NM_NATIVE)
-      1.2345678901234566e+29
+      >>> import math
+      >>> native = loads('123456789012345678901234567890', number_mode=NM_NATIVE)
+      >>> isinstance(native, float)
+      True
+      >>> math.isclose(native, float(123456789012345678901234567890),
+      ...              rel_tol=0, abs_tol=math.ulp(native))
+      True
+
+   The final bit of the rounded ``double`` can differ between platforms; the example
+   permits a difference of one unit in the last place while requiring a ``float``.
 
    These flags can be combined together:
 
