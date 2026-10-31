@@ -4,10 +4,6 @@ Changes
 1.26 (unreleased)
 ~~~~~~~~~~~~~~~~~
 
-* Normalize signed, signaling and payload-bearing Decimal NaNs to the supported
-  ``NaN`` token when non-finite numbers are enabled, so encoded output remains
-  readable by the decoder.
-
 * Add Windows ARM64 build (`PR #242`__), thanks to Nikhil Dabas
 
   __ https://github.com/python-rapidjson/python-rapidjson/pull/242
@@ -43,6 +39,13 @@ Changes
   Parijat Biswas
 
   __ https://github.com/python-rapidjson/python-rapidjson/pull/253
+
+* Normalize signed, signaling and payload-bearing Decimal NaNs to the supported
+  ``NaN`` token when non-finite numbers are enabled, so encoded output remains
+  readable by the decoder (`PR #255`__), thanks to Rupayon Haldar
+
+  __ https://github.com/python-rapidjson/python-rapidjson/pull/255
+
 
 
 1.25 (2026-09-06)
