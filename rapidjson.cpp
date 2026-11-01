@@ -2932,7 +2932,8 @@ dumps_internal(
         memcpy(quoted + 1, s, size);
         writer->RawValue(quoted, (SizeType) size + 2, kStringType);
         Py_DECREF(hexval);
-    } else if (!(iterableMode & IM_ONLY_LISTS) && PyIter_Check(object)) {
+    } else if (!(iterableMode & IM_ONLY_LISTS)
+               && (PyIter_Check(object) || PyAnySet_Check(object))) {
         PyObject* iterator = PyObject_GetIter(object);
         if (iterator == NULL)
             return false;

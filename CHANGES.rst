@@ -4,6 +4,10 @@ Changes
 1.26 (2026-11-01)
 ~~~~~~~~~~~~~~~~~
 
+* Serialize sets and frozensets as arrays under ``IM_ANY_ITERABLE`` (`issue 168`__)
+
+  __ https://github.com/python-rapidjson/python-rapidjson/issues/168
+
 * Add Windows ARM64 build (`PR #242`__), thanks to Nikhil Dabas
 
   __ https://github.com/python-rapidjson/python-rapidjson/pull/242
