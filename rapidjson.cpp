@@ -124,12 +124,28 @@ typedef struct {
 } rj_state;
 
 
+namespace { extern PyModuleDef module_def; }
+
+
 static inline rj_state*
 get_rj_state(PyObject* module)
 {
     void* state = PyModule_GetState(module);
     assert(state != NULL);
     return (rj_state*) state;
+}
+
+
+/* Module level functions receive the module itself as their first argument, but methods
+   and the tp_call slot of the heap types receive an instance: in that case the module
+   owning the type (possibly a superclass of it) must be looked up through its MRO. */
+static inline rj_state*
+get_type_state(PyTypeObject* type)
+{
+    PyObject* module = PyType_GetModuleByDef(type, &module_def);
+    if (module == NULL)
+        return NULL;
+    return get_rj_state(module);
 }
 
 
@@ -2224,7 +2240,9 @@ decoder_call(PyObject* self, PyObject* args, PyObject* kwargs)
     PyObject* jsonObject;
     PyObject* chunkSizeObj = NULL;
     size_t chunkSize = 65536;
-    rj_state* state = get_rj_state(self);
+    rj_state* state = get_type_state(Py_TYPE(self));
+    if (state == NULL)
+        return NULL;
 
     if (!PyArg_ParseTupleAndKeywords(args, kwargs, "O|$O",
                                      (char**) kwlist,
@@ -3584,7 +3602,9 @@ encoder_call(PyObject* self, PyObject* args, PyObject* kwargs)
     size_t chunkSize = 65536;
     PyObject* defaultFn = NULL;
     PyObject* result;
-    rj_state* state = get_rj_state(self);
+    rj_state* state = get_type_state(Py_TYPE(self));
+    if (state == NULL)
+        return NULL;
 
     if (!PyArg_ParseTupleAndKeywords(args, kwargs, "O|O$O",
                                      (char**) kwlist,
@@ -3773,7 +3793,9 @@ static PyType_Spec Validator_Type_Spec = {
 static PyObject* validator_call(PyObject* self, PyObject* args, PyObject* kwargs)
 {
     PyObject* jsonObject;
-    rj_state* state = get_rj_state(self);
+    rj_state* state = get_type_state(Py_TYPE(self));
+    if (state == NULL)
+        return NULL;
 
     if (!PyArg_ParseTuple(args, "O", &jsonObject))
         return NULL;
@@ -3860,16 +3882,10 @@ static void validator_dealloc(PyObject* self)
 }
 
 
-namespace { extern PyModuleDef module; }
-
 static PyObject* validator_new(PyTypeObject* type, PyObject* args, PyObject* kwargs)
 {
     PyObject* jsonObject;
-    PyObject* self = PyType_GetModuleByDef(type, &module);
-    if (self == NULL) {
-        return NULL;
-    }
-    rj_state* state = (rj_state*) PyModule_GetState(self);
+    rj_state* state = get_type_state(type);
     if (state == NULL) {
         PyErr_Format(PyExc_SystemError,
                      "rapidjson.Validator: No rapidjson module state found");
@@ -4194,7 +4210,7 @@ static struct PyModuleDef_Slot slots[] = {
 
 namespace {
 
-    PyModuleDef module = {
+    PyModuleDef module_def = {
         PyModuleDef_HEAD_INIT,      /* m_base */
         "rapidjson",                /* m_name */
         PyDoc_STR("Fast, simple JSON encoder and decoder. Based on RapidJSON C++ library."),
@@ -4211,5 +4227,5 @@ namespace {
 PyMODINIT_FUNC
 PyInit_rapidjson()
 {
-    return PyModuleDef_Init(&module);
+    return PyModuleDef_Init(&module_def);
 }
