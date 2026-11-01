@@ -2497,7 +2497,8 @@ dumps_internal(
         }
 
         if (numberMode & NM_NAN) {
-            PyObject* is_nan = PyObject_CallMethodObjArgs(object, is_nan_name,
+            PyObject* is_nan = PyObject_CallMethodObjArgs(object,
+                                                          state->consts.names.is_nan,
                                                           NULL);
             if (is_nan == NULL)
                 return false;
