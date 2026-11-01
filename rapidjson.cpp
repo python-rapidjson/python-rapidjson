@@ -3970,6 +3970,7 @@ module_exec(PyObject* self)
     if (!rawjson_type)
         return -1;
     state->types.rawjson = rawjson_type.get();
+    Py_INCREF(state->types.rawjson);
 
     PyDateTime_IMPORT;
     if(!PyDateTimeAPI)
