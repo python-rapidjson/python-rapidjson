@@ -7,11 +7,20 @@
 //
 
 #include <Python.h>
+
+#if defined(__GNUC__)
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wunused-variable"
+#endif
 #include <datetime.h>
+#if defined(__GNUC__)
+#pragma GCC diagnostic pop
+#endif
 #include <structmember.h>
 
 #include <algorithm>
 #include <cmath>
+#include <memory>
 #include <string>
 #include <vector>
 
@@ -24,6 +33,31 @@
 
 
 using namespace rapidjson;
+
+
+/* Redirect references to the DT API through the module state. */
+#define PyDateTimeAPI (state->apis.datetime)
+
+
+struct PyDerefer {
+    void operator() (PyObject* obj) const noexcept {Py_DecRef(obj);}
+};
+using PyStrongRef = std::unique_ptr<PyObject, PyDerefer>;
+
+
+static PyStrongRef
+inline from_module_and_spec(PyObject& module, PyType_Spec& spec) noexcept {
+    PyStrongRef type{PyType_FromModuleAndSpec(&module, &spec, NULL)};
+    return type;
+}
+
+
+static int
+heap_type_traverse(PyObject *op, visitproc visit, void *arg)
+{
+    Py_VISIT(Py_TYPE(op));
+    return 0;
+}
 
 
 /* On some MacOS combo, using Py_IS_XXX() macros does not work (see
@@ -41,12 +75,19 @@ using namespace rapidjson;
 #endif
 
 
-static PyObject* decimal_type = NULL;
-static PyObject* timezone_type = NULL;
-static PyObject* timezone_utc = NULL;
-static PyObject* uuid_type = NULL;
-static PyObject* validation_error = NULL;
-static PyObject* decode_error = NULL;
+struct Errors {
+    PyObject* validation = NULL;
+    PyObject* decode = NULL;
+};
+
+
+struct Types {
+    PyObject* decimal = NULL;
+    PyObject* timezone = NULL;
+    PyObject* uuid = NULL;
+    PyObject* rawjson = NULL;
+    Errors errors;
+};
 
 
 /* These are the names of often used methods or literal values, interned in the module
@@ -56,25 +97,165 @@ static PyObject* decode_error = NULL;
    We cannot use _Py_IDENTIFIER() because that upsets the GNU C++ compiler in -pedantic
    mode. */
 
-static PyObject* astimezone_name = NULL;
-static PyObject* hex_name = NULL;
-static PyObject* timestamp_name = NULL;
-static PyObject* total_seconds_name = NULL;
-static PyObject* utcoffset_name = NULL;
-static PyObject* is_infinite_name = NULL;
-static PyObject* is_nan_name = NULL;
-static PyObject* start_object_name = NULL;
-static PyObject* end_object_name = NULL;
-static PyObject* default_name = NULL;
-static PyObject* end_array_name = NULL;
-static PyObject* string_name = NULL;
-static PyObject* read_name = NULL;
-static PyObject* write_name = NULL;
-static PyObject* encoding_name = NULL;
+struct Names {
+    PyObject* astimezone = NULL;
+    PyObject* hex = NULL;
+    PyObject* timestamp = NULL;
+    PyObject* total_seconds = NULL;
+    PyObject* utcoffset = NULL;
+    PyObject* is_infinite = NULL;
+    PyObject* is_nan = NULL;
+    PyObject* start_object = NULL;
+    PyObject* end_object = NULL;
+    PyObject* default_name = NULL;
+    PyObject* end_array = NULL;
+    PyObject* string = NULL;
+    PyObject* read = NULL;
+    PyObject* write = NULL;
+    PyObject* encoding = NULL;
+};
 
-static PyObject* minus_inf_string_value = NULL;
-static PyObject* nan_string_value = NULL;
-static PyObject* plus_inf_string_value = NULL;
+
+struct Strings {
+    PyObject* minus_inf = NULL;
+    PyObject* nan = NULL;
+    PyObject* plus_inf = NULL;
+};
+
+
+struct Consts {
+    PyObject* timezone_utc = NULL;
+    Names names;
+    Strings strings;
+};
+
+
+struct APIs {
+    PyDateTime_CAPI* datetime = NULL;
+};
+
+
+typedef struct {
+    Types types;
+    Consts consts;
+    APIs apis;
+} rj_state;
+
+
+namespace { extern PyModuleDef module_def; }
+
+
+static inline rj_state*
+get_rj_state(PyObject* module)
+{
+    void* state = PyModule_GetState(module);
+    assert(state != NULL);
+    return (rj_state*) state;
+}
+
+
+/* Module level functions receive the module itself as their first argument, but methods
+   and the tp_call slot of the heap types receive an instance: in that case the module
+   owning the type (possibly a superclass of it) must be looked up through its MRO. */
+static inline rj_state*
+get_type_state(PyTypeObject* type)
+{
+#if PY_VERSION_HEX >= 0x030B0000
+    PyObject* module = PyType_GetModuleByDef(type, &module_def);
+#else
+    /* Backward compatibility for Python 3.10, until we support that:
+       PyType_GetModuleByDef() has been introduced in 3.11 and before 3.12 (pre PEP-684
+       that is) the module is the same in the whole process. */
+    (void) type;
+    PyObject* module = PyState_FindModule(&module_def);
+    if (module == NULL)
+        PyErr_SetString(PyExc_SystemError, "rapidjson: module state not found");
+#endif
+    if (module == NULL)
+        return NULL;
+    return get_rj_state(module);
+}
+
+
+static int
+rj_clear(PyObject* self)
+{
+    rj_state* state = get_rj_state(self);
+
+    Py_CLEAR(state->types.decimal);
+    Py_CLEAR(state->types.timezone);
+    Py_CLEAR(state->types.uuid);
+    Py_CLEAR(state->types.rawjson);
+    Py_CLEAR(state->types.errors.validation);
+    Py_CLEAR(state->types.errors.decode);
+
+    Py_CLEAR(state->consts.timezone_utc);
+    Py_CLEAR(state->consts.names.astimezone);
+    Py_CLEAR(state->consts.names.hex);
+    Py_CLEAR(state->consts.names.timestamp);
+    Py_CLEAR(state->consts.names.total_seconds);
+    Py_CLEAR(state->consts.names.utcoffset);
+    Py_CLEAR(state->consts.names.is_infinite);
+    Py_CLEAR(state->consts.names.is_nan);
+    Py_CLEAR(state->consts.names.start_object);
+    Py_CLEAR(state->consts.names.end_object);
+    Py_CLEAR(state->consts.names.default_name);
+    Py_CLEAR(state->consts.names.end_array);
+    Py_CLEAR(state->consts.names.string);
+    Py_CLEAR(state->consts.names.read);
+    Py_CLEAR(state->consts.names.write);
+    Py_CLEAR(state->consts.names.encoding);
+
+    Py_CLEAR(state->consts.strings.minus_inf);
+    Py_CLEAR(state->consts.strings.nan);
+    Py_CLEAR(state->consts.strings.plus_inf);
+
+    return 0;
+}
+
+
+static int
+rj_traverse(PyObject* self, visitproc visit, void* arg)
+{
+    rj_state* state = get_rj_state(self);
+
+    Py_VISIT(state->types.decimal);
+    Py_VISIT(state->types.timezone);
+    Py_VISIT(state->types.uuid);
+    Py_VISIT(state->types.rawjson);
+    Py_VISIT(state->types.errors.validation);
+    Py_VISIT(state->types.errors.decode);
+
+    Py_VISIT(state->consts.timezone_utc);
+    Py_VISIT(state->consts.names.astimezone);
+    Py_VISIT(state->consts.names.hex);
+    Py_VISIT(state->consts.names.timestamp);
+    Py_VISIT(state->consts.names.total_seconds);
+    Py_VISIT(state->consts.names.utcoffset);
+    Py_VISIT(state->consts.names.is_infinite);
+    Py_VISIT(state->consts.names.is_nan);
+    Py_VISIT(state->consts.names.start_object);
+    Py_VISIT(state->consts.names.end_object);
+    Py_VISIT(state->consts.names.default_name);
+    Py_VISIT(state->consts.names.end_array);
+    Py_VISIT(state->consts.names.string);
+    Py_VISIT(state->consts.names.read);
+    Py_VISIT(state->consts.names.write);
+    Py_VISIT(state->consts.names.encoding);
+
+    Py_VISIT(state->consts.strings.minus_inf);
+    Py_VISIT(state->consts.strings.nan);
+    Py_VISIT(state->consts.strings.plus_inf);
+
+    return 0;
+}
+
+
+static void
+rj_free(void* self)
+{
+    (void) rj_clear((PyObject*) self);
+}
 
 
 struct HandlerContext {
@@ -198,7 +379,7 @@ enum MappingMode {
 //////////////////////////
 
 
-static PyObject* do_decode(PyObject* decoder,
+static PyObject* do_decode(const rj_state* state, PyObject* decoder,
                            const char* jsonStr, Py_ssize_t jsonStrlen,
                            PyObject* jsonStream, size_t chunkSize,
                            PyObject* objectHook,
@@ -208,12 +389,12 @@ static PyObject* decoder_call(PyObject* self, PyObject* args, PyObject* kwargs);
 static PyObject* decoder_new(PyTypeObject* type, PyObject* args, PyObject* kwargs);
 
 
-static PyObject* do_encode(PyObject* value, PyObject* defaultFn, bool ensureAscii,
+static PyObject* do_encode(const rj_state* state, PyObject* value, PyObject* defaultFn, bool ensureAscii,
                            unsigned writeMode, char indentChar, unsigned indentCount,
                            unsigned numberMode, unsigned datetimeMode,
                            unsigned uuidMode, unsigned bytesMode,
                            unsigned iterableMode, unsigned mappingMode);
-static PyObject* do_stream_encode(PyObject* value, PyObject* stream, size_t chunkSize,
+static PyObject* do_stream_encode(const rj_state* state, PyObject* value, PyObject* stream, size_t chunkSize,
                                   PyObject* defaultFn, bool ensureAscii,
                                   unsigned writeMode, char indentChar,
                                   unsigned indentCount, unsigned numberMode,
@@ -238,8 +419,8 @@ class PyReadStreamWrapper {
 public:
     typedef char Ch;
 
-    PyReadStreamWrapper(PyObject* stream, size_t size)
-        : stream(stream) {
+    PyReadStreamWrapper(const Names& names, PyObject* stream, size_t size)
+        : names(&names), stream(stream) {
         Py_INCREF(stream);
         chunkSize = PyLong_FromUnsignedLong(size);
         buffer = NULL;
@@ -300,7 +481,7 @@ private:
     void Read() {
         Py_CLEAR(chunk);
 
-        chunk = PyObject_CallMethodObjArgs(stream, read_name, chunkSize, NULL);
+        chunk = PyObject_CallMethodObjArgs(stream, names->read, chunkSize, NULL);
 
         if (chunk == NULL) {
             eof = true;
@@ -327,6 +508,7 @@ private:
         }
     }
 
+    const Names* names;
     PyObject* stream;
     PyObject* chunkSize;
     PyObject* chunk;
@@ -339,18 +521,19 @@ private:
 
 
 class PyWriteStreamWrapper {
+    const rj_state* state;
 public:
     typedef char Ch;
 
-    PyWriteStreamWrapper(PyObject* stream, size_t size)
-        : stream(stream) {
+    PyWriteStreamWrapper(const rj_state* state, PyObject* stream, size_t size)
+        : state(state), stream(stream) {
         Py_INCREF(stream);
         buffer = (char*) PyMem_Malloc(size);
         assert(buffer);
         bufferEnd = buffer + size;
         cursor = buffer;
         multiByteChar = NULL;
-        isBinary = !PyObject_HasAttr(stream, encoding_name);
+        isBinary = !PyObject_HasAttr(stream, state->consts.names.encoding);
     }
 
     ~PyWriteStreamWrapper() {
@@ -397,7 +580,8 @@ public:
         if (c == NULL) {
             // Propagate the error state, it will be caught by dumps_internal()
         } else {
-            PyObject* res = PyObject_CallMethodObjArgs(stream, write_name, c, NULL);
+            PyObject* res = PyObject_CallMethodObjArgs(stream, state->consts.names.write,
+                                                       c, NULL);
             if (res == NULL) {
                 // Likewise
             } else {
@@ -431,6 +615,7 @@ public:
     }
 
 private:
+    const Names* names;
     PyObject* stream;
     Ch* buffer;
     Ch* bufferEnd;
@@ -504,45 +689,22 @@ PyDoc_STRVAR(rawjson_doc,
              "'{\"already\": \"serialized\"}'");
 
 
-static PyTypeObject RawJSON_Type = {
-    PyVarObject_HEAD_INIT(NULL, 0)
-    "rapidjson.RawJSON",            /* tp_name */
-    sizeof(RawJSON),                /* tp_basicsize */
-    0,                              /* tp_itemsize */
-    (destructor) RawJSON_dealloc,   /* tp_dealloc */
-    0,                              /* tp_print */
-    0,                              /* tp_getattr */
-    0,                              /* tp_setattr */
-    0,                              /* tp_compare */
-    0,                              /* tp_repr */
-    0,                              /* tp_as_number */
-    0,                              /* tp_as_sequence */
-    0,                              /* tp_as_mapping */
-    0,                              /* tp_hash */
-    0,                              /* tp_call */
-    0,                              /* tp_str */
-    0,                              /* tp_getattro */
-    0,                              /* tp_setattro */
-    0,                              /* tp_as_buffer */
-    Py_TPFLAGS_DEFAULT,             /* tp_flags */
-    rawjson_doc,                    /* tp_doc */
-    0,                              /* tp_traverse */
-    0,                              /* tp_clear */
-    0,                              /* tp_richcompare */
-    0,                              /* tp_weaklistoffset */
-    0,                              /* tp_iter */
-    0,                              /* tp_iternext */
-    0,                              /* tp_methods */
-    RawJSON_members,                /* tp_members */
-    0,                              /* tp_getset */
-    0,                              /* tp_base */
-    0,                              /* tp_dict */
-    0,                              /* tp_descr_get */
-    0,                              /* tp_descr_set */
-    0,                              /* tp_dictoffset */
-    0,                              /* tp_init */
-    0,                              /* tp_alloc */
-    RawJSON_new,                    /* tp_new */
+static PyType_Slot RawJSON_Type_Slot[] = {
+    {Py_tp_dealloc, reinterpret_cast<void*>(RawJSON_dealloc)},
+    {Py_tp_doc, const_cast<char*>(rawjson_doc)},
+    {Py_tp_members, reinterpret_cast<void*>(RawJSON_members)},
+    {Py_tp_new, reinterpret_cast<void*>(RawJSON_new)},
+    {Py_tp_traverse, reinterpret_cast<void*>(heap_type_traverse)},
+    {0, NULL}
+};
+
+
+static PyType_Spec RawJSON_Type_Spec = {
+    "rapidjson.RawJSON",                                                /* name */
+    sizeof(RawJSON),                                                    /* basicsize */
+    0,                                                                  /* itemsize */
+    Py_TPFLAGS_DEFAULT | Py_TPFLAGS_HAVE_GC | Py_TPFLAGS_IMMUTABLETYPE, /* flags */
+    RawJSON_Type_Slot                                                   /* slots */
 };
 
 
@@ -803,6 +965,7 @@ float_from_string(const char* s, Py_ssize_t len)
 
 
 struct PyHandler {
+    const rj_state* state;
     PyObject* decoderStartObject;
     PyObject* decoderEndObject;
     PyObject* decoderEndArray;
@@ -816,12 +979,14 @@ struct PyHandler {
     unsigned recursionLimit;
     std::vector<HandlerContext> stack;
 
-    PyHandler(PyObject* decoder,
+    PyHandler(const rj_state* state,
+              PyObject* decoder,
               PyObject* hook,
               unsigned dm,
               unsigned um,
               unsigned nm)
-        : decoderStartObject(NULL),
+        : state(state),
+          decoderStartObject(NULL),
           decoderEndObject(NULL),
           decoderEndArray(NULL),
           decoderString(NULL),
@@ -834,17 +999,21 @@ struct PyHandler {
             stack.reserve(128);
             if (decoder != NULL) {
                 assert(!objectHook);
-                if (PyObject_HasAttr(decoder, start_object_name)) {
-                    decoderStartObject = PyObject_GetAttr(decoder, start_object_name);
+                if (PyObject_HasAttr(decoder, state->consts.names.start_object)) {
+                    decoderStartObject = PyObject_GetAttr(decoder,
+                                                          state->consts.names.start_object);
                 }
-                if (PyObject_HasAttr(decoder, end_object_name)) {
-                    decoderEndObject = PyObject_GetAttr(decoder, end_object_name);
+                if (PyObject_HasAttr(decoder, state->consts.names.end_object)) {
+                    decoderEndObject = PyObject_GetAttr(decoder,
+                                                        state->consts.names.end_object);
                 }
-                if (PyObject_HasAttr(decoder, end_array_name)) {
-                    decoderEndArray = PyObject_GetAttr(decoder, end_array_name);
+                if (PyObject_HasAttr(decoder, state->consts.names.end_array)) {
+                    decoderEndArray = PyObject_GetAttr(decoder,
+                                                       state->consts.names.end_array);
                 }
-                if (PyObject_HasAttr(decoder, string_name)) {
-                    decoderString = PyObject_GetAttr(decoder, string_name);
+                if (PyObject_HasAttr(decoder, state->consts.names.string)) {
+                    decoderString = PyObject_GetAttr(decoder,
+                                                     state->consts.names.string);
                 }
             }
             sharedKeys = PyDict_New();
@@ -1206,9 +1375,10 @@ struct PyHandler {
 
         PyObject* value;
         if (numberMode & NM_DECIMAL) {
-            value = PyObject_CallFunctionObjArgs(decimal_type, nan_string_value, NULL);
+            value = PyObject_CallFunctionObjArgs(state->types.decimal,
+                                                 state->consts.strings.nan, NULL);
         } else {
-            value = PyFloat_FromString(nan_string_value);
+            value = PyFloat_FromString(state->consts.strings.nan);
         }
 
         if (value == NULL)
@@ -1226,14 +1396,14 @@ struct PyHandler {
 
         PyObject* value;
         if (numberMode & NM_DECIMAL) {
-            value = PyObject_CallFunctionObjArgs(decimal_type,
+            value = PyObject_CallFunctionObjArgs(state->types.decimal,
                                                  minus
-                                                 ? minus_inf_string_value
-                                                 : plus_inf_string_value, NULL);
+                                                 ? state->consts.strings.minus_inf
+                                                 : state->consts.strings.plus_inf, NULL);
         } else {
             value = PyFloat_FromString(minus
-                                       ? minus_inf_string_value
-                                       : plus_inf_string_value);
+                                       ? state->consts.strings.minus_inf
+                                       : state->consts.strings.plus_inf);
         }
 
         if (value == NULL)
@@ -1300,7 +1470,7 @@ struct PyHandler {
                 PyObject* pystr = PyUnicode_FromStringAndSize(str, length);
                 if (pystr == NULL)
                     return false;
-                value = PyObject_CallFunctionObjArgs(decimal_type, pystr, NULL);
+                value = PyObject_CallFunctionObjArgs(state->types.decimal, pystr, NULL);
                 Py_DECREF(pystr);
             } else {
                 std::string zstr(str, length);
@@ -1455,11 +1625,12 @@ struct PyHandler {
         if ((datetimeMode & DM_NAIVE_IS_UTC || isZ) && !hasOffset) {
             if (hasDate) {
                 value = PyDateTimeAPI->DateTime_FromDateAndTime(
-                    year, month, day, hours, mins, secs, usecs, timezone_utc,
+                    year, month, day, hours, mins, secs, usecs, state->consts.timezone_utc,
                     PyDateTimeAPI->DateTimeType);
             } else {
                 value = PyDateTimeAPI->Time_FromTime(
-                    hours, mins, secs, usecs, timezone_utc, PyDateTimeAPI->TimeType);
+                    hours, mins, secs, usecs, state->consts.timezone_utc,
+                    PyDateTimeAPI->TimeType);
             }
         } else if (datetimeMode & DM_IGNORE_TZ || (!hasOffset && !isZ)) {
             if (hasDate) {
@@ -1474,14 +1645,15 @@ struct PyHandler {
             value = NULL;
         } else if (!hasDate && datetimeMode & DM_SHIFT_TO_UTC) {
             value = PyDateTimeAPI->Time_FromTime(
-                hours, mins, secs, usecs, timezone_utc, PyDateTimeAPI->TimeType);
+                hours, mins, secs, usecs, state->consts.timezone_utc,
+                PyDateTimeAPI->TimeType);
         } else {
             PyObject* offset = PyDateTimeAPI->Delta_FromDelta(0, tzoff, 0, 1,
                                                               PyDateTimeAPI->DeltaType);
             if (offset == NULL) {
                 value = NULL;
             } else {
-                PyObject* tz = PyObject_CallFunctionObjArgs(timezone_type, offset, NULL);
+                PyObject* tz = PyObject_CallFunctionObjArgs(state->types.timezone, offset, NULL);
                 Py_DECREF(offset);
                 if (tz == NULL) {
                     value = NULL;
@@ -1492,7 +1664,8 @@ struct PyHandler {
                             PyDateTimeAPI->DateTimeType);
                         if (value != NULL && datetimeMode & DM_SHIFT_TO_UTC) {
                             PyObject* asUTC = PyObject_CallMethodObjArgs(
-                                value, astimezone_name, timezone_utc, NULL);
+                                value, state->consts.names.astimezone,
+                                state->consts.timezone_utc, NULL);
                             Py_DECREF(value);
                             if (asUTC == NULL) {
                                 value = NULL;
@@ -1539,7 +1712,7 @@ struct PyHandler {
         if (pystr == NULL)
             return false;
 
-        PyObject* value = PyObject_CallFunctionObjArgs(uuid_type, pystr, NULL);
+        PyObject* value = PyObject_CallFunctionObjArgs(state->types.uuid, pystr, NULL);
         Py_DECREF(pystr);
 
         if (value == NULL)
@@ -1626,6 +1799,7 @@ loads(PyObject* self, PyObject* args, PyObject* kwargs)
     PyObject* parseModeObj = NULL;
     unsigned parseMode = PM_NONE;
     int allowNan = -1;
+    rj_state* state = get_rj_state(self);
 
     if (!PyArg_ParseTupleAndKeywords(args, kwargs, "O|$OOOOOp:rapidjson.loads",
                                      (char**) kwlist,
@@ -1695,7 +1869,7 @@ loads(PyObject* self, PyObject* args, PyObject* kwargs)
         return NULL;
     }
 
-    PyObject* result = do_decode(NULL, jsonStr, jsonStrLen, NULL, 0, objectHook,
+    PyObject* result = do_decode(state, NULL, jsonStr, jsonStrLen, NULL, 0, objectHook,
                                  numberMode, datetimeMode, uuidMode, parseMode);
 
     if (asUnicode != NULL)
@@ -1744,6 +1918,7 @@ load(PyObject* self, PyObject* args, PyObject* kwargs)
     PyObject* chunkSizeObj = NULL;
     size_t chunkSize = 65536;
     int allowNan = -1;
+    rj_state* state = get_rj_state(self);
 
     if (!PyArg_ParseTupleAndKeywords(args, kwargs, "O|$OOOOOOp:rapidjson.load",
                                      (char**) kwlist,
@@ -1757,7 +1932,7 @@ load(PyObject* self, PyObject* args, PyObject* kwargs)
                                      &allowNan))
         return NULL;
 
-    if (!PyObject_HasAttr(jsonObject, read_name)) {
+    if (!PyObject_HasAttr(jsonObject, state->consts.names.read)) {
         PyErr_SetString(PyExc_TypeError, "Expected file-like object");
         return NULL;
     }
@@ -1853,8 +2028,8 @@ load(PyObject* self, PyObject* args, PyObject* kwargs)
         }
     }
 
-    return do_decode(NULL, NULL, 0, jsonObject, chunkSize, objectHook,
-                     numberMode, datetimeMode, uuidMode, parseMode);
+    return do_decode(state, NULL, NULL, 0, jsonObject, chunkSize, objectHook, numberMode,
+                     datetimeMode, uuidMode, parseMode);
 }
 
 
@@ -1882,46 +2057,22 @@ static PyMemberDef decoder_members[] = {
 };
 
 
-static PyTypeObject Decoder_Type = {
-    PyVarObject_HEAD_INIT(NULL, 0)
-    "rapidjson.Decoder",                      /* tp_name */
-    sizeof(DecoderObject),                    /* tp_basicsize */
-    0,                                        /* tp_itemsize */
-    0,                                        /* tp_dealloc */
-    0,                                        /* tp_print */
-    0,                                        /* tp_getattr */
-    0,                                        /* tp_setattr */
-    0,                                        /* tp_compare */
-    0,                                        /* tp_repr */
-    0,                                        /* tp_as_number */
-    0,                                        /* tp_as_sequence */
-    0,                                        /* tp_as_mapping */
-    0,                                        /* tp_hash */
-    (ternaryfunc) decoder_call,               /* tp_call */
-    0,                                        /* tp_str */
-    0,                                        /* tp_getattro */
-    0,                                        /* tp_setattro */
-    0,                                        /* tp_as_buffer */
-    Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE, /* tp_flags */
-    decoder_doc,                              /* tp_doc */
-    0,                                        /* tp_traverse */
-    0,                                        /* tp_clear */
-    0,                                        /* tp_richcompare */
-    0,                                        /* tp_weaklistoffset */
-    0,                                        /* tp_iter */
-    0,                                        /* tp_iternext */
-    0,                                        /* tp_methods */
-    decoder_members,                          /* tp_members */
-    0,                                        /* tp_getset */
-    0,                                        /* tp_base */
-    0,                                        /* tp_dict */
-    0,                                        /* tp_descr_get */
-    0,                                        /* tp_descr_set */
-    0,                                        /* tp_dictoffset */
-    0,                                        /* tp_init */
-    0,                                        /* tp_alloc */
-    decoder_new,                              /* tp_new */
-    PyObject_Del,                             /* tp_free */
+static PyType_Slot Decoder_Type_Slot[] = {
+    {Py_tp_doc, const_cast<char*>(decoder_doc)},
+    {Py_tp_call, reinterpret_cast<void*>(decoder_call)},
+    {Py_tp_members, decoder_members},
+    {Py_tp_new, reinterpret_cast<void*>(decoder_new)},
+    {Py_tp_traverse, reinterpret_cast<void*>(heap_type_traverse)},
+    {0, NULL}
+};
+
+
+static PyType_Spec Decoder_Type_Spec = {
+    "rapidjson.Decoder",                                                                      /* name */
+    sizeof(DecoderObject),                                                                    /* basicsize */
+    0,                                                                                        /* itemsize */
+    Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE | Py_TPFLAGS_HAVE_GC | Py_TPFLAGS_IMMUTABLETYPE, /* flags */
+    Decoder_Type_Slot                                                                         /* slots */
 };
 
 
@@ -2033,12 +2184,12 @@ static PyTypeObject Decoder_Type = {
 
 
 static PyObject*
-do_decode(PyObject* decoder, const char* jsonStr, Py_ssize_t jsonStrLen,
-          PyObject* jsonStream, size_t chunkSize, PyObject* objectHook,
-          unsigned numberMode, unsigned datetimeMode, unsigned uuidMode,
-          unsigned parseMode)
+do_decode(const rj_state* state, PyObject* decoder, const char* jsonStr,
+          Py_ssize_t jsonStrLen, PyObject* jsonStream, size_t chunkSize,
+          PyObject* objectHook, unsigned numberMode, unsigned datetimeMode,
+          unsigned uuidMode, unsigned parseMode)
 {
-    PyHandler handler(decoder, objectHook, datetimeMode, uuidMode, numberMode);
+    PyHandler handler(state, decoder, objectHook, datetimeMode, uuidMode, numberMode);
     Reader reader;
     ParseResult result;
 
@@ -2060,7 +2211,7 @@ do_decode(PyObject* decoder, const char* jsonStr, Py_ssize_t jsonStrLen,
 
         PyMem_Free(jsonStrCopy);
     } else {
-        PyReadStreamWrapper sw(jsonStream, chunkSize);
+        PyReadStreamWrapper sw(state->consts.names, jsonStream, chunkSize);
 
         DECODE(reader, kParseNoFlags, sw, handler);
 
@@ -2091,7 +2242,7 @@ do_decode(PyObject* decoder, const char* jsonStr, Py_ssize_t jsonStrLen,
                 PyErr_Restore(etype, evalue, etraceback);
         }
         else
-            PyErr_Format(decode_error, "Parse error at offset %zu: %s",
+            PyErr_Format(state->types.errors.decode, "Parse error at offset %zu: %s",
                          offset, GetParseError_En(result.Code()));
 
         Py_XDECREF(handler.root);
@@ -2117,6 +2268,9 @@ decoder_call(PyObject* self, PyObject* args, PyObject* kwargs)
     PyObject* jsonObject;
     PyObject* chunkSizeObj = NULL;
     size_t chunkSize = 65536;
+    rj_state* state = get_type_state(Py_TYPE(self));
+    if (state == NULL)
+        return NULL;
 
     if (!PyArg_ParseTupleAndKeywords(args, kwargs, "O|$O",
                                      (char**) kwlist,
@@ -2158,7 +2312,7 @@ decoder_call(PyObject* self, PyObject* args, PyObject* kwargs)
             Py_DECREF(asUnicode);
             return NULL;
         }
-    } else if (PyObject_HasAttr(jsonObject, read_name)) {
+    } else if (PyObject_HasAttr(jsonObject, state->consts.names.read)) {
         jsonStr = NULL;
         jsonStrLen = 0;
     } else {
@@ -2170,8 +2324,8 @@ decoder_call(PyObject* self, PyObject* args, PyObject* kwargs)
 
     DecoderObject* d = (DecoderObject*) self;
 
-    PyObject* result = do_decode(self, jsonStr, jsonStrLen, jsonObject, chunkSize, NULL,
-                                 d->numberMode, d->datetimeMode, d->uuidMode,
+    PyObject* result = do_decode(state, self, jsonStr, jsonStrLen, jsonObject, chunkSize,
+                                 NULL, d->numberMode, d->datetimeMode, d->uuidMode,
                                  d->parseMode);
 
     if (asUnicode != NULL)
@@ -2323,6 +2477,7 @@ all_keys_are_string(PyObject* dict) {
 template<typename WriterT>
 static bool
 dumps_internal(
+    const rj_state* state,
     WriterT* writer,
     PyObject* object,
     PyObject* defaultFn,
@@ -2335,7 +2490,7 @@ dumps_internal(
 {
     int is_decimal;
 
-#define RECURSE(v) dumps_internal(writer, v, defaultFn,                 \
+#define RECURSE(v) dumps_internal(state, writer, v, defaultFn,          \
                                   numberMode, datetimeMode, uuidMode,   \
                                   bytesMode, iterableMode, mappingMode)
 
@@ -2351,14 +2506,15 @@ dumps_internal(
     } else if (PyBool_Check(object)) {
         writer->Bool(object == Py_True);
     } else if (numberMode & NM_DECIMAL
-               && (is_decimal = PyObject_IsInstance(object, decimal_type))) {
+               && (is_decimal = PyObject_IsInstance(object, state->types.decimal))) {
         if (is_decimal == -1) {
             return false;
         }
 
         if (!(numberMode & NM_NAN)) {
             bool is_inf_or_nan;
-            PyObject* is_inf = PyObject_CallMethodObjArgs(object, is_infinite_name,
+            PyObject* is_inf = PyObject_CallMethodObjArgs(object,
+                                                          state->consts.names.is_infinite,
                                                           NULL);
 
             if (is_inf == NULL) {
@@ -2368,7 +2524,8 @@ dumps_internal(
             Py_DECREF(is_inf);
 
             if (!is_inf_or_nan) {
-                PyObject* is_nan = PyObject_CallMethodObjArgs(object, is_nan_name,
+                PyObject* is_nan = PyObject_CallMethodObjArgs(object,
+                                                              state->consts.names.is_nan,
                                                               NULL);
 
                 if (is_nan == NULL) {
@@ -2386,7 +2543,8 @@ dumps_internal(
         }
 
         if (numberMode & NM_NAN) {
-            PyObject* is_nan = PyObject_CallMethodObjArgs(object, is_nan_name,
+            PyObject* is_nan = PyObject_CallMethodObjArgs(object,
+                                                          state->consts.names.is_nan,
                                                           NULL);
             if (is_nan == NULL)
                 return false;
@@ -2655,9 +2813,9 @@ dumps_internal(
         char timeZone[TIMEZONE_LEN] = { 0 };
 
         if (!(datetimeMode & DM_IGNORE_TZ)
-            && PyObject_HasAttr(object, utcoffset_name)) {
+            && PyObject_HasAttr(object, state->consts.names.utcoffset)) {
             PyObject* utcOffset = PyObject_CallMethodObjArgs(object,
-                                                             utcoffset_name,
+                                                             state->consts.names.utcoffset,
                                                              NULL);
 
             if (utcOffset == NULL)
@@ -2677,7 +2835,7 @@ dumps_internal(
 
                         asUTC = PyDateTimeAPI->DateTime_FromDateAndTime(
                             year, month, day, hour, min, sec, microsec,
-                            timezone_utc, PyDateTimeAPI->DateTimeType);
+                            state->consts.timezone_utc, PyDateTimeAPI->DateTimeType);
                     } else {
                         hour = PyDateTime_TIME_GET_HOUR(dtObject);
                         min = PyDateTime_TIME_GET_MINUTE(dtObject);
@@ -2685,7 +2843,7 @@ dumps_internal(
                         microsec = PyDateTime_TIME_GET_MICROSECOND(dtObject);
                         asUTC = PyDateTimeAPI->Time_FromTime(
                             hour, min, sec, microsec,
-                            timezone_utc, PyDateTimeAPI->TimeType);
+                            state->consts.timezone_utc, PyDateTimeAPI->TimeType);
                     }
 
                     if (asUTC == NULL) {
@@ -2703,8 +2861,9 @@ dumps_internal(
                 if (datetimeMode & DM_SHIFT_TO_UTC) {
                     // If it's not already in UTC, shift the value
                     if (PyObject_IsTrue(utcOffset)) {
-                        asUTC = PyObject_CallMethodObjArgs(object, astimezone_name,
-                                                           timezone_utc, NULL);
+                        asUTC = PyObject_CallMethodObjArgs(object, state->consts.names.astimezone,
+                                                           state->consts.timezone_utc,
+                                                           NULL);
 
                         if (asUTC == NULL) {
                             Py_DECREF(utcOffset);
@@ -2721,7 +2880,7 @@ dumps_internal(
 
                     if (PyObject_IsTrue(utcOffset)) {
                         PyObject* tsObj = PyObject_CallMethodObjArgs(utcOffset,
-                                                                     total_seconds_name,
+                                                                     state->consts.names.total_seconds,
                                                                      NULL);
 
                         if (tsObj == NULL) {
@@ -2801,7 +2960,7 @@ dumps_internal(
         } else /* if (datetimeMode & DM_UNIX_TIME) */ {
             if (PyDateTime_Check(dtObject)) {
                 PyObject* timestampObj = PyObject_CallMethodObjArgs(dtObject,
-                                                                    timestamp_name,
+                                                                    state->consts.names.timestamp,
                                                                     NULL);
 
                 if (timestampObj == NULL) {
@@ -2866,7 +3025,7 @@ dumps_internal(
             if (datetimeMode & (DM_SHIFT_TO_UTC | DM_NAIVE_IS_UTC))
                 midnightObj = PyDateTimeAPI->DateTime_FromDateAndTime(
                     year, month, day, 0, 0, 0, 0,
-                    timezone_utc, PyDateTimeAPI->DateTimeType);
+                    state->consts.timezone_utc, PyDateTimeAPI->DateTimeType);
             else
                 midnightObj = PyDateTime_FromDateAndTime(year, month, day,
                                                          0, 0, 0, 0);
@@ -2875,7 +3034,8 @@ dumps_internal(
                 return false;
             }
 
-            timestampObj = PyObject_CallMethodObjArgs(midnightObj, timestamp_name,
+            timestampObj = PyObject_CallMethodObjArgs(midnightObj,
+                                                      state->consts.names.timestamp,
                                                       NULL);
 
             Py_DECREF(midnightObj);
@@ -2904,12 +3064,12 @@ dumps_internal(
             }
         }
     } else if (uuidMode != UM_NONE
-               && PyObject_TypeCheck(object, (PyTypeObject*) uuid_type)) {
+               && PyObject_TypeCheck(object, (PyTypeObject*) state->types.uuid)) {
         PyObject* hexval;
         if (uuidMode == UM_CANONICAL)
             hexval = PyObject_Str(object);
         else
-            hexval = PyObject_GetAttr(object, hex_name);
+            hexval = PyObject_GetAttr(object, state->consts.names.hex);
         if (hexval == NULL)
             return false;
 
@@ -2962,7 +3122,7 @@ dumps_internal(
             return false;
 
         writer->EndArray();
-    } else if (PyObject_TypeCheck(object, &RawJSON_Type)) {
+    } else if (PyObject_TypeCheck(object, (PyTypeObject*) state->types.rawjson)) {
         const char* jsonStr;
         Py_ssize_t l;
         jsonStr = PyUnicode_AsUTF8AndSize(((RawJSON*) object)->value, &l);
@@ -3069,6 +3229,7 @@ dumps(PyObject* self, PyObject* args, PyObject* kwargs)
     int skipKeys = false;
     int sortKeys = false;
     int allowNan = -1;
+    rj_state* state = get_rj_state(self);
 
     if (!PyArg_ParseTupleAndKeywords(args, kwargs, "O|$ppOOpOOOOOOOp:rapidjson.dumps",
                                      (char**) kwlist,
@@ -3127,9 +3288,9 @@ dumps(PyObject* self, PyObject* args, PyObject* kwargs)
     if (sortKeys)
         mappingMode |= MM_SORT_KEYS;
 
-    return do_encode(value, defaultFn, ensureAscii ? true : false, writeMode, indentChar,
-                     indentCount, numberMode, datetimeMode, uuidMode, bytesMode,
-                     iterableMode, mappingMode);
+    return do_encode(state, value, defaultFn, ensureAscii ? true : false, writeMode,
+                     indentChar, indentCount, numberMode, datetimeMode, uuidMode,
+                     bytesMode, iterableMode, mappingMode);
 }
 
 
@@ -3196,6 +3357,7 @@ dump(PyObject* self, PyObject* args, PyObject* kwargs)
     };
     int skipKeys = false;
     int sortKeys = false;
+    rj_state* state = get_rj_state(self);
 
     if (!PyArg_ParseTupleAndKeywords(args, kwargs, "OO|$ppOOpOOOOOOOOp:rapidjson.dump",
                                      (char**) kwlist,
@@ -3259,7 +3421,7 @@ dump(PyObject* self, PyObject* args, PyObject* kwargs)
     if (sortKeys)
         mappingMode |= MM_SORT_KEYS;
 
-    return do_stream_encode(value, stream, chunkSize, defaultFn,
+    return do_stream_encode(state, value, stream, chunkSize, defaultFn,
                             ensureAscii ? true : false, writeMode, indentChar,
                             indentCount, numberMode, datetimeMode, uuidMode, bytesMode,
                             iterableMode, mappingMode);
@@ -3331,46 +3493,22 @@ static PyGetSetDef encoder_props[] = {
     {NULL}
 };
 
-static PyTypeObject Encoder_Type = {
-    PyVarObject_HEAD_INIT(NULL, 0)
-    "rapidjson.Encoder",                      /* tp_name */
-    sizeof(EncoderObject),                    /* tp_basicsize */
-    0,                                        /* tp_itemsize */
-    0,                                        /* tp_dealloc */
-    0,                                        /* tp_print */
-    0,                                        /* tp_getattr */
-    0,                                        /* tp_setattr */
-    0,                                        /* tp_compare */
-    0,                                        /* tp_repr */
-    0,                                        /* tp_as_number */
-    0,                                        /* tp_as_sequence */
-    0,                                        /* tp_as_mapping */
-    0,                                        /* tp_hash */
-    (ternaryfunc) encoder_call,               /* tp_call */
-    0,                                        /* tp_str */
-    0,                                        /* tp_getattro */
-    0,                                        /* tp_setattro */
-    0,                                        /* tp_as_buffer */
-    Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE, /* tp_flags */
-    encoder_doc,                              /* tp_doc */
-    0,                                        /* tp_traverse */
-    0,                                        /* tp_clear */
-    0,                                        /* tp_richcompare */
-    0,                                        /* tp_weaklistoffset */
-    0,                                        /* tp_iter */
-    0,                                        /* tp_iternext */
-    0,                                        /* tp_methods */
-    encoder_members,                          /* tp_members */
-    encoder_props,                            /* tp_getset */
-    0,                                        /* tp_base */
-    0,                                        /* tp_dict */
-    0,                                        /* tp_descr_get */
-    0,                                        /* tp_descr_set */
-    0,                                        /* tp_dictoffset */
-    0,                                        /* tp_init */
-    0,                                        /* tp_alloc */
-    encoder_new,                              /* tp_new */
-    PyObject_Del,                             /* tp_free */
+static PyType_Slot Encoder_Type_Slot[] = {
+    {Py_tp_doc, const_cast<char*>(encoder_doc)},
+    {Py_tp_call, reinterpret_cast<void*>(encoder_call)},
+    {Py_tp_members, encoder_members},
+    {Py_tp_getset, encoder_props},
+    {Py_tp_new, reinterpret_cast<void*>(encoder_new)},
+    {Py_tp_traverse, reinterpret_cast<void*>(heap_type_traverse)},
+    {0, NULL}
+};
+
+static PyType_Spec Encoder_Type_Spec = {
+    "rapidjson.Encoder",                                                                      /* name */
+    sizeof(EncoderObject),                                                                    /* basicsize */
+    0,                                                                                        /* itemsize */
+    Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE | Py_TPFLAGS_HAVE_GC | Py_TPFLAGS_IMMUTABLETYPE, /* flags */
+    Encoder_Type_Slot                                                                         /* slots */
 };
 
 
@@ -3379,7 +3517,8 @@ static PyTypeObject Encoder_Type = {
 
 
 #define DUMPS_INTERNAL_CALL                             \
-    (dumps_internal(&writer,                            \
+    (dumps_internal(state,                              \
+                    &writer,                            \
                     value,                              \
                     defaultFn,                          \
                     numberMode,                         \
@@ -3392,8 +3531,8 @@ static PyTypeObject Encoder_Type = {
 
 
 static PyObject*
-do_encode(PyObject* value, PyObject* defaultFn, bool ensureAscii, unsigned writeMode,
-          char indentChar, unsigned indentCount, unsigned numberMode,
+do_encode(const rj_state* state, PyObject* value, PyObject* defaultFn, bool ensureAscii,
+          unsigned writeMode, char indentChar, unsigned indentCount, unsigned numberMode,
           unsigned datetimeMode, unsigned uuidMode, unsigned bytesMode,
           unsigned iterableMode, unsigned mappingMode)
 {
@@ -3428,7 +3567,8 @@ do_encode(PyObject* value, PyObject* defaultFn, bool ensureAscii, unsigned write
 
 
 #define DUMP_INTERNAL_CALL                      \
-    (dumps_internal(&writer,                    \
+    (dumps_internal(state,                      \
+                    &writer,                    \
                     value,                      \
                     defaultFn,                  \
                     numberMode,                 \
@@ -3441,13 +3581,13 @@ do_encode(PyObject* value, PyObject* defaultFn, bool ensureAscii, unsigned write
 
 
 static PyObject*
-do_stream_encode(PyObject* value, PyObject* stream, size_t chunkSize, PyObject* defaultFn,
-                 bool ensureAscii, unsigned writeMode, char indentChar,
-                 unsigned indentCount, unsigned numberMode, unsigned datetimeMode,
-                 unsigned uuidMode, unsigned bytesMode, unsigned iterableMode,
-                 unsigned mappingMode)
+do_stream_encode(const rj_state* state, PyObject* value, PyObject* stream,
+                 size_t chunkSize, PyObject* defaultFn, bool ensureAscii,
+                 unsigned writeMode, char indentChar, unsigned indentCount,
+                 unsigned numberMode, unsigned datetimeMode, unsigned uuidMode,
+                 unsigned bytesMode, unsigned iterableMode, unsigned mappingMode)
 {
-    PyWriteStreamWrapper os(stream, chunkSize);
+    PyWriteStreamWrapper os(state, stream, chunkSize);
 
     if (writeMode == WM_COMPACT) {
         if (ensureAscii) {
@@ -3490,6 +3630,9 @@ encoder_call(PyObject* self, PyObject* args, PyObject* kwargs)
     size_t chunkSize = 65536;
     PyObject* defaultFn = NULL;
     PyObject* result;
+    rj_state* state = get_type_state(Py_TYPE(self));
+    if (state == NULL)
+        return NULL;
 
     if (!PyArg_ParseTupleAndKeywords(args, kwargs, "O|O$O",
                                      (char**) kwlist,
@@ -3501,7 +3644,7 @@ encoder_call(PyObject* self, PyObject* args, PyObject* kwargs)
     EncoderObject* e = (EncoderObject*) self;
 
     if (stream != NULL && stream != Py_None) {
-        if (!PyObject_HasAttr(stream, write_name)) {
+        if (!PyObject_HasAttr(stream, state->consts.names.write)) {
             PyErr_SetString(PyExc_TypeError, "Expected a writable stream");
             return NULL;
         }
@@ -3509,22 +3652,23 @@ encoder_call(PyObject* self, PyObject* args, PyObject* kwargs)
         if (!accept_chunk_size_arg(chunkSizeObj, chunkSize))
             return NULL;
 
-        if (PyObject_HasAttr(self, default_name)) {
-            defaultFn = PyObject_GetAttr(self, default_name);
+        if (PyObject_HasAttr(self, state->consts.names.default_name)) {
+            defaultFn = PyObject_GetAttr(self, state->consts.names.default_name);
         }
 
-        result = do_stream_encode(value, stream, chunkSize, defaultFn, e->ensureAscii,
-                                  e->writeMode, e->indentChar, e->indentCount,
-                                  e->numberMode, e->datetimeMode, e->uuidMode,
-                                  e->bytesMode, e->iterableMode, e->mappingMode);
+        result = do_stream_encode(state, value, stream, chunkSize, defaultFn,
+                                  e->ensureAscii, e->writeMode, e->indentChar,
+                                  e->indentCount, e->numberMode, e->datetimeMode,
+                                  e->uuidMode, e->bytesMode, e->iterableMode,
+                                  e->mappingMode);
     } else {
-        if (PyObject_HasAttr(self, default_name)) {
-            defaultFn = PyObject_GetAttr(self, default_name);
+        if (PyObject_HasAttr(self, state->consts.names.default_name)) {
+            defaultFn = PyObject_GetAttr(self, state->consts.names.default_name);
         }
 
-        result = do_encode(value, defaultFn, e->ensureAscii, e->writeMode, e->indentChar,
-                           e->indentCount, e->numberMode, e->datetimeMode, e->uuidMode,
-                           e->bytesMode, e->iterableMode, e->mappingMode);
+        result = do_encode(state, value, defaultFn, e->ensureAscii, e->writeMode,
+                           e->indentChar, e->indentCount, e->numberMode, e->datetimeMode,
+                           e->uuidMode, e->bytesMode, e->iterableMode, e->mappingMode);
     }
 
     if (defaultFn != NULL)
@@ -3655,52 +3799,31 @@ PyDoc_STRVAR(validator_doc,
              " string.");
 
 
-static PyTypeObject Validator_Type = {
-    PyVarObject_HEAD_INIT(NULL, 0)
-    "rapidjson.Validator",          /* tp_name */
-    sizeof(ValidatorObject),        /* tp_basicsize */
-    0,                              /* tp_itemsize */
-    (destructor) validator_dealloc, /* tp_dealloc */
-    0,                              /* tp_print */
-    0,                              /* tp_getattr */
-    0,                              /* tp_setattr */
-    0,                              /* tp_compare */
-    0,                              /* tp_repr */
-    0,                              /* tp_as_number */
-    0,                              /* tp_as_sequence */
-    0,                              /* tp_as_mapping */
-    0,                              /* tp_hash */
-    (ternaryfunc) validator_call,   /* tp_call */
-    0,                              /* tp_str */
-    0,                              /* tp_getattro */
-    0,                              /* tp_setattro */
-    0,                              /* tp_as_buffer */
-    Py_TPFLAGS_DEFAULT,             /* tp_flags */
-    validator_doc,                  /* tp_doc */
-    0,                              /* tp_traverse */
-    0,                              /* tp_clear */
-    0,                              /* tp_richcompare */
-    0,                              /* tp_weaklistoffset */
-    0,                              /* tp_iter */
-    0,                              /* tp_iternext */
-    0,                              /* tp_methods */
-    0,                              /* tp_members */
-    0,                              /* tp_getset */
-    0,                              /* tp_base */
-    0,                              /* tp_dict */
-    0,                              /* tp_descr_get */
-    0,                              /* tp_descr_set */
-    0,                              /* tp_dictoffset */
-    0,                              /* tp_init */
-    0,                              /* tp_alloc */
-    validator_new,                  /* tp_new */
-    PyObject_Del,                   /* tp_free */
+static PyType_Slot Validator_Type_Slot[] = {
+    {Py_tp_doc, const_cast<char*>(validator_doc)},
+    {Py_tp_call, reinterpret_cast<void*>(validator_call)},
+    {Py_tp_new, reinterpret_cast<void*>(validator_new)},
+    {Py_tp_traverse, reinterpret_cast<void*>(heap_type_traverse)},
+    {Py_tp_dealloc, reinterpret_cast<void*>(validator_dealloc)},
+    {0, NULL}
+};
+
+
+static PyType_Spec Validator_Type_Spec = {
+    "rapidjson.Validator",                                              /* name */
+    sizeof(ValidatorObject),                                            /* basicsize */
+    0,                                                                  /* itemsize */
+    Py_TPFLAGS_DEFAULT | Py_TPFLAGS_HAVE_GC | Py_TPFLAGS_IMMUTABLETYPE, /* flags */
+    Validator_Type_Slot                                                 /* slots */
 };
 
 
 static PyObject* validator_call(PyObject* self, PyObject* args, PyObject* kwargs)
 {
     PyObject* jsonObject;
+    rj_state* state = get_type_state(Py_TYPE(self));
+    if (state == NULL)
+        return NULL;
 
     if (!PyArg_ParseTuple(args, "O", &jsonObject))
         return NULL;
@@ -3739,7 +3862,7 @@ static PyObject* validator_call(PyObject* self, PyObject* args, PyObject* kwargs
     if (error) {
         if (asUnicode != NULL)
             Py_DECREF(asUnicode);
-        PyErr_SetString(decode_error, "Invalid JSON");
+        PyErr_SetString(state->types.errors.decode, "Invalid JSON");
         return NULL;
     }
 
@@ -3764,7 +3887,7 @@ static PyObject* validator_call(PyObject* self, PyObject* args, PyObject* kwargs
 
         PyObject* error = Py_BuildValue("sss", validator.GetInvalidSchemaKeyword(),
                                         sptr.GetString(), dptr.GetString());
-        PyErr_SetObject(validation_error, error);
+        PyErr_SetObject(state->types.errors.validation, error);
 
         if (error != NULL)
             Py_DECREF(error);
@@ -3790,6 +3913,12 @@ static void validator_dealloc(PyObject* self)
 static PyObject* validator_new(PyTypeObject* type, PyObject* args, PyObject* kwargs)
 {
     PyObject* jsonObject;
+    rj_state* state = get_type_state(type);
+    if (state == NULL) {
+        PyErr_Format(PyExc_SystemError,
+                     "rapidjson.Validator: No rapidjson module state found");
+        return NULL;
+    }
 
     if (!PyArg_ParseTuple(args, "O", &jsonObject))
         return NULL;
@@ -3829,7 +3958,7 @@ static PyObject* validator_new(PyTypeObject* type, PyObject* args, PyObject* kwa
         Py_DECREF(asUnicode);
 
     if (error) {
-        PyErr_SetString(decode_error, "Invalid JSON");
+        PyErr_SetString(state->types.errors.decode, "Invalid JSON");
         return NULL;
     }
 
@@ -3862,26 +3991,33 @@ static PyMethodDef functions[] = {
 
 
 static int
-module_exec(PyObject* m)
+module_exec(PyObject* self)
 {
     PyObject* datetimeModule;
     PyObject* decimalModule;
     PyObject* uuidModule;
+    rj_state* state = get_rj_state(self);
 
-    if (PyType_Ready(&Decoder_Type) < 0)
+    auto decoder_type = from_module_and_spec(*self, Decoder_Type_Spec);
+    if (!decoder_type)
         return -1;
 
-    if (PyType_Ready(&Encoder_Type) < 0)
+    auto encoder_type = from_module_and_spec(*self, Encoder_Type_Spec);
+    if (!encoder_type)
         return -1;
 
-    if (PyType_Ready(&Validator_Type) < 0)
+    auto validator_type = from_module_and_spec(*self, Validator_Type_Spec);
+    if (!validator_type)
         return -1;
 
-    if (PyType_Ready(&RawJSON_Type) < 0)
+    auto rawjson_type = from_module_and_spec(*self, RawJSON_Type_Spec);
+    if (!rawjson_type)
         return -1;
+    state->types.rawjson = rawjson_type.get();
+    Py_INCREF(state->types.rawjson);
 
-    PyDateTime_IMPORT;
-    if(!PyDateTimeAPI)
+    state->apis.datetime = (PyDateTime_CAPI*) PyCapsule_Import(PyDateTime_CAPSULE_NAME, 0);
+    if (state->apis.datetime == NULL)
         return -1;
 
     datetimeModule = PyImport_ImportModule("datetime");
@@ -3892,153 +4028,154 @@ module_exec(PyObject* m)
     if (decimalModule == NULL)
         return -1;
 
-    decimal_type = PyObject_GetAttrString(decimalModule, "Decimal");
+    state->types.decimal = PyObject_GetAttrString(decimalModule, "Decimal");
     Py_DECREF(decimalModule);
 
-    if (decimal_type == NULL)
+    if (state->types.decimal == NULL)
         return -1;
 
-    timezone_type = PyObject_GetAttrString(datetimeModule, "timezone");
+    state->types.timezone = PyObject_GetAttrString(datetimeModule, "timezone");
     Py_DECREF(datetimeModule);
 
-    if (timezone_type == NULL)
+    if (state->types.timezone == NULL)
         return -1;
 
-    timezone_utc = PyObject_GetAttrString(timezone_type, "utc");
-    if (timezone_utc == NULL)
+    state->consts.timezone_utc = PyObject_GetAttrString(state->types.timezone, "utc");
+    if (state->consts.timezone_utc == NULL)
         return -1;
 
     uuidModule = PyImport_ImportModule("uuid");
     if (uuidModule == NULL)
         return -1;
 
-    uuid_type = PyObject_GetAttrString(uuidModule, "UUID");
+    state->types.uuid = PyObject_GetAttrString(uuidModule, "UUID");
     Py_DECREF(uuidModule);
 
-    if (uuid_type == NULL)
+    if (state->types.uuid == NULL)
         return -1;
 
-    astimezone_name = PyUnicode_InternFromString("astimezone");
-    if (astimezone_name == NULL)
+    state->consts.names.astimezone = PyUnicode_InternFromString("astimezone");
+    if (state->consts.names.astimezone == NULL)
         return -1;
 
-    hex_name = PyUnicode_InternFromString("hex");
-    if (hex_name == NULL)
+    state->consts.names.hex = PyUnicode_InternFromString("hex");
+    if (state->consts.names.hex == NULL)
         return -1;
 
-    timestamp_name = PyUnicode_InternFromString("timestamp");
-    if (timestamp_name == NULL)
+    state->consts.names.timestamp = PyUnicode_InternFromString("timestamp");
+    if (state->consts.names.timestamp == NULL)
         return -1;
 
-    total_seconds_name = PyUnicode_InternFromString("total_seconds");
-    if (total_seconds_name == NULL)
+    state->consts.names.total_seconds = PyUnicode_InternFromString("total_seconds");
+    if (state->consts.names.total_seconds == NULL)
         return -1;
 
-    utcoffset_name = PyUnicode_InternFromString("utcoffset");
-    if (utcoffset_name == NULL)
+    state->consts.names.utcoffset = PyUnicode_InternFromString("utcoffset");
+    if (state->consts.names.utcoffset == NULL)
         return -1;
 
-    is_infinite_name = PyUnicode_InternFromString("is_infinite");
-    if (is_infinite_name == NULL)
+    state->consts.names.is_infinite = PyUnicode_InternFromString("is_infinite");
+    if (state->consts.names.is_infinite == NULL)
         return -1;
 
-    is_nan_name = PyUnicode_InternFromString("is_nan");
-    if (is_nan_name == NULL)
+    state->consts.names.is_nan = PyUnicode_InternFromString("is_nan");
+    if (state->consts.names.is_nan == NULL)
         return -1;
 
-    minus_inf_string_value = PyUnicode_InternFromString("-Infinity");
-    if (minus_inf_string_value == NULL)
+    state->consts.strings.minus_inf = PyUnicode_InternFromString("-Infinity");
+    if (state->consts.strings.minus_inf == NULL)
         return -1;
 
-    nan_string_value = PyUnicode_InternFromString("nan");
-    if (nan_string_value == NULL)
+    state->consts.strings.nan = PyUnicode_InternFromString("nan");
+    if (state->consts.strings.nan == NULL)
         return -1;
 
-    plus_inf_string_value = PyUnicode_InternFromString("+Infinity");
-    if (plus_inf_string_value == NULL)
+    state->consts.strings.plus_inf = PyUnicode_InternFromString("+Infinity");
+    if (state->consts.strings.plus_inf == NULL)
         return -1;
 
-    start_object_name = PyUnicode_InternFromString("start_object");
-    if (start_object_name == NULL)
+    state->consts.names.start_object = PyUnicode_InternFromString("start_object");
+    if (state->consts.names.start_object == NULL)
         return -1;
 
-    end_object_name = PyUnicode_InternFromString("end_object");
-    if (end_object_name == NULL)
+    state->consts.names.end_object = PyUnicode_InternFromString("end_object");
+    if (state->consts.names.end_object == NULL)
         return -1;
 
-    default_name = PyUnicode_InternFromString("default");
-    if (default_name == NULL)
+    state->consts.names.default_name = PyUnicode_InternFromString("default");
+    if (state->consts.names.default_name == NULL)
         return -1;
 
-    end_array_name = PyUnicode_InternFromString("end_array");
-    if (end_array_name == NULL)
+    state->consts.names.end_array = PyUnicode_InternFromString("end_array");
+    if (state->consts.names.end_array == NULL)
         return -1;
 
-    string_name = PyUnicode_InternFromString("string");
-    if (string_name == NULL)
+    state->consts.names.string = PyUnicode_InternFromString("string");
+    if (state->consts.names.string == NULL)
         return -1;
 
-    read_name = PyUnicode_InternFromString("read");
-    if (read_name == NULL)
+    state->consts.names.read = PyUnicode_InternFromString("read");
+    if (state->consts.names.read == NULL)
         return -1;
 
-    write_name = PyUnicode_InternFromString("write");
-    if (write_name == NULL)
+    state->consts.names.write = PyUnicode_InternFromString("write");
+    if (state->consts.names.write == NULL)
         return -1;
 
-    encoding_name = PyUnicode_InternFromString("encoding");
-    if (encoding_name == NULL)
+    state->consts.names.encoding = PyUnicode_InternFromString("encoding");
+    if (state->consts.names.encoding == NULL)
         return -1;
 
 #define STRINGIFY(x) XSTRINGIFY(x)
 #define XSTRINGIFY(x) #x
 
-    if (PyModule_AddIntConstant(m, "DM_NONE", DM_NONE)
-        || PyModule_AddIntConstant(m, "DM_ISO8601", DM_ISO8601)
-        || PyModule_AddIntConstant(m, "DM_UNIX_TIME", DM_UNIX_TIME)
-        || PyModule_AddIntConstant(m, "DM_ONLY_SECONDS", DM_ONLY_SECONDS)
-        || PyModule_AddIntConstant(m, "DM_IGNORE_TZ", DM_IGNORE_TZ)
-        || PyModule_AddIntConstant(m, "DM_NAIVE_IS_UTC", DM_NAIVE_IS_UTC)
-        || PyModule_AddIntConstant(m, "DM_SHIFT_TO_UTC", DM_SHIFT_TO_UTC)
+    if (PyModule_AddIntConstant(self, "DM_NONE", DM_NONE)
+        || PyModule_AddIntConstant(self, "DM_ISO8601", DM_ISO8601)
+        || PyModule_AddIntConstant(self, "DM_UNIX_TIME", DM_UNIX_TIME)
+        || PyModule_AddIntConstant(self, "DM_ONLY_SECONDS", DM_ONLY_SECONDS)
+        || PyModule_AddIntConstant(self, "DM_IGNORE_TZ", DM_IGNORE_TZ)
+        || PyModule_AddIntConstant(self, "DM_NAIVE_IS_UTC", DM_NAIVE_IS_UTC)
+        || PyModule_AddIntConstant(self, "DM_SHIFT_TO_UTC", DM_SHIFT_TO_UTC)
 
-        || PyModule_AddIntConstant(m, "UM_NONE", UM_NONE)
-        || PyModule_AddIntConstant(m, "UM_HEX", UM_HEX)
-        || PyModule_AddIntConstant(m, "UM_CANONICAL", UM_CANONICAL)
+        || PyModule_AddIntConstant(self, "UM_NONE", UM_NONE)
+        || PyModule_AddIntConstant(self, "UM_HEX", UM_HEX)
+        || PyModule_AddIntConstant(self, "UM_CANONICAL", UM_CANONICAL)
 
-        || PyModule_AddIntConstant(m, "NM_NONE", NM_NONE)
-        || PyModule_AddIntConstant(m, "NM_NAN", NM_NAN)
-        || PyModule_AddIntConstant(m, "NM_DECIMAL", NM_DECIMAL)
-        || PyModule_AddIntConstant(m, "NM_NATIVE", NM_NATIVE)
+        || PyModule_AddIntConstant(self, "NM_NONE", NM_NONE)
+        || PyModule_AddIntConstant(self, "NM_NAN", NM_NAN)
+        || PyModule_AddIntConstant(self, "NM_DECIMAL", NM_DECIMAL)
+        || PyModule_AddIntConstant(self, "NM_NATIVE", NM_NATIVE)
 
-        || PyModule_AddIntConstant(m, "PM_NONE", PM_NONE)
-        || PyModule_AddIntConstant(m, "PM_COMMENTS", PM_COMMENTS)
-        || PyModule_AddIntConstant(m, "PM_TRAILING_COMMAS", PM_TRAILING_COMMAS)
+        || PyModule_AddIntConstant(self, "PM_NONE", PM_NONE)
+        || PyModule_AddIntConstant(self, "PM_COMMENTS", PM_COMMENTS)
+        || PyModule_AddIntConstant(self, "PM_TRAILING_COMMAS", PM_TRAILING_COMMAS)
 
-        || PyModule_AddIntConstant(m, "BM_NONE", BM_NONE)
-        || PyModule_AddIntConstant(m, "BM_UTF8", BM_UTF8)
+        || PyModule_AddIntConstant(self, "BM_NONE", BM_NONE)
+        || PyModule_AddIntConstant(self, "BM_UTF8", BM_UTF8)
 
-        || PyModule_AddIntConstant(m, "WM_COMPACT", WM_COMPACT)
-        || PyModule_AddIntConstant(m, "WM_PRETTY", WM_PRETTY)
-        || PyModule_AddIntConstant(m, "WM_SINGLE_LINE_ARRAY", WM_SINGLE_LINE_ARRAY)
+        || PyModule_AddIntConstant(self, "WM_COMPACT", WM_COMPACT)
+        || PyModule_AddIntConstant(self, "WM_PRETTY", WM_PRETTY)
+        || PyModule_AddIntConstant(self, "WM_SINGLE_LINE_ARRAY", WM_SINGLE_LINE_ARRAY)
 
-        || PyModule_AddIntConstant(m, "IM_ANY_ITERABLE", IM_ANY_ITERABLE)
-        || PyModule_AddIntConstant(m, "IM_ONLY_LISTS", IM_ONLY_LISTS)
+        || PyModule_AddIntConstant(self, "IM_ANY_ITERABLE", IM_ANY_ITERABLE)
+        || PyModule_AddIntConstant(self, "IM_ONLY_LISTS", IM_ONLY_LISTS)
 
-        || PyModule_AddIntConstant(m, "MM_ANY_MAPPING", MM_ANY_MAPPING)
-        || PyModule_AddIntConstant(m, "MM_ONLY_DICTS", MM_ONLY_DICTS)
-        || PyModule_AddIntConstant(m, "MM_COERCE_KEYS_TO_STRINGS",
+        || PyModule_AddIntConstant(self, "MM_ANY_MAPPING", MM_ANY_MAPPING)
+        || PyModule_AddIntConstant(self, "MM_ONLY_DICTS", MM_ONLY_DICTS)
+        || PyModule_AddIntConstant(self, "MM_COERCE_KEYS_TO_STRINGS",
                                    MM_COERCE_KEYS_TO_STRINGS)
-        || PyModule_AddIntConstant(m, "MM_SKIP_NON_STRING_KEYS", MM_SKIP_NON_STRING_KEYS)
-        || PyModule_AddIntConstant(m, "MM_SORT_KEYS", MM_SORT_KEYS)
+        || PyModule_AddIntConstant(self, "MM_SKIP_NON_STRING_KEYS",
+                                   MM_SKIP_NON_STRING_KEYS)
+        || PyModule_AddIntConstant(self, "MM_SORT_KEYS", MM_SORT_KEYS)
 
-        || PyModule_AddStringConstant(m, "__version__",
+        || PyModule_AddStringConstant(self, "__version__",
                                       STRINGIFY(PYTHON_RAPIDJSON_VERSION))
-        || PyModule_AddStringConstant(m, "__author__",
+        || PyModule_AddStringConstant(self, "__author__",
                                       "Ken Robbins <ken@kenrobbins.com>"
                                       ", Lele Gaifax <lele@metapensiero.it>")
-        || PyModule_AddStringConstant(m, "__rapidjson_version__",
+        || PyModule_AddStringConstant(self, "__rapidjson_version__",
                                       RAPIDJSON_VERSION_STRING)
-        || PyModule_AddStringConstant(m, "__rapidjson_exact_version__",
+        || PyModule_AddStringConstant(self, "__rapidjson_exact_version__",
 #ifdef RAPIDJSON_EXACT_VERSION
                                       STRINGIFY(RAPIDJSON_EXACT_VERSION)
 #else
@@ -4051,47 +4188,39 @@ module_exec(PyObject* m)
         )
         return -1;
 
-    Py_INCREF(&Decoder_Type);
-    if (PyModule_AddObject(m, "Decoder", (PyObject*) &Decoder_Type) < 0) {
-        Py_DECREF(&Decoder_Type);
+    if (PyModule_AddObject(self, "Decoder", decoder_type.get()) < 0)
+        return -1;
+    decoder_type.release();
+
+    if (PyModule_AddObject(self, "Encoder", encoder_type.get()) < 0)
+        return -1;
+    encoder_type.release();
+
+    if (PyModule_AddObject(self, "Validator", validator_type.get()) < 0)
+        return -1;
+    validator_type.release();
+
+    if (PyModule_AddObject(self, "RawJSON", rawjson_type.get()) < 0)
+        return -1;
+    rawjson_type.release();
+
+    state->types.errors.validation = PyErr_NewException("rapidjson.ValidationError",
+                                                        PyExc_ValueError, NULL);
+    if (state->types.errors.validation == NULL)
+        return -1;
+    Py_INCREF(state->types.errors.validation);
+    if (PyModule_AddObject(self, "ValidationError", state->types.errors.validation) < 0) {
+        Py_DECREF(state->types.errors.validation);
         return -1;
     }
 
-    Py_INCREF(&Encoder_Type);
-    if (PyModule_AddObject(m, "Encoder", (PyObject*) &Encoder_Type) < 0) {
-        Py_DECREF(&Encoder_Type);
+    state->types.errors.decode = PyErr_NewException("rapidjson.JSONDecodeError",
+                                                    PyExc_ValueError, NULL);
+    if (state->types.errors.decode == NULL)
         return -1;
-    }
-
-    Py_INCREF(&Validator_Type);
-    if (PyModule_AddObject(m, "Validator", (PyObject*) &Validator_Type) < 0) {
-        Py_DECREF(&Validator_Type);
-        return -1;
-    }
-
-    Py_INCREF(&RawJSON_Type);
-    if (PyModule_AddObject(m, "RawJSON", (PyObject*) &RawJSON_Type) < 0) {
-        Py_DECREF(&RawJSON_Type);
-        return -1;
-    }
-
-    validation_error = PyErr_NewException("rapidjson.ValidationError",
-                                          PyExc_ValueError, NULL);
-    if (validation_error == NULL)
-        return -1;
-    Py_INCREF(validation_error);
-    if (PyModule_AddObject(m, "ValidationError", validation_error) < 0) {
-        Py_DECREF(validation_error);
-        return -1;
-    }
-
-    decode_error = PyErr_NewException("rapidjson.JSONDecodeError",
-                                      PyExc_ValueError, NULL);
-    if (decode_error == NULL)
-        return -1;
-    Py_INCREF(decode_error);
-    if (PyModule_AddObject(m, "JSONDecodeError", decode_error) < 0) {
-        Py_DECREF(decode_error);
+    Py_INCREF(state->types.errors.decode);
+    if (PyModule_AddObject(self, "JSONDecodeError", state->types.errors.decode) < 0) {
+        Py_DECREF(state->types.errors.decode);
         return -1;
     }
 
@@ -4101,25 +4230,30 @@ module_exec(PyObject* m)
 
 static struct PyModuleDef_Slot slots[] = {
     {Py_mod_exec, (void*) module_exec},
+#if PY_VERSION_HEX >= 0x030C0000
+    {Py_mod_multiple_interpreters, Py_MOD_PER_INTERPRETER_GIL_SUPPORTED},
+#endif
     {0, NULL}
 };
 
+namespace {
 
-static PyModuleDef module = {
-    PyModuleDef_HEAD_INIT,      /* m_base */
-    "rapidjson",                /* m_name */
-    PyDoc_STR("Fast, simple JSON encoder and decoder. Based on RapidJSON C++ library."),
-    0,                          /* m_size */
-    functions,                  /* m_methods */
-    slots,                      /* m_slots */
-    NULL,                       /* m_traverse */
-    NULL,                       /* m_clear */
-    NULL                        /* m_free */
-};
+    PyModuleDef module_def = {
+        PyModuleDef_HEAD_INIT,      /* m_base */
+        "rapidjson",                /* m_name */
+        PyDoc_STR("Fast, simple JSON encoder and decoder. Based on RapidJSON C++ library."),
+        sizeof(rj_state),           /* m_size */
+        functions,                  /* m_methods */
+        slots,                      /* m_slots */
+        rj_traverse,                /* m_traverse */
+        rj_clear,                   /* m_clear */
+        rj_free                     /* m_free */
+    };
 
+}
 
 PyMODINIT_FUNC
 PyInit_rapidjson()
 {
-    return PyModuleDef_Init(&module);
+    return PyModuleDef_Init(&module_def);
 }
