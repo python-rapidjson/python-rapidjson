@@ -2,7 +2,7 @@
 # :Project:   python-rapidjson -- Development Makefile
 # :Author:    Lele Gaifax <lele@metapensiero.it>
 # :License:   MIT License
-# :Copyright: © 2017, 2018, 2019, 2020, 2021, 2021 Lele Gaifax
+# :Copyright: © 2017, 2018, 2019, 2020, 2021, 2021, 2026 Lele Gaifax
 #
 
 export TOPDIR := $(CURDIR)
@@ -12,7 +12,7 @@ else
 export VENVDIR := $(TOPDIR)/env
 endif
 export PYTHON := $(VENVDIR)/bin/python
-export SHELL := /bin/bash
+export SHELL := bash
 export SYS_PYTHON := $(shell command -v python3.7 || command -v python3)
 
 all: rapidjson/license.txt virtualenv help
