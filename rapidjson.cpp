@@ -3943,7 +3943,7 @@ module_exec(PyObject* m)
         return -1;
 
     is_nan_name = PyUnicode_InternFromString("is_nan");
-    if (is_infinite_name == NULL)
+    if (is_nan_name == NULL)
         return -1;
 
     minus_inf_string_value = PyUnicode_InternFromString("-Infinity");
