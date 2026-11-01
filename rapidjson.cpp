@@ -160,7 +160,17 @@ get_rj_state(PyObject* module)
 static inline rj_state*
 get_type_state(PyTypeObject* type)
 {
+#if PY_VERSION_HEX >= 0x030B0000
     PyObject* module = PyType_GetModuleByDef(type, &module_def);
+#else
+    /* Backward compatibility for Python 3.10, until we support that:
+       PyType_GetModuleByDef() has been introduced in 3.11 and before 3.12 (pre PEP-684
+       that is) the module is the same in the whole process. */
+    (void) type;
+    PyObject* module = PyState_FindModule(&module_def);
+    if (module == NULL)
+        PyErr_SetString(PyExc_SystemError, "rapidjson: module state not found");
+#endif
     if (module == NULL)
         return NULL;
     return get_rj_state(module);
