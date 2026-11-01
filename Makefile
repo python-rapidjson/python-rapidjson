@@ -13,7 +13,7 @@ export VENVDIR := $(TOPDIR)/env
 endif
 export PYTHON := $(VENVDIR)/bin/python
 export SHELL := bash
-export SYS_PYTHON := $(shell command -v python3.7 || command -v python3)
+export SYS_PYTHON := $(shell command -v python3)
 
 all: rapidjson/license.txt virtualenv help
 
