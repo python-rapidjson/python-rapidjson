@@ -1,7 +1,7 @@
 Changes
 -------
 
-1.26 (unreleased)
+1.26 (2026-11-01)
 ~~~~~~~~~~~~~~~~~
 
 * Add Windows ARM64 build (`PR #242`__), thanks to Nikhil Dabas
@@ -45,7 +45,6 @@ Changes
   readable by the decoder (`PR #255`__), thanks to Rupayon Haldar
 
   __ https://github.com/python-rapidjson/python-rapidjson/pull/255
-
 
 
 1.25 (2026-09-06)
