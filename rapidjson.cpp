@@ -7,7 +7,15 @@
 //
 
 #include <Python.h>
+
+#if defined(__GNUC__)
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wunused-variable"
+#endif
 #include <datetime.h>
+#if defined(__GNUC__)
+#pragma GCC diagnostic pop
+#endif
 #include <structmember.h>
 
 #include <algorithm>
@@ -25,6 +33,10 @@
 
 
 using namespace rapidjson;
+
+
+/* Redirect references to the DT API through the module state. */
+#define PyDateTimeAPI (state->apis.datetime)
 
 
 struct PyDerefer {
@@ -118,9 +130,15 @@ struct Consts {
 };
 
 
+struct APIs {
+    PyDateTime_CAPI* datetime = NULL;
+};
+
+
 typedef struct {
     Types types;
     Consts consts;
+    APIs apis;
 } rj_state;
 
 
@@ -3988,8 +4006,8 @@ module_exec(PyObject* self)
     state->types.rawjson = rawjson_type.get();
     Py_INCREF(state->types.rawjson);
 
-    PyDateTime_IMPORT;
-    if(!PyDateTimeAPI)
+    state->apis.datetime = (PyDateTime_CAPI*) PyCapsule_Import(PyDateTime_CAPSULE_NAME, 0);
+    if (state->apis.datetime == NULL)
         return -1;
 
     datetimeModule = PyImport_ImportModule("datetime");
