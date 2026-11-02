@@ -1,6 +1,12 @@
 Changes
 -------
 
+Unreleased
+~~~~~~~~~~
+
+* Preserve the value of non-ASCII ``RawJSON`` input with ``ensure_ascii=True``
+  by emitting JSON Unicode escapes instead of truncating code points.
+
 1.26 (2026-11-01)
 ~~~~~~~~~~~~~~~~~
 
