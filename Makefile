@@ -49,7 +49,7 @@ help::
 
 .PHONY: distclean
 distclean:: clean
-	rm -rf .tox build dist rapidjson_exact_version.txt
+	rm -rf build dist rapidjson_exact_version.txt
 	git submodule deinit --all
 
 help::
