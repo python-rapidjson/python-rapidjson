@@ -13,8 +13,8 @@ from setuptools import setup, Extension
 from distutils import sysconfig
 
 
-if sys.version_info < (3, 10):
-    raise NotImplementedError("Only Python 3.10+ is supported.")
+if sys.version_info < (3, 11):
+    raise NotImplementedError("Only Python 3.11+ is supported.")
 
 ROOT_PATH = os.path.abspath(os.path.dirname(__file__))
 
@@ -90,7 +90,6 @@ setup(
         'Programming Language :: C++',
         'Programming Language :: Python :: 3 :: Only',
         'Programming Language :: Python :: 3',
-        'Programming Language :: Python :: 3.10',
         'Programming Language :: Python :: 3.11',
         'Programming Language :: Python :: 3.12',
         'Programming Language :: Python :: 3.13',
@@ -98,7 +97,7 @@ setup(
         'Programming Language :: Python :: 3.15',
         'Programming Language :: Python',
     ],
-    python_requires=">=3.10",
+    python_requires=">=3.11",
     ext_modules=[Extension('rapidjson', **extension_options)],
     package_dir={"rapidjson-stubs": "typings/rapidjson"},
     packages=["rapidjson-stubs"],
