@@ -644,8 +644,12 @@ typedef struct {
 static void
 RawJSON_dealloc(RawJSON* self)
 {
+    PyTypeObject* tp = Py_TYPE(self);
+
+    PyObject_GC_UnTrack(self);
     Py_XDECREF(self->value);
-    Py_TYPE(self)->tp_free((PyObject*) self);
+    tp->tp_free((PyObject*) self);
+    Py_DECREF(tp);
 }
 
 
@@ -3904,9 +3908,13 @@ static PyObject* validator_call(PyObject* self, PyObject* args, PyObject* kwargs
 
 static void validator_dealloc(PyObject* self)
 {
+    PyTypeObject* tp = Py_TYPE(self);
     ValidatorObject* s = (ValidatorObject*) self;
+
+    PyObject_GC_UnTrack(self);
     delete s->schema;
-    Py_TYPE(self)->tp_free(self);
+    tp->tp_free(self);
+    Py_DECREF(tp);
 }
 
 
