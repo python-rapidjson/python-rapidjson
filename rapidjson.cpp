@@ -3419,7 +3419,7 @@ static PyTypeObject Encoder_Type = {
                     bytesMode,                          \
                     iterableMode,                       \
                     mappingMode, ensureAscii)           \
-     ? PyUnicode_FromString(buf.GetString()) : NULL)
+     ? PyUnicode_FromStringAndSize(buf.GetString(), buf.GetSize()) : NULL)
 
 
 static PyObject*
