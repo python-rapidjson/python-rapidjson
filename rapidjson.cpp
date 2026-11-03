@@ -22,8 +22,11 @@
 #include "rapidjson/prettywriter.h"
 #include "rapidjson/error/en.h"
 
+#include "pywriter.h"
+
 
 using namespace rapidjson;
+using namespace pyrapidjson;
 
 
 /* On some MacOS combo, using Py_IS_XXX() macros does not work (see
@@ -420,6 +423,24 @@ public:
         *cursor++ = c;
     }
 
+    void Append(const char* s, size_t n) {
+        while (n > 0) {
+            if (cursor == bufferEnd) {
+                if (!isBinary)
+                    trackMultiByteChar();
+                Flush();
+            }
+            size_t room = (size_t)(bufferEnd - cursor);
+            size_t chunk = n < room ? n : room;
+            memcpy(cursor, s, chunk);
+            cursor += chunk;
+            s += chunk;
+            n -= chunk;
+        }
+        if (!isBinary)
+            trackMultiByteChar();
+    }
+
     Ch* PutBegin() {
         assert(false);
         return 0;
@@ -431,6 +452,27 @@ public:
     }
 
 private:
+    /* Record whether the buffer ends in the middle of a UTF-8 sequence, so that
+       Flush() does not split it when feeding a text stream. */
+    void trackMultiByteChar() {
+        size_t used = (size_t)(cursor - buffer);
+        size_t back = used < 4 ? used : 4;
+        size_t pos = used;
+        while (back > 0) {
+            --pos;
+            --back;
+            if ((buffer[pos] & 0xC0) != 0x80)
+                break;
+        }
+        if (pos == used) {
+            multiByteChar = NULL;
+            return;
+        }
+        unsigned char lead = (unsigned char) buffer[pos];
+        size_t need = lead >= 0xF0 ? 4 : lead >= 0xE0 ? 3 : lead >= 0xC0 ? 2 : 1;
+        multiByteChar = (used - pos < need) ? buffer + pos : NULL;
+    }
+
     PyObject* stream;
     Ch* buffer;
     Ch* bufferEnd;
@@ -3431,16 +3473,16 @@ do_encode(PyObject* value, PyObject* defaultFn, bool ensureAscii, unsigned write
     if (writeMode == WM_COMPACT) {
         if (ensureAscii) {
             GenericStringBuffer<ASCII<> > buf;
-            Writer<GenericStringBuffer<ASCII<> >, UTF8<>, ASCII<> > writer(buf);
+            FastWriter<GenericStringBuffer<ASCII<> >, ASCII<> > writer(buf);
             return DUMPS_INTERNAL_CALL;
         } else {
             StringBuffer buf;
-            Writer<StringBuffer> writer(buf);
+            FastWriter<StringBuffer> writer(buf);
             return DUMPS_INTERNAL_CALL;
         }
     } else if (ensureAscii) {
         GenericStringBuffer<ASCII<> > buf;
-        PrettyWriter<GenericStringBuffer<ASCII<> >, UTF8<>, ASCII<> > writer(buf);
+        FastPrettyWriter<GenericStringBuffer<ASCII<> >, ASCII<> > writer(buf);
         writer.SetIndent(indentChar, indentCount);
         if (writeMode & WM_SINGLE_LINE_ARRAY) {
             writer.SetFormatOptions(kFormatSingleLineArray);
@@ -3448,7 +3490,7 @@ do_encode(PyObject* value, PyObject* defaultFn, bool ensureAscii, unsigned write
         return DUMPS_INTERNAL_CALL;
     } else {
         StringBuffer buf;
-        PrettyWriter<StringBuffer> writer(buf);
+        FastPrettyWriter<StringBuffer> writer(buf);
         writer.SetIndent(indentChar, indentCount);
         if (writeMode & WM_SINGLE_LINE_ARRAY) {
             writer.SetFormatOptions(kFormatSingleLineArray);
@@ -3482,21 +3524,21 @@ do_stream_encode(PyObject* value, PyObject* stream, size_t chunkSize, PyObject* 
 
     if (writeMode == WM_COMPACT) {
         if (ensureAscii) {
-            Writer<PyWriteStreamWrapper, UTF8<>, ASCII<> > writer(os);
+            FastWriter<PyWriteStreamWrapper, ASCII<> > writer(os);
             return DUMP_INTERNAL_CALL;
         } else {
-            Writer<PyWriteStreamWrapper> writer(os);
+            FastWriter<PyWriteStreamWrapper> writer(os);
             return DUMP_INTERNAL_CALL;
         }
     } else if (ensureAscii) {
-        PrettyWriter<PyWriteStreamWrapper, UTF8<>, ASCII<> > writer(os);
+        FastPrettyWriter<PyWriteStreamWrapper, ASCII<> > writer(os);
         writer.SetIndent(indentChar, indentCount);
         if (writeMode & WM_SINGLE_LINE_ARRAY) {
             writer.SetFormatOptions(kFormatSingleLineArray);
         }
         return DUMP_INTERNAL_CALL;
     } else {
-        PrettyWriter<PyWriteStreamWrapper> writer(os);
+        FastPrettyWriter<PyWriteStreamWrapper> writer(os);
         writer.SetIndent(indentChar, indentCount);
         if (writeMode & WM_SINGLE_LINE_ARRAY) {
             writer.SetFormatOptions(kFormatSingleLineArray);

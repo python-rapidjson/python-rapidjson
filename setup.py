@@ -45,7 +45,7 @@ extension_options = {
     'sources': ['./rapidjson.cpp'],
     'include_dirs': [rj_include_dir],
     'define_macros': [('PYTHON_RAPIDJSON_VERSION', VERSION)],
-    'depends': ['./rapidjson_exact_version.txt'],
+    'depends': ['./rapidjson_exact_version.txt', './pywriter.h'],
 }
 
 if os.path.exists('rapidjson_exact_version.txt'):
