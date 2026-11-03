@@ -1,11 +1,15 @@
 Changes
 -------
 
-Unreleased
-~~~~~~~~~~
+1.27 (unreleased)
+~~~~~~~~~~~~~~~~~
 
-* Preserve the value of non-ASCII ``RawJSON`` input with ``ensure_ascii=True``
-  by emitting JSON Unicode escapes instead of truncating code points.
+* Preserve the value of non-ASCII ``RawJSON`` input with ``ensure_ascii=True`` by emitting
+  JSON Unicode escapes instead of truncating code points (`PR #258`__), thanks to Parijat
+  Biswas
+
+  __ https://github.com/python-rapidjson/python-rapidjson/pull/258
+
 
 1.26 (2026-11-01)
 ~~~~~~~~~~~~~~~~~
