@@ -21,13 +21,14 @@
    Preserialized JSON string.
 
    :param str value: the string that rapidjson should use verbatim when serializing this
-                     object
+                     object (except non-ASCII escaping when ``ensure_ascii=True``)
 
 Some applications might decide to store JSON-serialized objects in their database, but
 might need to assemble them in a bigger JSON.
 
 The ``RawJSON`` class serves this purpose. When serialized, the string value provided will
-be used verbatim, whitespace included:
+retain its spelling and whitespace. With ``ensure_ascii=True`` (the default), non-ASCII
+characters are emitted as JSON Unicode escapes; ``ensure_ascii=False`` preserves them:
 
 .. doctest::
 

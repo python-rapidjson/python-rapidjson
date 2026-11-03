@@ -2331,13 +2331,14 @@ dumps_internal(
     unsigned uuidMode,
     unsigned bytesMode,
     unsigned iterableMode,
-    unsigned mappingMode)
+    unsigned mappingMode,
+    bool ensureAscii)
 {
     int is_decimal;
 
 #define RECURSE(v) dumps_internal(writer, v, defaultFn,                 \
                                   numberMode, datetimeMode, uuidMode,   \
-                                  bytesMode, iterableMode, mappingMode)
+                                  bytesMode, iterableMode, mappingMode, ensureAscii)
 
 #define ASSERT_VALID_SIZE(l) do {                                       \
     if (l < 0 || l > UINT_MAX) {                                        \
@@ -2969,7 +2970,37 @@ dumps_internal(
         if (jsonStr == NULL)
             return false;
         ASSERT_VALID_SIZE(l);
-        writer->RawValue(jsonStr, (SizeType) l, kStringType);
+        // RawValue transcodes to ASCII without JSON escaping, which truncates Unicode.
+        // Preserve the raw spelling except for the escaping requested by ensure_ascii.
+        if (ensureAscii && !PyUnicode_IS_ASCII(((RawJSON*) object)->value)) {
+            std::string escaped;
+            PyObject* value = ((RawJSON*) object)->value;
+            static const char hex[] = "0123456789abcdef";
+            int kind = PyUnicode_KIND(value);
+            void* data = PyUnicode_DATA(value);
+            for (Py_ssize_t i = 0; i < PyUnicode_GET_LENGTH(value); i++) {
+                Py_UCS4 ch = PyUnicode_READ(kind, data, i);
+                if (ch < 128) {
+                    escaped += (char) ch;
+                } else {
+                    Py_UCS4 units[2] = {ch, 0};
+                    int count = 1;
+                    if (ch > 0xffff) {
+                        units[0] = 0xd800 + ((ch - 0x10000) >> 10);
+                        units[1] = 0xdc00 + ((ch - 0x10000) & 0x3ff);
+                        count = 2;
+                    }
+                    for (int j = 0; j < count; j++) {
+                        escaped += "\\u";
+                        for (int shift = 12; shift >= 0; shift -= 4)
+                            escaped += hex[(units[j] >> shift) & 15];
+                    }
+                }
+            }
+            writer->RawValue(escaped.data(), escaped.size(), kStringType);
+        } else {
+            writer->RawValue(jsonStr, (SizeType) l, kStringType);
+        }
     } else if (defaultFn) {
         PyObject* retval = PyObject_CallFunctionObjArgs(defaultFn, object, NULL);
         if (retval == NULL)
@@ -3387,7 +3418,7 @@ static PyTypeObject Encoder_Type = {
                     uuidMode,                           \
                     bytesMode,                          \
                     iterableMode,                       \
-                    mappingMode)                        \
+                    mappingMode, ensureAscii)           \
      ? PyUnicode_FromString(buf.GetString()) : NULL)
 
 
@@ -3436,7 +3467,7 @@ do_encode(PyObject* value, PyObject* defaultFn, bool ensureAscii, unsigned write
                     uuidMode,                   \
                     bytesMode,                  \
                     iterableMode,               \
-                    mappingMode)                \
+                    mappingMode, ensureAscii)   \
      ? Py_INCREF(Py_None), Py_None : NULL)
 
 
