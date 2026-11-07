@@ -12,6 +12,7 @@
 
 #include <algorithm>
 #include <cmath>
+#include <new>
 #include <string>
 #include <vector>
 
@@ -81,6 +82,7 @@ struct HandlerContext {
     PyObject* object;
     const char* key;
     SizeType keyLength;
+    size_t nextIndex;
     bool isObject;
     bool keyValuePairs;
     bool copiedKey;
@@ -802,7 +804,30 @@ float_from_string(const char* s, Py_ssize_t len)
 }
 
 
+struct PyHandler;
+
+
+// Callback scopes form a per-thread stack, so recursive and concurrent calls to
+// the same Decoder never replace each other's current location.
+struct DecoderCallback {
+    static thread_local DecoderCallback* active;
+    PyHandler* handler;
+    DecoderCallback* previous;
+    bool handled;
+
+    DecoderCallback(PyHandler* h, bool valueHandled)
+        : handler(h), previous(active), handled(valueHandled)
+        { active = this; }
+
+    ~DecoderCallback() { active = previous; }
+};
+
+
+thread_local DecoderCallback* DecoderCallback::active = NULL;
+
+
 struct PyHandler {
+    PyObject* decoder;
     PyObject* decoderStartObject;
     PyObject* decoderEndObject;
     PyObject* decoderEndArray;
@@ -821,7 +846,8 @@ struct PyHandler {
               unsigned dm,
               unsigned um,
               unsigned nm)
-        : decoderStartObject(NULL),
+        : decoder(decoder),
+          decoderStartObject(NULL),
           decoderEndObject(NULL),
           decoderEndArray(NULL),
           decoderString(NULL),
@@ -869,7 +895,7 @@ struct PyHandler {
 
     bool Handle(PyObject* value) {
         if (root) {
-            const HandlerContext& current = stack.back();
+            HandlerContext& current = stack.back();
 
             if (current.isObject) {
                 PyObject* key = PyUnicode_FromStringAndSize(current.key,
@@ -919,6 +945,7 @@ struct PyHandler {
                 if (rc == -1) {
                     return false;
                 }
+                current.nextIndex++;
             }
         } else {
             root = value;
@@ -965,6 +992,7 @@ struct PyHandler {
         bool key_value_pairs;
 
         if (decoderStartObject != NULL) {
+            DecoderCallback callback(this, false);
             mapping = PyObject_CallFunctionObjArgs(decoderStartObject, NULL);
             if (mapping == NULL)
                 return false;
@@ -983,7 +1011,11 @@ struct PyHandler {
             key_value_pairs = false;
         }
 
+        // Retain the context's reference before Handle transfers its reference
+        // to the parent, which may be a custom mapping that discards the value.
+        Py_INCREF(mapping);
         if (!Handle(mapping)) {
+            Py_DECREF(mapping);
             return false;
         }
 
@@ -992,9 +1024,8 @@ struct PyHandler {
         ctx.keyValuePairs = key_value_pairs;
         ctx.object = mapping;
         ctx.key = NULL;
+        ctx.nextIndex = 0;
         ctx.copiedKey = false;
-        Py_INCREF(mapping);
-
         stack.push_back(ctx);
 
         return true;
@@ -1018,6 +1049,7 @@ struct PyHandler {
 
         PyObject* replacement;
         if (decoderEndObject != NULL) {
+            DecoderCallback callback(this, true);
             replacement = PyObject_CallFunctionObjArgs(decoderEndObject, mapping, NULL);
         } else /* if (objectHook != NULL) */ {
             replacement = PyObject_CallFunctionObjArgs(objectHook, mapping, NULL);
@@ -1114,7 +1146,9 @@ struct PyHandler {
             return false;
         }
 
+        Py_INCREF(list);
         if (!Handle(list)) {
+            Py_DECREF(list);
             return false;
         }
 
@@ -1122,9 +1156,8 @@ struct PyHandler {
         ctx.isObject = false;
         ctx.object = list;
         ctx.key = NULL;
+        ctx.nextIndex = 0;
         ctx.copiedKey = false;
-        Py_INCREF(list);
-
         stack.push_back(ctx);
 
         return true;
@@ -1146,8 +1179,11 @@ struct PyHandler {
             return true;
         }
 
-        PyObject* replacement = PyObject_CallFunctionObjArgs(decoderEndArray, sequence,
-                                                             NULL);
+        PyObject* replacement;
+        {
+            DecoderCallback callback(this, true);
+            replacement = PyObject_CallFunctionObjArgs(decoderEndArray, sequence, NULL);
+        }
         Py_DECREF(sequence);
         if (replacement == NULL)
             return false;
@@ -1568,6 +1604,7 @@ struct PyHandler {
             return false;
 
         if (decoderString != NULL) {
+            DecoderCallback callback(this, false);
             PyObject* replacement = PyObject_CallFunctionObjArgs(decoderString, value,
                                                                  NULL);
             Py_DECREF(value);
@@ -1588,6 +1625,47 @@ typedef struct {
     unsigned numberMode;
     unsigned parseMode;
 } DecoderObject;
+
+
+static PyObject*
+decoder_pointer(PyObject* self, void*)
+{
+    const DecoderCallback* callback = DecoderCallback::active;
+    while (callback != NULL && callback->handler->decoder != self)
+        callback = callback->previous;
+    if (callback == NULL)
+        Py_RETURN_NONE;
+
+    const std::vector<HandlerContext>& stack = callback->handler->stack;
+    try {
+        std::string pointer;
+        for (size_t i = 0; i < stack.size(); i++) {
+            const HandlerContext& ctx = stack[i];
+            pointer += '/';
+            if (ctx.isObject) {
+                for (SizeType j = 0; j < ctx.keyLength; j++) {
+                    char ch = ctx.key[j];
+                    if (ch == '~')
+                        pointer += "~0";
+                    else if (ch == '/')
+                        pointer += "~1";
+                    else
+                        pointer += ch;
+                }
+            } else {
+                // Ancestor containers and end callbacks have already been
+                // appended; start_object/string refer to the next array item.
+                size_t index = ctx.nextIndex;
+                if (i + 1 < stack.size() || callback->handled)
+                    index--;
+                pointer += std::to_string(index);
+            }
+        }
+        return PyUnicode_FromStringAndSize(pointer.data(), pointer.size());
+    } catch (const std::bad_alloc&) {
+        return PyErr_NoMemory();
+    }
+}
 
 
 PyDoc_STRVAR(loads_docstring,
@@ -1882,6 +1960,13 @@ static PyMemberDef decoder_members[] = {
 };
 
 
+static PyGetSetDef decoder_getset[] = {
+    {"pointer", decoder_pointer, NULL,
+     "The current callback's JSON Pointer, or None outside callbacks.", NULL},
+    {NULL}
+};
+
+
 static PyTypeObject Decoder_Type = {
     PyVarObject_HEAD_INIT(NULL, 0)
     "rapidjson.Decoder",                      /* tp_name */
@@ -1912,7 +1997,7 @@ static PyTypeObject Decoder_Type = {
     0,                                        /* tp_iternext */
     0,                                        /* tp_methods */
     decoder_members,                          /* tp_members */
-    0,                                        /* tp_getset */
+    decoder_getset,                            /* tp_getset */
     0,                                        /* tp_base */
     0,                                        /* tp_dict */
     0,                                        /* tp_descr_get */
