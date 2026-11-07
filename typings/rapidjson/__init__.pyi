@@ -167,6 +167,9 @@ class ValidationError(Exception): ...
 
 @disjoint_base
 class Decoder:
+    @property
+    def pointer(self) -> t.Optional[str]: ...
+
     datetime_mode: _DatetimeMode
     number_mode: _NumberMode
     parse_mode: _ParseMode

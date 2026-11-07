@@ -55,3 +55,25 @@ def test_join_duplicated_keys():
     jdk = JoinDuplicatedKeysDecoder()
     result = jdk('{"a": 1, "b": {"b1": 1, "b2": 2}, "b": {"b1": 3, "b2": 2,"b4": 8}}')
     assert result == {'a': 1, 'b': [{'b1': 1, 'b2': 2}, {'b1': 3, 'b2': 2, 'b4': 8}]}
+
+
+def test_discarding_mapping_retains_nested_containers():
+    import weakref
+
+    mappings = []
+
+    class Discard(dict):
+        def __setitem__(self, key, value):
+            pass
+
+    class DiscardingDecoder(Decoder):
+        def start_object(self):
+            mapping = Discard()
+            mappings.append(weakref.ref(mapping))
+            return mapping
+
+    decoder = DiscardingDecoder()
+    result = decoder('{"object":{"nested":{"value":1}},"array":[{},[1,2,3]]}')
+    assert result == {}
+    assert mappings[0]() is result
+    assert all(reference() is None for reference in mappings[1:])

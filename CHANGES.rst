@@ -4,6 +4,12 @@ Changes
 1.27 (unreleased)
 ~~~~~~~~~~~~~~~~~
 
+* Expose the current RFC 6901 path through ``Decoder.pointer`` during decoder callbacks
+  (`issue #134`__), including recursive and concurrent decoder calls. Retain containers
+  while parsing into custom mappings that discard their values.
+
+  __ https://github.com/python-rapidjson/python-rapidjson/issues/134
+
 * Preserve the value of non-ASCII ``RawJSON`` input with ``ensure_ascii=True`` by emitting
   JSON Unicode escapes instead of truncating code points (`PR #258`__), thanks to Parijat
   Biswas
