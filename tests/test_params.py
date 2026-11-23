@@ -536,6 +536,10 @@ def test_uuid_and_datetime_mode_together(dumps, loads):
         ('1999-02-03t10:20:30', str),
 
         ('0000-01-01', str),
+        ('0001-00-01', str),
+        ('0001-01-00', str),
+        ('0001-00-01T10:20:30', str),
+        ('0001-01-00T10:20:30', str),
         ('0001-99-99', str),
         ('0001-01-32', str),
         ('0001-02-29', str),
@@ -597,6 +601,19 @@ def test_uuid_and_datetime_mode_together(dumps, loads):
 def test_datetime_iso8601(value, cls, loads):
     result = loads('"%s"' % value, datetime_mode=rj.DM_ISO8601)
     assert isinstance(result, cls)
+
+
+@pytest.mark.parametrize(
+    'value', [
+        '2026-00-11',
+        '2026-01-00',
+        '2026-00-00',
+        '2026-00-11T00:00:00',
+        '2026-01-00T00:00:00',
+    ])
+def test_datetime_iso8601_invalid_zero_month_or_day_in_containers(value, loads):
+    assert loads('{"d": "%s"}' % value, datetime_mode=rj.DM_ISO8601) == {'d': value}
+    assert loads('["%s"]' % value, datetime_mode=rj.DM_ISO8601) == [value]
 
 
 @pytest.mark.parametrize(
