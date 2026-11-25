@@ -1373,7 +1373,7 @@ struct PyHandler {
         month = digit(5)*10 + digit(6);
         day = digit(8)*10 + digit(9);
 
-        return year > 0 && month <= 12 && day <= days_per_month(year, month);
+        return year > 0 && month >= 1 && month <= 12 && day >= 1 && day <= days_per_month(year, month);
     }
 
     bool IsIso8601Offset(const char* str, int& tzoff) {
@@ -1480,7 +1480,10 @@ struct PyHandler {
 
         if (length == 10 && hasDate) {
             // just a date, handle quickly
-            return Handle(PyDate_FromDate(year, month, day));
+            PyObject* value = PyDate_FromDate(year, month, day);
+            if (value == NULL)
+                return false;
+            return Handle(value);
         }
 
         bool isZ = str[length - 1] == 'Z';
