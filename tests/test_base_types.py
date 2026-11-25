@@ -161,10 +161,10 @@ def test_serialize_sets_dumps():
             return list(obj)
         raise TypeError(repr(obj) + " is not JSON serializable")
 
-    rj.dumps([set()], default=default_iterable)
+    rj.dumps([set()], default=default_iterable, iterable_mode=rj.IM_ONLY_LISTS)
 
     with pytest.raises(TypeError):
-        rj.dumps([set()])
+        rj.dumps([set()], iterable_mode=rj.IM_ONLY_LISTS)
 
 
 def test_serialize_sets_encoder():
@@ -174,11 +174,11 @@ def test_serialize_sets_encoder():
                 return list(obj)
             raise TypeError(repr(obj) + " is not JSON serializable")
 
-    dumps = SetsEncoder()
+    dumps = SetsEncoder(iterable_mode=rj.IM_ONLY_LISTS)
     dumps([set()])
 
     with pytest.raises(TypeError):
-        rj.Encoder()([set()])
+        rj.Encoder(iterable_mode=rj.IM_ONLY_LISTS)([set()])
 
 
 def test_constants(dumps, loads):
@@ -197,6 +197,17 @@ def test_iterables(dumps):
         yield 3
 
     assert dumps(gen()) == '[1,2,3]'
+
+
+@pytest.mark.parametrize('value', (set(), {1, 2}, frozenset(), frozenset({1, 2})))
+def test_set_iterables(value, dumps):
+    assert set(rj.loads(dumps(value, iterable_mode=rj.IM_ANY_ITERABLE))) == value
+
+
+@pytest.mark.parametrize('value', (set(), {1, 2}, frozenset(), frozenset({1, 2})))
+def test_set_iterables_only_lists(value, dumps):
+    with pytest.raises(TypeError):
+        dumps(value, iterable_mode=rj.IM_ONLY_LISTS)
 
 
 def test_decode_error(loads):
