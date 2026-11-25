@@ -54,6 +54,34 @@
 
       The UUID mode, whether and how UUID literals will be recognized.
 
+   .. attribute:: pointer
+
+      :type: str or None
+
+      The JSON Pointer (:rfc:`6901`) identifying the value being processed by
+      :meth:`start_object`, :meth:`end_object`, :meth:`end_array` or :meth:`string`.
+      This read-only attribute is available during these callbacks; otherwise it
+      is ``None``. The document root is identified by the empty string. Object
+      keys escape ``~`` as ``~0`` and ``/`` as ``~1``, and array indexes start at
+      zero. Empty and duplicate object keys are preserved in the path.
+
+      The path describes the original JSON structure, before callback replacements.
+      It is constructed only when the attribute is read. A recursive call to the
+      same decoder exposes the inner callback's path and restores the outer one
+      when that callback returns. Calls in different threads have separate paths.
+
+      .. doctest::
+
+         >>> class LocatedStrings(Decoder):
+         ...   def string(self, value):
+         ...     return (self.pointer, value)
+         ...
+         >>> located = LocatedStrings()
+         >>> located('{"a/b": ["first", "second"]}')
+         {'a/b': [('/a~1b/0', 'first'), ('/a~1b/1', 'second')]}
+         >>> located.pointer is None
+         True
+
    .. rubric:: Methods
 
    .. method:: __call__(json, *, chunk_size=65536)
