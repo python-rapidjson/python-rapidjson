@@ -23,6 +23,10 @@ Changes
 
   __ https://github.com/python-rapidjson/python-rapidjson/pull/264
 
+* Restore ``debug-tests`` job on GH CI (`PR #265`__), thanks to Junhyung Lee
+
+  __ https://github.com/python-rapidjson/python-rapidjson/pull/265
+
 
 1.26 (2026-11-01)
 ~~~~~~~~~~~~~~~~~
