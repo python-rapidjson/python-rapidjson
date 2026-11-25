@@ -18,6 +18,11 @@ Changes
 
   __ https://github.com/python-rapidjson/python-rapidjson/pull/258
 
+* Fix DM_ISO8601 handling of dates with a zero month or day (`PR #264`__), thanks to
+  Junhyung Lee
+
+  __ https://github.com/python-rapidjson/python-rapidjson/pull/264
+
 
 1.26 (2026-11-01)
 ~~~~~~~~~~~~~~~~~
